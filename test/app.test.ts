@@ -35,7 +35,7 @@ describe('Tareeq Academy API foundation', () => {
   })
 
   it('handles unexpected errors without exposing internals', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const testApp = new OpenAPIHono()
     testApp.get('/failure', () => {
       throw new Error('sensitive implementation detail')
@@ -57,6 +57,7 @@ describe('Tareeq Academy API foundation', () => {
       },
     })
     expect(JSON.stringify(body)).not.toContain('sensitive implementation detail')
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain('sensitive implementation detail')
   })
 
   it('formats Zod validation failures consistently', async () => {

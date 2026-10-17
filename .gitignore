@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 .vercel/
+src/generated/prisma/
 
 .env
 .env.*

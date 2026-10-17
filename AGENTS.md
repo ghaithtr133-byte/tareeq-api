@@ -2,7 +2,7 @@
 
 ## Architecture
 
-This repository is an independently deployed Node.js 24 backend implemented as a modular monolith with Hono and TypeScript. Keep modules cohesive inside this application and introduce module boundaries only when an approved feature needs them. `src/app.ts` assembles the application, `src/routes/` contains the currently implemented route definitions, `src/shared/` contains shared HTTP conventions, `src/config/` owns runtime configuration, `src/index.ts` is the Vercel entrypoint, and `src/server.ts` is the local Node.js entrypoint.
+This repository is an independently deployed Node.js 24 backend implemented as a modular monolith with Hono and TypeScript. Keep modules cohesive inside this application and introduce module boundaries only when an approved feature needs them. `src/app.ts` assembles the application, `src/auth/` contains administrative authentication and authorization, `src/database/` owns the Prisma runtime client, `src/routes/` contains other implemented route definitions, `src/shared/` contains shared HTTP conventions, `src/config/` owns runtime configuration, `src/index.ts` is the Vercel entrypoint, and `src/server.ts` is the local Node.js entrypoint. Prisma schema and versioned migrations live under `prisma/`.
 
 Do not create placeholder modules, speculative abstractions, or empty future-feature directories.
 
@@ -19,11 +19,12 @@ When a requirement genuinely needs a leadership decision, stop the affected chan
 - HTTP framework: Hono.
 - Validation and API description: Zod and OpenAPI using the approved Hono integration.
 - Interactive reference: official Scalar Hono integration.
+- Database: Prisma ORM with Neon PostgreSQL and versioned migrations.
 - Hosting target: Vercel Functions.
 - npm is the package manager unless Project Leadership approves a change.
 - Lock exact dependency versions.
 
-Prisma/Neon, Resend, and Cloudinary may be introduced only by tasks that explicitly authorize them. Do not add frameworks, infrastructure, or dependencies for anticipated work.
+Resend and Cloudinary may be introduced only by tasks that explicitly authorize them. Do not add frameworks, infrastructure, or dependencies for anticipated work.
 
 ## API conventions
 
@@ -34,6 +35,9 @@ Prisma/Neon, Resend, and Cloudinary may be introduced only by tasks that explici
 - Define implemented endpoints with the Zod/OpenAPI route pattern so runtime validation and documentation remain aligned.
 - Serve the OpenAPI document at `/openapi.json` and Scalar at `/docs`.
 - Do not expose stack traces, secrets, or sensitive internal details in responses.
+- Administrative authentication uses host-only HttpOnly cookies, signed 15-minute access JWTs, rotating hashed refresh sessions, explicit origin/CORS controls, and exactly `ADMIN` and `SUPER_ADMIN` roles.
+- Never return password hashes or authentication credentials in JSON, log them, or persist plaintext refresh credentials.
+- Use versioned Prisma migrations against explicitly identified development databases; never use destructive commands or `prisma db push` as a migration substitute.
 
 Report any proposed change to an approved API contract to Project Leadership before implementing it. Do not silently change paths, envelopes, status codes, request/response schemas, or documented behavior.
 
