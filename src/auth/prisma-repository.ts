@@ -80,6 +80,9 @@ export class PrismaAuthRepository implements AuthRepository {
         data: { ...replacement, userId: current.userId },
       })
       return toAdminRecord(user)
+    }, {
+      maxWait: 15_000,
+      timeout: 15_000,
     })
   }
 
