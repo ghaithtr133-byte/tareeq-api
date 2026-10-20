@@ -65,18 +65,30 @@ export const emptySuccessResponseSchema = successEnvelopeSchema(z.object({})).op
 export const authErrorResponses = {
   400: {
     description: 'The request is invalid.',
-    content: { 'application/json': { schema: errorResponseSchema } },
+    content: { 'application/json': { schema: errorResponseSchema, example: {
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Invalid request.', details: [] },
+    } } },
   },
   401: {
     description: 'Authentication failed or is required.',
-    content: { 'application/json': { schema: errorResponseSchema } },
+    content: { 'application/json': { schema: errorResponseSchema, example: {
+      success: false,
+      error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication is required.', details: {} },
+    } } },
   },
   403: {
     description: 'The request is forbidden due to permissions or origin validation.',
-    content: { 'application/json': { schema: errorResponseSchema } },
+    content: { 'application/json': { schema: errorResponseSchema, example: {
+      success: false,
+      error: { code: 'CSRF_VALIDATION_FAILED', message: 'Request origin is not allowed.', details: {} },
+    } } },
   },
   415: {
     description: 'The request body is not application/json.',
-    content: { 'application/json': { schema: errorResponseSchema } },
+    content: { 'application/json': { schema: errorResponseSchema, example: {
+      success: false,
+      error: { code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Unsupported media type.', details: {} },
+    } } },
   },
 } as const

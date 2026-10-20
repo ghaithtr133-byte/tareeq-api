@@ -104,6 +104,57 @@ describe('Tareeq Academy API foundation', () => {
     expect(document.components.schemas.HealthResponse).toBeDefined()
   })
 
+  it('documents the complete 36-operation API with descriptions, examples, and Admin security', async () => {
+    const response = await app.request('/openapi.json')
+    const document = (await response.json()) as {
+      paths: Record<string, Record<string, {
+        summary?: string
+        description?: string
+        tags?: string[]
+        security?: Array<Record<string, unknown>>
+        requestBody?: {
+          content?: Record<string, { example?: unknown }>
+        }
+        responses: Record<string, {
+          content?: Record<string, { example?: unknown }>
+        }>
+      }>>
+    }
+    const methods = new Set(['get', 'post', 'patch', 'put', 'delete'])
+    const operations = Object.entries(document.paths).flatMap(([path, pathItem]) =>
+      Object.entries(pathItem)
+        .filter(([method]) => methods.has(method))
+        .map(([method, operation]) => ({ path, method, operation })),
+    )
+
+    expect(operations).toHaveLength(36)
+    for (const { path, method, operation } of operations) {
+      expect(operation.summary, `${method.toUpperCase()} ${path} summary`).toBeTruthy()
+      expect(operation.description, `${method.toUpperCase()} ${path} description`).toBeTruthy()
+      expect(operation.tags?.length, `${method.toUpperCase()} ${path} tags`).toBeGreaterThan(0)
+      expect(
+        Object.values(operation.responses).some((item) =>
+          Object.values(item.content ?? {}).some((content) => content.example !== undefined),
+        ),
+        `${method.toUpperCase()} ${path} response example`,
+      ).toBe(true)
+
+      if (operation.requestBody) {
+        expect(
+          Object.values(operation.requestBody.content ?? {}).some(
+            (content) => content.example !== undefined,
+          ),
+          `${method.toUpperCase()} ${path} request example`,
+        ).toBe(true)
+      }
+
+      if (path.startsWith('/api/v1/admin/')) {
+        expect(operation.security).toEqual([{ accessCookie: [] }])
+        expect(operation.description).toContain('ADMIN or SUPER_ADMIN')
+      }
+    }
+  })
+
   it('serves Scalar documentation configured to load the OpenAPI document', async () => {
     const response = await app.request('/docs')
     const html = await response.text()

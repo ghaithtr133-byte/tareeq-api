@@ -24,6 +24,7 @@ const healthRoute = createRoute({
       content: {
         'application/json': {
           schema: healthResponseSchema,
+          example: { success: true, data: { status: 'ok' } },
         },
       },
     },

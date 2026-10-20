@@ -12,6 +12,17 @@ enum AdminRole {
   SUPER_ADMIN
 }
 
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ScholarshipApplicationStatus {
+  OPEN
+  CLOSED
+}
+
 model AdminUser {
   id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String
@@ -36,4 +47,152 @@ model RefreshSession {
 
   @@index([userId, revokedAt])
   @@index([expiresAt])
+}
+
+model Country {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nameAr           String
+  nameEn           String?
+  slug             String            @unique
+  introductionAr   String
+  introductionEn   String?
+  detailsAr        String
+  detailsEn        String?
+  imageUrl         String?
+  imageAltAr       String?
+  imageAltEn       String?
+  featured         Boolean           @default(false)
+  displayOrder     Int               @default(0)
+  status           PublicationStatus @default(DRAFT)
+  publishedAt      DateTime?         @db.Timestamptz(3)
+  seoTitleAr       String?
+  seoDescriptionAr String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  universities     University[]
+  scholarships     Scholarship[]
+  articles         Article[]
+
+  @@index([status, featured, displayOrder, id])
+  @@index([createdAt, id])
+}
+
+model University {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nameAr           String
+  nameEn           String?
+  officialName     String
+  slug             String            @unique
+  countryId        String            @db.Uuid
+  cityAr           String
+  cityEn           String?
+  overviewAr       String
+  overviewEn       String?
+  officialWebsite  String?
+  imageUrl         String?
+  imageAltAr       String?
+  imageAltEn       String?
+  featured         Boolean           @default(false)
+  status           PublicationStatus @default(DRAFT)
+  publishedAt      DateTime?         @db.Timestamptz(3)
+  seoTitleAr       String?
+  seoDescriptionAr String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  country          Country           @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  scholarships     Scholarship[]
+  articles         Article[]
+
+  @@index([countryId, status, featured, createdAt, id])
+  @@index([status, createdAt, id])
+}
+
+model Scholarship {
+  id                String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titleAr           String
+  titleEn           String?
+  slug              String                       @unique
+  countryId         String?                      @db.Uuid
+  universityId      String?                      @db.Uuid
+  studyLevel        String
+  fundingType       String
+  requirementsAr    String
+  requirementsEn    String?
+  descriptionAr     String
+  descriptionEn     String?
+  verifiedDeadline  DateTime?                    @db.Timestamptz(3)
+  officialSourceUrl String?
+  applicationStatus ScholarshipApplicationStatus @default(OPEN)
+  status            PublicationStatus            @default(DRAFT)
+  featured          Boolean                      @default(false)
+  publishedAt       DateTime?                    @db.Timestamptz(3)
+  seoTitleAr        String?
+  seoDescriptionAr  String?
+  createdAt         DateTime                     @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                     @updatedAt @db.Timestamptz(3)
+  country           Country?                     @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  university        University?                  @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  articles          Article[]
+
+  @@index([countryId, status, featured, createdAt, id])
+  @@index([universityId, status, createdAt, id])
+  @@index([status, applicationStatus, verifiedDeadline, id])
+  @@index([studyLevel, fundingType])
+}
+
+model Service {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titleAr          String
+  titleEn          String?
+  slug             String            @unique
+  summaryAr        String
+  summaryEn        String?
+  descriptionAr    String
+  descriptionEn    String?
+  imageUrl         String?
+  imageAltAr       String?
+  imageAltEn       String?
+  featured         Boolean           @default(false)
+  displayOrder     Int               @default(0)
+  status           PublicationStatus @default(DRAFT)
+  publishedAt      DateTime?         @db.Timestamptz(3)
+  seoTitleAr       String?
+  seoDescriptionAr String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+
+  @@index([status, featured, displayOrder, id])
+  @@index([createdAt, id])
+}
+
+model Article {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titleAr          String
+  titleEn          String?
+  slug             String            @unique
+  summaryAr        String
+  summaryEn        String?
+  bodyAr           Json
+  bodyEn           Json?
+  coverImageUrl    String?
+  coverImageAltAr  String?
+  coverImageAltEn  String?
+  countryId        String?           @db.Uuid
+  universityId     String?           @db.Uuid
+  scholarshipId    String?           @db.Uuid
+  featured         Boolean           @default(false)
+  status           PublicationStatus @default(DRAFT)
+  publishedAt      DateTime?         @db.Timestamptz(3)
+  seoTitleAr       String?
+  seoDescriptionAr String?
+  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  country          Country?          @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  university       University?       @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  scholarship      Scholarship?      @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
+
+  @@index([countryId, status, createdAt, id])
+  @@index([universityId, status, createdAt, id])
+  @@index([scholarshipId, status, createdAt, id])
+  @@index([status, featured, createdAt, id])
 }

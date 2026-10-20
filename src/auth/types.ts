@@ -25,5 +25,6 @@ export type IssuedCredentials = {
 export type AuthEnv = {
   Variables: {
     authClaims: AccessClaims
+    requestId: string
   }
 }

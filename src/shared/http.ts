@@ -85,10 +85,12 @@ export const handleError: ErrorHandler = (error, c) => {
     return errorResponse(c, error.status, safeError.code, safeError.message)
   }
 
-  console.error(
-    'Unhandled application error.',
-    error instanceof Error ? error.name : 'UnknownError',
-  )
+  const requestId = c.res.headers.get('X-Request-Id') ?? crypto.randomUUID()
+  c.header('X-Request-Id', requestId)
+  console.error('Unhandled application error.', {
+    requestId,
+    error: error instanceof Error ? error.name : 'UnknownError',
+  })
 
   return errorResponse(
     c,

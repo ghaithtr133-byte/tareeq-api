@@ -1,117 +1,152 @@
 # Tareeq Academy Backend
 
-Standalone backend API for Tareeq Academy, an educational consulting platform. The current implementation provides the API foundation, PostgreSQL authentication schema, and administrative authentication/authorization. Business modules are added only through separately approved tasks.
+Standalone API for Tareeq Academy. It provides administrative cookie authentication and content APIs for countries, universities, scholarships, services, and articles.
 
-## Technology stack
+Detailed endpoint schemas and examples are generated at `/openapi.json` and rendered through Scalar at `/docs`. Frontend workflows are documented in [docs/frontend-integration.md](docs/frontend-integration.md).
 
-- Node.js 24
-- TypeScript in strict mode
-- Hono
-- Zod and `@hono/zod-openapi`
-- Scalar API Reference
-- Prisma ORM and Neon PostgreSQL
-- Vercel Functions
+## Technology and prerequisites
 
-Resend and Cloudinary remain deferred to future approved work.
+- Node.js `24.x`.
+- npm `11.6.2`, as declared by `packageManager`; use the committed `package-lock.json`.
+- Hono `4.13.13`, strict TypeScript, Zod/OpenAPI, and Scalar.
+- Prisma ORM and Client `7.10.0`.
+- A Neon PostgreSQL database with a pooled runtime URL and direct migration URL.
 
-## Prerequisites
-
-- Node.js 24.x
-- npm 11.x
+Do not provide database URLs, JWT secrets, bootstrap credentials, or other Backend secrets to Frontend applications. Frontends communicate only with the HTTP API.
 
 ## Local setup
 
-```sh
+From the repository root:
+
+```powershell
 npm install
-copy .env.example .env
+Copy-Item .env.example .env
+npm run prisma:generate
 npm run dev
 ```
 
-On macOS or Linux, use `cp .env.example .env`. Configure:
+On macOS or Linux, replace the copy command with `cp .env.example .env`. Fill in `.env` before starting routes that use authentication or the database. Never commit `.env`.
 
-- `PORT`: local Node.js server port; defaults to `3000`.
-- `NODE_ENV`: `development`, `test`, or `production`; production enables Secure cookies.
-- `DATABASE_URL`: pooled Neon PostgreSQL URL used by the running API.
-- `DIRECT_DATABASE_URL`: direct development database URL used by Prisma migrations.
-- `JWT_SECRET`: cryptographically random JWT signing secret of at least 32 characters.
-- `AUTH_ALLOWED_ORIGINS`: comma-separated exact Frontend origins allowed to send credentialed requests.
-- `BOOTSTRAP_SUPER_ADMIN_NAME`, `BOOTSTRAP_SUPER_ADMIN_EMAIL`, and `BOOTSTRAP_SUPER_ADMIN_PASSWORD`: used only by the explicitly invoked initial bootstrap script.
+`npm run dev` loads `.env` when present and starts the local Node server. `PORT` defaults to `3000`, so the default URLs are:
 
-Development and production databases must be separate. Never place actual secrets or connection strings in committed files.
+- `http://localhost:3000/api/v1/health` — process health only; it does not probe the database.
+- `http://localhost:3000/openapi.json` — generated OpenAPI 3.1 document.
+- `http://localhost:3000/docs` — Scalar interactive API reference.
+
+If `PORT` is changed, use that port in all three URLs.
+
+## Environment variables
+
+| Variable | Requirement | Used by | Format |
+| --- | --- | --- | --- |
+| `PORT` | Optional; default `3000` | Local Node server | Integer from 1–65535 |
+| `NODE_ENV` | Optional; default `development` | Runtime cookie security | `development`, `test`, or `production` |
+| `DATABASE_URL` | Required for database-backed runtime routes | Prisma runtime client | Pooled Neon PostgreSQL URL |
+| `DIRECT_DATABASE_URL` | Required by the approved migration workflow | Prisma CLI | Direct/unpooled URL for the same Neon database |
+| `JWT_SECRET` | Required for authentication/Admin routes | JWT signing and verification | Private random string, at least 32 characters |
+| `AUTH_ALLOWED_ORIGINS` | Required for authentication/Admin routes | Credentialed CORS and origin/CSRF checks | Comma-separated exact origins without paths |
+| `BOOTSTRAP_SUPER_ADMIN_NAME` | Bootstrap only | `npm run auth:bootstrap` | Non-empty name, maximum 120 characters |
+| `BOOTSTRAP_SUPER_ADMIN_EMAIL` | Bootstrap only | `npm run auth:bootstrap` | Valid administrator email |
+| `BOOTSTRAP_SUPER_ADMIN_PASSWORD` | Bootstrap only | `npm run auth:bootstrap` | 12–128 characters with lowercase, uppercase, and numeric characters |
+
+`DATABASE_URL` is used by the running application through `src/database/client.ts`. `DIRECT_DATABASE_URL` is preferred by `prisma7.config.ts` for Prisma migrations; the configuration technically falls back to `DATABASE_URL`, but the approved Neon workflow uses the direct URL.
+
+`AUTH_ALLOWED_ORIGINS` values must be exact origins such as `http://localhost:3001` or `https://admin.example.com`. Do not include paths and do not use `*` with credentialed requests.
 
 ## Commands
 
-```sh
-npm run dev        # Start the local server with file watching
-npm run typecheck  # Check TypeScript types
-npm run lint       # Run ESLint
-npm test           # Run focused automated tests
-npm run build      # Compile production output to dist/
-npm start          # Run the compiled local Node.js entrypoint
-npm run prisma:validate
-npm run prisma:generate
-npm run prisma:migrate:dev -- --name <migration-name>
+```powershell
+npm run dev                    # Watch and run src/server.ts with .env
+npm run prisma:generate        # Generate Prisma Client
+npm run prisma:validate        # Validate schema and Prisma configuration
+npm run prisma:migrate:status  # Read-only migration status
+npm run typecheck              # Strict TypeScript check
+npm run lint                   # ESLint
+npm run build                  # Compile production output to dist/
+npm start                      # Run the compiled local Node server
+npm test                       # Safe default Vitest suite; DB suites remain gated
+npm run test:api               # Safe isolated health/auth/content API regression
+```
+
+The repository uses the custom root configuration file `prisma7.config.ts`. Prisma `7.10.0` discovers it when commands run from the repository root, which is how the npm scripts are defined. The file loads `.env`, uses `DIRECT_DATABASE_URL` before `DATABASE_URL`, and points Prisma at `prisma/schema.prisma` and `prisma/migrations`.
+
+For an already provisioned/deployed database, inspect status first and apply reviewed migrations only when explicitly authorized:
+
+```powershell
+npm run prisma:migrate:status
 npm run prisma:migrate:deploy
 ```
 
-Use `prisma:migrate:dev` only against an isolated development database. Review generated SQL before applying it. Use `prisma:migrate:deploy` in an approved deployment workflow; do not use `prisma db push` as a replacement for migration history.
+`prisma:migrate:deploy` changes the database. Do not run it merely to test setup. `prisma:migrate:dev` is retained for explicitly identified isolated development databases and must not be used casually against the shared Neon database. Never use `prisma db push` as a substitute for migration history.
 
-The initial migration enables PostgreSQL `citext` and `pgcrypto`, then creates:
+### Explicitly authorized PostgreSQL tests
 
-- `AdminUser`: UUID identity, case-insensitive unique email, Argon2id password hash, `ADMIN`/`SUPER_ADMIN` role, active state, and UTC-compatible timestamps.
-- `RefreshSession`: UUID identity, owning administrator, unique refresh-token hash, expiry/revocation/use timestamps, and cascading deletion with its administrator.
+The ordinary test commands do not mutate Neon. Content integration is separately gated:
 
-Only hashed refresh credentials are persisted.
+```powershell
+$env:RUN_CONTENT_DATABASE_INTEGRATION = '1'
+npm test -- test/content.postgres.integration.test.ts
+Remove-Item Env:RUN_CONTENT_DATABASE_INTEGRATION
+```
 
-## API and documentation
+Run it only with current authorization. It creates uniquely named temporary fixtures, tracks exact IDs, deletes only those IDs, and verifies cleanup. The existing authentication PostgreSQL suite is similarly gated by `RUN_DATABASE_INTEGRATION=1` and should be run only when its mutations are explicitly in scope.
 
-With the local server running:
+## Approved database policy
 
-- `GET http://localhost:3000/api/v1/health` — unauthenticated process health check.
-- `GET http://localhost:3000/openapi.json` — generated OpenAPI 3.1 document.
-- `GET http://localhost:3000/docs` — interactive Scalar API reference.
-- `POST http://localhost:3000/api/v1/auth/login` — validate credentials and set access/refresh cookies.
-- `POST http://localhost:3000/api/v1/auth/refresh` — rotate the refresh session and both cookies.
-- `POST http://localhost:3000/api/v1/auth/logout` — revoke the current refresh session and clear cookies.
-- `GET http://localhost:3000/api/v1/auth/me` — return the authenticated administrator.
-- `POST http://localhost:3000/api/v1/auth/change-password` — change the password, revoke refresh sessions, and require a fresh login.
+Project Leadership formally approved one Neon PostgreSQL database for development and eventual production. Treat it as production-sensitive:
 
-API endpoints return a consistent envelope. Successful responses use `{ "success": true, "data": ... }`; errors use `{ "success": false, "error": { "code": "...", "message": "...", "details": ... } }`.
+- Never reset the database or rewrite migration history.
+- Never use destructive migrations without explicit approval.
+- Never use broad `DELETE`, `TRUNCATE`, or cleanup operations.
+- Never modify real records as test fixtures.
+- Isolate temporary fixtures and remove them by exact tracked IDs.
+- After actual production launch, obtain fresh authorization before any database-mutating integration test.
+- Do not operate Neon or Vercel management consoles through agents.
 
-## Authentication and authorization
+## Authentication and browser security
 
-Passwords use Argon2id. The access credential is a signed HS256 JWT containing the administrator ID and role and expires after 15 minutes. The refresh credential is an opaque random value valid for seven days; only its SHA-256 hash is stored. Every successful refresh atomically consumes the existing session and creates its replacement, preventing reuse and concurrent double rotation.
+The API uses host-only HttpOnly cookies: a signed 15-minute access JWT and an opaque rotating refresh credential valid for seven days. Tokens are never returned in JSON and must never be stored in `localStorage` or `sessionStorage`.
 
-Both credentials are sent only through host-only, HttpOnly cookies. Cookies use `SameSite=Lax`, exact paths, explicit expirations, and `Secure` in production. Authenticated state-changing requests require an approved or same-origin `Origin`. Authentication CORS uses an explicit allowlist with credentials and never uses a wildcard.
+Cookies use `SameSite=Lax`, explicit paths, and `Secure` when `NODE_ENV=production`. State-changing authenticated requests require an `Origin` that exactly matches the request origin or `AUTH_ALLOWED_ORIGINS`. Credentialed CORS never uses a wildcard.
 
-Available roles are exactly `ADMIN` and `SUPER_ADMIN`. Reusable middleware supports authenticated routes, either administrative role, and `SUPER_ADMIN`-only routes. Normal role checks use verified JWT claims without a database lookup.
+The supported roles are exactly `ADMIN` and `SUPER_ADMIN`; both can manage Task #3 content. The accepted V1 limitation is that an already signed access token may remain usable for up to its 15-minute expiry after session revocation or account deactivation. Login and refresh reject inactive accounts.
 
-The approved V1 limitation is that a signed access token can remain usable until its 15-minute expiration after session revocation or account deactivation. Refresh and login reject inactive accounts; no token blacklist or Redis layer is used.
-
-Vercel preview domains that are cross-site may not support the final `SameSite=Lax` cookie flow. Production cookie security must not be weakened to accommodate previews.
+Cross-site Vercel Preview domains may not receive `SameSite=Lax` cookies consistently. Use appropriately related production/custom domains rather than weakening cookie security. A separate Next.js host or middleware cannot read host-only cookies owned by the API host.
 
 ## Initial SUPER_ADMIN
 
-After applying migrations to an empty, isolated database, set the three `BOOTSTRAP_SUPER_ADMIN_*` values and run:
+The bootstrap variables are optional during normal runtime. On an empty database, and only with explicit authorization, configure all three bootstrap variables and run:
 
-```sh
+```powershell
 npm run auth:bootstrap
 ```
 
-The command is never run by application startup or deployment. It refuses to create an account if any administrator already exists, never prints credentials or hashes, and creates no default account. Remove the bootstrap credential values from the environment after successful provisioning.
+The command refuses to run when an administrator already exists, creates no default account, and does not print credentials or hashes. Remove bootstrap values from the environment afterward.
 
-## Vercel preparation
+## Content behavior
 
-`src/index.ts` exports the Hono application as the default export, which is the entrypoint expected by Hono's current zero-configuration Vercel integration. The local Node.js server lives separately in `src/server.ts`, so it is not required by the Vercel runtime. Set the project runtime to Node.js 24 in Vercel and deploy the repository root. No `vercel.json` is currently necessary.
+All public content routes use `/api/v1`, default to `page=1&limit=12`, cap `limit` at 50, and return only `PUBLISHED` records. Admin routes use `/api/v1/admin/{resource}` and support GET, POST, and PATCH for `countries`, `universities`, `scholarships`, `services`, and `articles`. There are no DELETE operations.
 
-An actual production deployment is not part of this initialization task and has not been performed.
+Arabic fields are required; English content is optional. Previously published slugs are immutable, and `publishedAt` records the first publication time. A scholarship may remain public while applications are closed; a passed `verifiedDeadline` produces an effective `CLOSED` status without archiving it.
 
-## Current limitations
+Article bodies are validated arrays of plain-text blocks, not HTML and not native TipTap JSON. See the Frontend guide for the exact format and required TipTap adapter.
 
-- No business-domain endpoints.
-- No email, file upload, analytics, audit, or scheduled-job integrations.
-- The health check reports process availability only and intentionally has no dependency checks.
-- No production deployment has been performed.
-- Database migration execution and live integration require approved Neon development credentials.
+## Troubleshooting
 
-#
+- **Missing environment variables:** compare `.env` with `.env.example`. Authentication/database-backed routes require `DATABASE_URL`, `JWT_SECRET`, and `AUTH_ALLOWED_ORIGINS`.
+- **Invalid Neon connection:** confirm the pooled URL is in `DATABASE_URL`, the direct URL is in `DIRECT_DATABASE_URL`, both name the intended database, and SSL parameters are present. Do not print either value in logs or support requests.
+- **Prisma Client missing:** run `npm run prisma:generate`. Generated files live under ignored `src/generated/prisma/`.
+- **Prisma configuration not detected:** run the npm scripts from the repository root and confirm `prisma7.config.ts` exists.
+- **Pending migrations:** run `npm run prisma:migrate:status`. Apply with `npm run prisma:migrate:deploy` only after reviewing SQL and receiving authorization.
+- **Invalid JWT configuration:** `JWT_SECRET` must be at least 32 characters and identical for every instance serving the same environment.
+- **CORS or CSRF rejection:** add the exact Frontend origin to `AUTH_ALLOWED_ORIGINS`, send browser credentials for cookie-authenticated requests, and include the browser-generated `Origin` on POST/PATCH.
+- **Authentication cookies absent:** verify HTTPS and `NODE_ENV=production` in production, exact API/Frontend domain relationships, and browser cookie restrictions. Cross-site preview domains are not a reliable final cookie topology.
+- **Bootstrap variables missing:** they are required only for the explicitly invoked one-time bootstrap command, not normal startup.
+
+Unexpected responses include `X-Request-Id`. Provide that value when reporting a server failure; the API never returns stack traces or SQL details.
+
+## Deployment ownership and current limitations
+
+`src/index.ts` is the Vercel Hono entrypoint and `src/server.ts` is the standalone local Node entrypoint. The Project Owner manages deployment and all Neon/Vercel console operations.
+
+Email, uploads/media storage, analytics, audit logs, scheduled jobs, student accounts, payments, and Admin account management are outside Task #3. Content images are URL references only.

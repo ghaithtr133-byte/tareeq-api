@@ -16,8 +16,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:api": "vitest run test/app.test.ts test/auth.test.ts test/content.api.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
+    "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "auth:bootstrap": "tsx --env-file-if-exists=.env scripts/bootstrap-super-admin.ts"

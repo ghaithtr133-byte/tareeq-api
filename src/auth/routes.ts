@@ -23,22 +23,40 @@ const cookieHeaders = {
   },
 }
 
+const userResponseExample = {
+  success: true,
+  data: {
+    user: {
+      id: 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20',
+      name: 'Admin Name',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+    },
+  },
+}
+
+const emptyResponseExample = { success: true, data: {} }
+
 const loginRoute = createRoute({
   method: 'post',
   path: '/login',
   tags: ['Authentication'],
   summary: 'Authenticate an administrator',
+  description: 'Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.',
   request: {
     body: {
       required: true,
-      content: { 'application/json': { schema: loginRequestSchema } },
+      content: { 'application/json': {
+        schema: loginRequestSchema,
+        example: { email: 'admin@example.com', password: 'ExamplePassword123' },
+      } },
     },
   },
   responses: {
     200: {
       description: 'Authentication succeeded.',
       headers: cookieHeaders,
-      content: { 'application/json': { schema: authUserResponseSchema } },
+      content: { 'application/json': { schema: authUserResponseSchema, example: userResponseExample } },
     },
     ...authErrorResponses,
   },
@@ -49,12 +67,13 @@ const refreshRoute = createRoute({
   path: '/refresh',
   tags: ['Authentication'],
   summary: 'Rotate the refresh session',
+  description: 'Consumes the current rotating refresh cookie, issues replacement access and refresh cookies, and returns the active administrator. Reused, expired, revoked, or inactive-account sessions are rejected.',
   security: [{ refreshCookie: [] }],
   responses: {
     200: {
       description: 'The refresh credential was rotated.',
       headers: cookieHeaders,
-      content: { 'application/json': { schema: authUserResponseSchema } },
+      content: { 'application/json': { schema: authUserResponseSchema, example: userResponseExample } },
     },
     401: authErrorResponses[401],
     403: authErrorResponses[403],
@@ -66,12 +85,13 @@ const logoutRoute = createRoute({
   path: '/logout',
   tags: ['Authentication'],
   summary: 'Revoke the current refresh session',
+  description: 'Revokes the supplied refresh session when present and clears both authentication cookies. The endpoint remains safe when no refresh cookie is present.',
   security: [{}, { refreshCookie: [] }],
   responses: {
     200: {
       description: 'Authentication cookies were cleared.',
       headers: cookieHeaders,
-      content: { 'application/json': { schema: emptySuccessResponseSchema } },
+      content: { 'application/json': { schema: emptySuccessResponseSchema, example: emptyResponseExample } },
     },
     403: authErrorResponses[403],
   },
@@ -82,11 +102,12 @@ const meRoute = createRoute({
   path: '/me',
   tags: ['Authentication'],
   summary: 'Get the current administrator',
+  description: 'Returns the administrator represented by a valid access cookie. The access JWT has a 15-minute lifetime.',
   security: [{ accessCookie: [] }],
   responses: {
     200: {
       description: 'Current administrator profile.',
-      content: { 'application/json': { schema: authUserResponseSchema } },
+      content: { 'application/json': { schema: authUserResponseSchema, example: userResponseExample } },
     },
     401: authErrorResponses[401],
   },
@@ -97,18 +118,22 @@ const changePasswordRoute = createRoute({
   path: '/change-password',
   tags: ['Authentication'],
   summary: 'Change the current administrator password',
+  description: 'Validates the current password, updates it, revokes refresh sessions, clears authentication cookies, and requires a new login.',
   security: [{ accessCookie: [] }],
   request: {
     body: {
       required: true,
-      content: { 'application/json': { schema: changePasswordRequestSchema } },
+      content: { 'application/json': {
+        schema: changePasswordRequestSchema,
+        example: { currentPassword: 'CurrentPassword123', newPassword: 'ChangedPassword456' },
+      } },
     },
   },
   responses: {
     200: {
       description: 'Password changed, sessions revoked, and cookies cleared.',
       headers: cookieHeaders,
-      content: { 'application/json': { schema: emptySuccessResponseSchema } },
+      content: { 'application/json': { schema: emptySuccessResponseSchema, example: emptyResponseExample } },
     },
     ...authErrorResponses,
   },
