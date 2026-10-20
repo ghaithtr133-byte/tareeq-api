@@ -78,4 +78,8 @@ Make the smallest maintainable change that satisfies the approved task. Do not r
 
 Run typecheck, lint, production build, and focused automated tests for every implementation task unless the task explicitly sets different checks. Exercise the relevant HTTP behavior and documentation output. Review `git diff` and `git status` for scope, secrets, and unrelated changes. Report every required check as PASS, FAIL, or BLOCKED with the command and evidence; never claim an unexecuted check passed.
 
+Every major Backend task must update `scripts/verify-backend.ps1` for its approved API surface, execute it against the deployed HTTPS API after deployment, read both generated sanitized reports, and include the post-deployment PASS / FAIL / BLOCKED evidence in the task report. The verifier must remain read-only by default: it may not perform database writes, migrations, account creation, destructive operations, credential disclosure, or console access. Missing credentials or other prerequisites must be reported as BLOCKED and kept distinct from deployment or contract failures.
+
+For every Backend task that changes an API contract, update the implementation and Zod/OpenAPI/Scalar documentation, run `npm run postman:generate`, and require `npm run postman:check` to pass before review. Documentation-only changes to public descriptions, parameters, schemas, or examples must also regenerate the Collection. Then extend and run the PowerShell Acceptance Verifier, run the relevant API regression tests, and report both Postman synchronization and deployed verifier status. An API task is not ready for review while the committed Postman artifacts are stale.
+
 Do not commit, push, deploy, or begin another Linear task without explicit authorization.

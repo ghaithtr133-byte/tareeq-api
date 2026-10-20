@@ -1,0 +1,1324 @@
+{
+  "info": {
+    "_postman_id": "c4b7aa62-2c6a-43e8-802b-6de33de4a544",
+    "name": "Tareeq Academy API — Read-Only Smoke",
+    "description": "Safe for routine Collection Runner use. Contains only Health and the five public list GET requests. It performs no authentication, writes, migrations, cleanup, or destructive operations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "Backend origin without a trailing slash."
+    },
+    {
+      "key": "origin",
+      "value": "http://localhost:3001",
+      "type": "string",
+      "description": "Trusted Origin header used by POST/PATCH requests."
+    },
+    {
+      "key": "adminEmail",
+      "value": "replace-with-authorized-admin@example.invalid",
+      "type": "string",
+      "description": "Set locally; never commit a real account email."
+    },
+    {
+      "key": "adminPassword",
+      "value": "replace-with-authorized-admin-password",
+      "type": "string",
+      "description": "Set locally; never commit a real password."
+    },
+    {
+      "key": "newAdminPassword",
+      "value": "replace-with-new-admin-password",
+      "type": "string",
+      "description": "Manual password-change placeholder."
+    },
+    {
+      "key": "countrySlug",
+      "value": "study-in-germany",
+      "type": "string"
+    },
+    {
+      "key": "countryId",
+      "value": "9879d0a4-9b7e-48d1-850a-da51be9de671",
+      "type": "string"
+    },
+    {
+      "key": "universitySlug",
+      "value": "example-university",
+      "type": "string"
+    },
+    {
+      "key": "universityId",
+      "value": "88008b68-b698-4725-93e9-801537e7797c",
+      "type": "string"
+    },
+    {
+      "key": "scholarshipSlug",
+      "value": "example-scholarship",
+      "type": "string"
+    },
+    {
+      "key": "scholarshipId",
+      "value": "9f414dec-fcbc-49dd-994f-086d2ef40e1f",
+      "type": "string"
+    },
+    {
+      "key": "serviceSlug",
+      "value": "university-consulting",
+      "type": "string"
+    },
+    {
+      "key": "serviceId",
+      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+      "type": "string"
+    },
+    {
+      "key": "articleSlug",
+      "value": "study-guide",
+      "type": "string"
+    },
+    {
+      "key": "articleId",
+      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Read-Only Smoke",
+      "item": [
+        {
+          "name": "Check API health",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health"
+              ]
+            },
+            "description": "Reports whether the API process is available. No database or authentication is required.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: The API is healthy."
+          },
+          "response": [
+            {
+              "name": "200 The API is healthy.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "health"
+                  ]
+                },
+                "description": "Reports whether the API process is available. No database or authentication is required.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: The API is healthy."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"status\": \"ok\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON success envelope', function () { const body = pm.response.json(); pm.expect(body.success).to.eql(true); });",
+                  "pm.test('Request ID present', function () { pm.expect(pm.response.headers.has('X-Request-Id')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List published countries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "countries"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "One-based page number.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page. The maximum is 50.",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "الدراسة",
+                  "description": "Case-insensitive text search.",
+                  "disabled": true
+                },
+                {
+                  "key": "featured",
+                  "value": "true",
+                  "description": "Filter by featured state.",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "manual",
+                  "description": "Sort by display order or newest creation time.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+          },
+          "response": [
+            {
+              "name": "200 Published countries.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/countries",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "countries"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "manual",
+                      "description": "Sort by display order or newest creation time.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 12,\n      \"total\": 0,\n      \"totalPages\": 0\n    }\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/countries",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "countries"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "manual",
+                      "description": "Sort by display order or newest creation time.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON success envelope', function () { const body = pm.response.json(); pm.expect(body.success).to.eql(true); });",
+                  "pm.test('Request ID present', function () { pm.expect(pm.response.headers.has('X-Request-Id')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List published universities",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/universities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "universities"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "One-based page number.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page. The maximum is 50.",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "الدراسة",
+                  "description": "Case-insensitive text search.",
+                  "disabled": true
+                },
+                {
+                  "key": "country",
+                  "value": "{{countrySlug}}",
+                  "description": "Related Country slug.",
+                  "disabled": true
+                },
+                {
+                  "key": "featured",
+                  "value": "true",
+                  "description": "Filter by featured state.",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "newest",
+                  "description": "Sort newest first or by Arabic name.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+          },
+          "response": [
+            {
+              "name": "200 Published universities.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/universities",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "universities"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "country",
+                      "value": "{{countrySlug}}",
+                      "description": "Related Country slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "newest",
+                      "description": "Sort newest first or by Arabic name.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 12,\n      \"total\": 0,\n      \"totalPages\": 0\n    }\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/universities",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "universities"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "country",
+                      "value": "{{countrySlug}}",
+                      "description": "Related Country slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "newest",
+                      "description": "Sort newest first or by Arabic name.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON success envelope', function () { const body = pm.response.json(); pm.expect(body.success).to.eql(true); });",
+                  "pm.test('Request ID present', function () { pm.expect(pm.response.headers.has('X-Request-Id')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List published scholarships",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/scholarships",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scholarships"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "One-based page number.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page. The maximum is 50.",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "الدراسة",
+                  "description": "Case-insensitive text search.",
+                  "disabled": true
+                },
+                {
+                  "key": "country",
+                  "value": "{{countrySlug}}",
+                  "description": "Related Country slug.",
+                  "disabled": true
+                },
+                {
+                  "key": "university",
+                  "value": "{{universitySlug}}",
+                  "description": "Related University slug.",
+                  "disabled": true
+                },
+                {
+                  "key": "studyLevel",
+                  "value": "MASTERS",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "fundingType",
+                  "value": "FULL",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "applicationStatus",
+                  "value": "OPEN",
+                  "description": "Effective OPEN/CLOSED state; passed verified deadlines count as CLOSED.",
+                  "disabled": true
+                },
+                {
+                  "key": "featured",
+                  "value": "true",
+                  "description": "Filter by featured state.",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "newest",
+                  "description": "Sort newest first or by earliest non-null deadline.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+          },
+          "response": [
+            {
+              "name": "200 Published scholarships.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/scholarships",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "scholarships"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "country",
+                      "value": "{{countrySlug}}",
+                      "description": "Related Country slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "university",
+                      "value": "{{universitySlug}}",
+                      "description": "Related University slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "studyLevel",
+                      "value": "MASTERS",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "fundingType",
+                      "value": "FULL",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "applicationStatus",
+                      "value": "OPEN",
+                      "description": "Effective OPEN/CLOSED state; passed verified deadlines count as CLOSED.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "newest",
+                      "description": "Sort newest first or by earliest non-null deadline.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 12,\n      \"total\": 0,\n      \"totalPages\": 0\n    }\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/scholarships",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "scholarships"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "country",
+                      "value": "{{countrySlug}}",
+                      "description": "Related Country slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "university",
+                      "value": "{{universitySlug}}",
+                      "description": "Related University slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "studyLevel",
+                      "value": "MASTERS",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "fundingType",
+                      "value": "FULL",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "applicationStatus",
+                      "value": "OPEN",
+                      "description": "Effective OPEN/CLOSED state; passed verified deadlines count as CLOSED.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "newest",
+                      "description": "Sort newest first or by earliest non-null deadline.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON success envelope', function () { const body = pm.response.json(); pm.expect(body.success).to.eql(true); });",
+                  "pm.test('Request ID present', function () { pm.expect(pm.response.headers.has('X-Request-Id')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List published services",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "services"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "One-based page number.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page. The maximum is 50.",
+                  "disabled": true
+                },
+                {
+                  "key": "featured",
+                  "value": "true",
+                  "description": "Filter by featured state.",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "manual",
+                  "description": "Sort by display order or newest creation time.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+          },
+          "response": [
+            {
+              "name": "200 Published services.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "services"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "manual",
+                      "description": "Sort by display order or newest creation time.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 12,\n      \"total\": 0,\n      \"totalPages\": 0\n    }\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/services",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "services"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "manual",
+                      "description": "Sort by display order or newest creation time.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON success envelope', function () { const body = pm.response.json(); pm.expect(body.success).to.eql(true); });",
+                  "pm.test('Request ID present', function () { pm.expect(pm.response.headers.has('X-Request-Id')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List published articles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/articles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "articles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "One-based page number.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "12",
+                  "description": "Items per page. The maximum is 50.",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "الدراسة",
+                  "description": "Case-insensitive text search.",
+                  "disabled": true
+                },
+                {
+                  "key": "country",
+                  "value": "{{countrySlug}}",
+                  "description": "Related Country slug.",
+                  "disabled": true
+                },
+                {
+                  "key": "featured",
+                  "value": "true",
+                  "description": "Filter by featured state.",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "newest",
+                  "description": "Sort newest first.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+          },
+          "response": [
+            {
+              "name": "200 Published articles.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/articles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "articles"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "country",
+                      "value": "{{countrySlug}}",
+                      "description": "Related Country slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "newest",
+                      "description": "Sort newest first.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [],\n    \"pagination\": {\n      \"page\": 1,\n      \"limit\": 12,\n      \"total\": 0,\n      \"totalPages\": 0\n    }\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/articles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "articles"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "One-based page number.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12",
+                      "description": "Items per page. The maximum is 50.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "الدراسة",
+                      "description": "Case-insensitive text search.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "country",
+                      "value": "{{countrySlug}}",
+                      "description": "Related Country slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "featured",
+                      "value": "true",
+                      "description": "Filter by featured state.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort",
+                      "value": "newest",
+                      "description": "Sort newest first.",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('JSON success envelope', function () { const body = pm.response.json(); pm.expect(body.success).to.eql(true); });",
+                  "pm.test('Request ID present', function () { pm.expect(pm.response.headers.has('X-Request-Id')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

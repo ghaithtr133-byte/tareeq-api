@@ -35,6 +35,16 @@ export const adminApi = axios.create({
 
 `withCredentials` is required for cross-origin browser authentication calls. It is unnecessary for public read-only requests. Never copy access or refresh credentials into JavaScript storage; successful auth responses contain user data, not JWTs.
 
+## Postman collections
+
+Import `docs/postman/tareeq-api.postman_collection.json` for all 36 documented operations, then import either the Local or Vercel environment from the same directory and select it in Postman. Both environments use `baseUrl`; update only the sanitized placeholders you need. The full Collection includes clearly labeled manual POST/PATCH and authentication operations, so do not run the full Collection against production.
+
+For automated or routine checks, import `tareeq-api.read-only-smoke.postman_collection.json`. It contains only Health and the five public list requests and cannot modify data. The Local environment targets `http://localhost:3000`; the Vercel environment targets `https://tareeq-api.vercel.app`.
+
+Authentication uses Backend-owned HttpOnly cookies. Set the environment's Admin email/password locally, manually run Login with an authorized account, let Postman retain cookies for the API host, call `/auth/me`, refresh when needed, use Admin requests, and finish with Logout. Do not extract tokens or create Bearer/localStorage workflows. Postman cookie success does not prove browser CORS or SameSite behavior.
+
+Regenerate and verify repository artifacts with `npm run postman:generate` and `npm run postman:check`. Scalar at `{{baseUrl}}/docs` remains the complete interactive contract reference.
+
 ## Response envelopes
 
 A single record uses the standard success envelope:

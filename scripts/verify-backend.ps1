@@ -1,0 +1,486 @@
+[CmdletBinding()]
+param(
+  [ValidatePattern('^https://')]
+  [string]$BaseUrl = 'https://tareeq-api.vercel.app',
+
+  [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports'),
+
+  [ValidateRange(5, 120)]
+  [int]$TimeoutSeconds = 20
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+  throw 'PowerShell 7 or newer is required.'
+}
+
+$BaseUrl = $BaseUrl.TrimEnd('/')
+$resources = @('countries', 'universities', 'scholarships', 'services', 'articles')
+$checks = [System.Collections.Generic.List[object]]::new()
+$requests = [System.Collections.Generic.List[object]]::new()
+
+function Add-Check {
+  param(
+    [Parameter(Mandatory)][string]$Id,
+    [Parameter(Mandatory)][string]$Category,
+    [Parameter(Mandatory)][ValidateSet('PASS', 'FAIL', 'BLOCKED')][string]$Status,
+    [Parameter(Mandatory)][string]$Expected,
+    [Parameter(Mandatory)][string]$Actual,
+    [Parameter(Mandatory)][string]$Evidence,
+    [Parameter(Mandatory)][ValidateSet('NONE', 'DEPLOYMENT_FAILURE', 'CONTRACT_FAILURE', 'MISSING_PREREQUISITE')][string]$Classification,
+    [bool]$Required = $true
+  )
+
+  $checks.Add([pscustomobject]@{
+    id = $Id
+    category = $Category
+    status = $Status
+    required = $Required
+    classification = $Classification
+    expected = $Expected
+    actual = $Actual
+    evidence = $Evidence
+  })
+}
+
+function Test-Property {
+  param([object]$Value, [string]$Name)
+  return $null -ne $Value -and $Value.PSObject.Properties.Name -contains $Name
+}
+
+function Get-Header {
+  param([object]$Response, [string]$Name)
+  $value = $Response.Headers[$Name]
+  if ($null -eq $value) { return $null }
+  return [string]($value -join ', ')
+}
+
+function Invoke-ReadOnlyRequest {
+  param(
+    [Parameter(Mandatory)][ValidateSet('GET', 'POST', 'OPTIONS')][string]$Method,
+    [Parameter(Mandatory)][string]$Path,
+    [hashtable]$Headers = @{},
+    [AllowNull()][string]$Body = $null,
+    [string]$Purpose = 'read-only verification'
+  )
+
+  $parameters = @{
+    Uri = "$BaseUrl$Path"
+    Method = $Method
+    Headers = $Headers
+    TimeoutSec = $TimeoutSeconds
+    SkipHttpErrorCheck = $true
+    UseBasicParsing = $true
+    MaximumRedirection = 3
+  }
+  if ($null -ne $Body) {
+    $parameters.Body = $Body
+    $parameters.ContentType = 'application/json'
+  }
+
+  try {
+    $response = Invoke-WebRequest @parameters
+    $responseRequestId = Get-Header $response 'X-Request-Id'
+    $result = [pscustomobject]@{
+      method = $Method
+      path = $Path
+      purpose = $Purpose
+      statusCode = [int]$response.StatusCode
+      contentType = Get-Header $response 'Content-Type'
+      requestIdPresent = -not [string]::IsNullOrWhiteSpace($responseRequestId)
+      requestIdMatchesSupplied = if ($Headers.ContainsKey('X-Request-Id')) { $responseRequestId -eq [string]$Headers['X-Request-Id'] } else { $null }
+      accessControlAllowOrigin = Get-Header $response 'Access-Control-Allow-Origin'
+      accessControlAllowCredentials = Get-Header $response 'Access-Control-Allow-Credentials'
+      body = [string]$response.Content
+      transportError = $null
+    }
+  } catch {
+    $result = [pscustomobject]@{
+      method = $Method
+      path = $Path
+      purpose = $Purpose
+      statusCode = 0
+      contentType = $null
+      requestIdPresent = $false
+      requestIdMatchesSupplied = $null
+      accessControlAllowOrigin = $null
+      accessControlAllowCredentials = $null
+      body = ''
+      transportError = $_.Exception.Message
+    }
+  }
+
+  $requests.Add($result)
+  return $result
+}
+
+function Convert-JsonBody {
+  param([object]$Response)
+  if ([string]::IsNullOrWhiteSpace($Response.body)) { return $null }
+  try {
+    return $Response.body | ConvertFrom-Json -Depth 100
+  } catch {
+    return $null
+  }
+}
+
+function Test-ErrorEnvelope {
+  param([object]$Body, [string]$Code)
+  if (-not (Test-Property $Body 'success') -or $Body.success -ne $false) { return $false }
+  if (-not (Test-Property $Body 'error')) { return $false }
+  if (-not (Test-Property $Body.error 'code') -or $Body.error.code -ne $Code) { return $false }
+  if (-not (Test-Property $Body.error 'message') -or [string]::IsNullOrWhiteSpace([string]$Body.error.message)) { return $false }
+  if (-not (Test-Property $Body.error 'details')) { return $false }
+  $serialized = $Body | ConvertTo-Json -Depth 20 -Compress
+  return $serialized -notmatch '(?i)(stack trace|PrismaClient|postgresql://|DATABASE_URL|JWT_SECRET)'
+}
+
+function Test-PaginationEnvelope {
+  param([object]$Body, [int]$ExpectedPage, [int]$ExpectedLimit)
+  if (-not (Test-Property $Body 'success') -or $Body.success -ne $true) { return $false }
+  if (-not (Test-Property $Body 'data')) { return $false }
+  if (-not (Test-Property $Body.data 'items') -or -not (Test-Property $Body.data 'pagination')) { return $false }
+  $pagination = $Body.data.pagination
+  foreach ($name in @('page', 'limit', 'total', 'totalPages')) {
+    if (-not (Test-Property $pagination $name)) { return $false }
+  }
+  if ([int]$pagination.page -ne $ExpectedPage -or [int]$pagination.limit -ne $ExpectedLimit) { return $false }
+  if ([int]$pagination.total -lt 0 -or [int]$pagination.totalPages -lt 0) { return $false }
+  $expectedPages = if ([int]$pagination.total -eq 0) { 0 } else { [int][Math]::Ceiling([double]$pagination.total / [int]$pagination.limit) }
+  return [int]$pagination.totalPages -eq $expectedPages
+}
+
+function Get-OperationExampleState {
+  param([object]$Operation)
+  $responseExample = $false
+  foreach ($responseProperty in $Operation.responses.PSObject.Properties) {
+    $response = $responseProperty.Value
+    if (Test-Property $response 'content') {
+      foreach ($contentProperty in $response.content.PSObject.Properties) {
+        if (Test-Property $contentProperty.Value 'example') { $responseExample = $true }
+      }
+    }
+  }
+
+  $requestExample = $true
+  if (Test-Property $Operation 'requestBody') {
+    $requestExample = $false
+    if (Test-Property $Operation.requestBody 'content') {
+      foreach ($contentProperty in $Operation.requestBody.content.PSObject.Properties) {
+        if (Test-Property $contentProperty.Value 'example') { $requestExample = $true }
+      }
+    }
+  }
+  return [pscustomobject]@{ response = $responseExample; request = $requestExample }
+}
+
+# Health and request correlation.
+$correlationId = "tareeq-acceptance-$([guid]::NewGuid().ToString('N'))"
+$health = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/health' -Headers @{ 'X-Request-Id' = $correlationId } -Purpose 'health and request-ID verification'
+$healthBody = Convert-JsonBody $health
+$healthPass = $health.statusCode -eq 200 -and
+  (Test-Property $healthBody 'success') -and $healthBody.success -eq $true -and
+  (Test-Property $healthBody 'data') -and (Test-Property $healthBody.data 'status') -and
+  $healthBody.data.status -eq 'ok' -and $health.requestIdPresent -and $health.requestIdMatchesSupplied -eq $true
+Add-Check -Id 'health.endpoint' -Category 'Health' -Status $(if ($healthPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 200, success envelope, data.status=ok, and X-Request-Id.' `
+  -Actual "HTTP $($health.statusCode); request ID present=$($health.requestIdPresent); supplied ID echoed=$($health.requestIdMatchesSupplied)." `
+  -Evidence 'GET /api/v1/health used a synthetic correlation ID; response bodies are not retained in reports.' `
+  -Classification $(if ($health.statusCode -eq 0 -or $health.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($healthPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+# OpenAPI document and exact operation contract.
+$openApiResponse = Invoke-ReadOnlyRequest -Method GET -Path '/openapi.json' -Purpose 'OpenAPI verification'
+$openApi = Convert-JsonBody $openApiResponse
+$versionPass = $openApiResponse.statusCode -eq 200 -and (Test-Property $openApi 'openapi') -and $openApi.openapi -eq '3.1.0'
+Add-Check -Id 'openapi.version' -Category 'Documentation' -Status $(if ($versionPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'OpenAPI 3.1.0 document over HTTPS.' -Actual "HTTP $($openApiResponse.statusCode); version=$(if (Test-Property $openApi 'openapi') { $openApi.openapi } else { 'unavailable' })." `
+  -Evidence 'GET /openapi.json.' -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($versionPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$expectedOperations = [System.Collections.Generic.List[string]]::new()
+$expectedOperations.Add('GET /api/v1/health')
+foreach ($entry in @(
+  'POST /api/v1/auth/login',
+  'POST /api/v1/auth/refresh',
+  'POST /api/v1/auth/logout',
+  'GET /api/v1/auth/me',
+  'POST /api/v1/auth/change-password'
+)) { $expectedOperations.Add($entry) }
+foreach ($resource in $resources) {
+  foreach ($entry in @(
+    "GET /api/v1/$resource",
+    "GET /api/v1/$resource/{slug}",
+    "GET /api/v1/admin/$resource",
+    "GET /api/v1/admin/$resource/{id}",
+    "POST /api/v1/admin/$resource",
+    "PATCH /api/v1/admin/$resource/{id}"
+  )) { $expectedOperations.Add($entry) }
+}
+
+$actualOperations = [System.Collections.Generic.List[string]]::new()
+$documentationIssues = [System.Collections.Generic.List[string]]::new()
+if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
+  foreach ($pathProperty in $openApi.paths.PSObject.Properties) {
+    foreach ($method in @('get', 'post', 'patch', 'put', 'delete')) {
+      if ($pathProperty.Value.PSObject.Properties.Name -contains $method) {
+        $operation = $pathProperty.Value.$method
+        $operationName = "$($method.ToUpperInvariant()) $($pathProperty.Name)"
+        $actualOperations.Add($operationName)
+        if (-not (Test-Property $operation 'summary') -or [string]::IsNullOrWhiteSpace([string]$operation.summary)) { $documentationIssues.Add("$operationName missing summary") }
+        if (-not (Test-Property $operation 'description') -or [string]::IsNullOrWhiteSpace([string]$operation.description)) { $documentationIssues.Add("$operationName missing description") }
+        if (-not (Test-Property $operation 'tags') -or @($operation.tags).Count -eq 0) { $documentationIssues.Add("$operationName missing tags") }
+        if (-not (Test-Property $operation 'responses')) {
+          $documentationIssues.Add("$operationName missing responses")
+        } else {
+          $exampleState = Get-OperationExampleState $operation
+          if (-not $exampleState.response) { $documentationIssues.Add("$operationName missing response example") }
+          if (-not $exampleState.request) { $documentationIssues.Add("$operationName missing request example") }
+        }
+        if ($pathProperty.Name.StartsWith('/api/v1/admin/')) {
+          $securityJson = if (Test-Property $operation 'security') { $operation.security | ConvertTo-Json -Depth 5 -Compress } else { '' }
+          if ($securityJson -notmatch 'accessCookie') { $documentationIssues.Add("$operationName missing accessCookie security") }
+        }
+      }
+    }
+  }
+}
+$operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
+$operationPass = $actualOperations.Count -eq 36 -and $operationDifference.Count -eq 0
+Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Exactly the approved 36 operations with no missing or unexpected operations.' `
+  -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
+  -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, and five-resource content surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
+  -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 36
+$documentationEvidence = if ($documentationIssues.Count -eq 0) {
+  'All 36 live operations passed documentation metadata checks.'
+} else {
+  $issueLimit = [Math]::Min(10, $documentationIssues.Count)
+  @($documentationIssues.GetRange(0, $issueLimit)) -join '; '
+}
+Add-Check -Id 'openapi.operation_documentation' -Category 'Documentation' -Status $(if ($documentationPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Every operation has summary, description, tags, examples, responses, and Admin security where applicable.' `
+  -Actual "$($documentationIssues.Count) documentation issue(s)." `
+  -Evidence $documentationEvidence `
+  -Classification $(if ($documentationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+# Scalar HTML availability only; manual rendering is intentionally owner-managed.
+$scalar = Invoke-ReadOnlyRequest -Method GET -Path '/docs' -Purpose 'Scalar HTML availability'
+$scalarPass = $scalar.statusCode -eq 200 -and $scalar.contentType -match 'text/html' -and $scalar.body -match 'Tareeq Academy API Reference' -and $scalar.body -match '/openapi.json'
+Add-Check -Id 'scalar.endpoint' -Category 'Documentation' -Status $(if ($scalarPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 200 HTML configured for the live OpenAPI document.' `
+  -Actual "HTTP $($scalar.statusCode); content type=$($scalar.contentType)." `
+  -Evidence 'GET /docs; interactive browser rendering is outside this automated verifier.' `
+  -Classification $(if ($scalar.statusCode -eq 0 -or $scalar.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($scalarPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+# Public content reads, pagination, empty pages, validation, and not-found behavior.
+$databaseFailures = [System.Collections.Generic.List[string]]::new()
+foreach ($resource in $resources) {
+  $list = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/$resource" -Purpose 'public database-backed collection read'
+  $listBody = Convert-JsonBody $list
+  $listPass = $list.statusCode -eq 200 -and (Test-PaginationEnvelope $listBody 1 12) -and $list.requestIdPresent
+  if (-not $listPass) { $databaseFailures.Add("$resource HTTP $($list.statusCode)") }
+  $itemCount = if ($null -ne $listBody -and (Test-Property $listBody 'data') -and (Test-Property $listBody.data 'items')) { @($listBody.data.items).Count } else { -1 }
+  $total = if ($null -ne $listBody -and (Test-Property $listBody 'data') -and (Test-Property $listBody.data 'pagination')) { [int]$listBody.data.pagination.total } else { -1 }
+  Add-Check -Id "content.$resource.list" -Category 'Public Content' -Status $(if ($listPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'HTTP 200 success envelope with page=1, limit=12, consistent totals, and request ID.' `
+    -Actual "HTTP $($list.statusCode); items=$itemCount; total=$total; request ID present=$($list.requestIdPresent)." `
+    -Evidence "Read-only GET /api/v1/$resource." `
+    -Classification $(if ($list.statusCode -eq 0 -or $list.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($listPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+  $emptyPage = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/${resource}?page=1000000&limit=1" -Purpose 'empty-page pagination verification'
+  $emptyBody = Convert-JsonBody $emptyPage
+  $emptyPass = $emptyPage.statusCode -eq 200 -and (Test-PaginationEnvelope $emptyBody 1000000 1) -and @($emptyBody.data.items).Count -eq 0
+  Add-Check -Id "content.$resource.empty_page" -Category 'Public Content' -Status $(if ($emptyPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'HTTP 200 with an empty items array and valid pagination on an out-of-range page.' `
+    -Actual "HTTP $($emptyPage.statusCode); items=$(if ($null -ne $emptyBody -and (Test-Property $emptyBody 'data')) { @($emptyBody.data.items).Count } else { -1 })." `
+    -Evidence "Read-only GET /api/v1/${resource}?page=1000000&limit=1." `
+    -Classification $(if ($emptyPage.statusCode -eq 0 -or $emptyPage.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($emptyPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+  $invalid = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/${resource}?page=0" -Purpose 'query validation verification'
+  $invalidBody = Convert-JsonBody $invalid
+  $invalidDetailsPass = (Test-Property $invalidBody 'error') -and
+    (Test-Property $invalidBody.error 'details') -and
+    (Test-Property $invalidBody.error.details 'fields') -and
+    (Test-Property $invalidBody.error.details.fields 'page') -and
+    @($invalidBody.error.details.fields.page).Count -gt 0
+  $invalidPass = $invalid.statusCode -eq 400 -and (Test-ErrorEnvelope $invalidBody 'VALIDATION_ERROR') -and $invalidDetailsPass -and $invalid.requestIdPresent
+  Add-Check -Id "content.$resource.validation" -Category 'Validation' -Status $(if ($invalidPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'HTTP 400 standardized VALIDATION_ERROR with safe details and request ID.' `
+    -Actual "HTTP $($invalid.statusCode); code=$(if ($null -ne $invalidBody -and (Test-Property $invalidBody 'error')) { $invalidBody.error.code } else { 'unavailable' })." `
+    -Evidence "Read-only invalid query GET /api/v1/${resource}?page=0." `
+    -Classification $(if ($invalid.statusCode -eq 0 -or $invalid.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($invalidPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+  $missing = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/$resource/tareeq-acceptance-not-found-20261020" -Purpose 'not-found verification'
+  $missingBody = Convert-JsonBody $missing
+  $missingPass = $missing.statusCode -eq 404 -and (Test-ErrorEnvelope $missingBody 'CONTENT_NOT_FOUND') -and $missing.requestIdPresent
+  Add-Check -Id "content.$resource.not_found" -Category 'Not Found' -Status $(if ($missingPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'HTTP 404 standardized CONTENT_NOT_FOUND with request ID.' `
+    -Actual "HTTP $($missing.statusCode); code=$(if ($null -ne $missingBody -and (Test-Property $missingBody 'error')) { $missingBody.error.code } else { 'unavailable' })." `
+    -Evidence "Read-only lookup using a reserved nonexistent slug for $resource." `
+    -Classification $(if ($missing.statusCode -eq 0 -or $missing.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($missingPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
+
+# Repeat database-backed reads to detect the previously observed intermittent failure.
+for ($round = 1; $round -le 2; $round++) {
+  foreach ($resource in $resources) {
+    $repeat = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/${resource}?limit=1" -Purpose 'database read stability verification'
+    if ($repeat.statusCode -ne 200) { $databaseFailures.Add("repeat $round $resource HTTP $($repeat.statusCode)") }
+  }
+}
+$databasePass = $databaseFailures.Count -eq 0
+Add-Check -Id 'database.read_connectivity' -Category 'Database' -Status $(if ($databasePass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'All 15 public database-backed collection reads return HTTP 200.' `
+  -Actual "Failures=$($databaseFailures.Count)." `
+  -Evidence $(if ($databasePass) { 'Five initial reads plus two repeat rounds completed without a database-facing HTTP failure.' } else { @($databaseFailures) -join '; ' }) `
+  -Classification $(if ($databasePass) { 'NONE' } else { 'DEPLOYMENT_FAILURE' })
+
+# Authentication, Admin authorization, CORS, and CSRF boundaries without credentials.
+$me = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -Purpose 'anonymous authentication boundary'
+$meBody = Convert-JsonBody $me
+$mePass = $me.statusCode -eq 401 -and (Test-ErrorEnvelope $meBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'auth.me_anonymous' -Category 'Authentication' -Status $(if ($mePass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Anonymous request receives HTTP 401 AUTHENTICATION_REQUIRED.' -Actual "HTTP $($me.statusCode)." `
+  -Evidence 'GET /api/v1/auth/me without cookies.' -Classification $(if ($me.statusCode -eq 0 -or $me.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($mePass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+foreach ($resource in $resources) {
+  $admin = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/$resource" -Purpose 'anonymous Admin authorization boundary'
+  $adminBody = Convert-JsonBody $admin
+  $adminPass = $admin.statusCode -eq 401 -and (Test-ErrorEnvelope $adminBody 'AUTHENTICATION_REQUIRED')
+  Add-Check -Id "admin.$resource.anonymous" -Category 'Authorization' -Status $(if ($adminPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Anonymous Admin request receives HTTP 401 AUTHENTICATION_REQUIRED.' -Actual "HTTP $($admin.statusCode)." `
+    -Evidence "GET /api/v1/admin/$resource without cookies." `
+    -Classification $(if ($admin.statusCode -eq 0 -or $admin.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($adminPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
+
+$trustedPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path '/api/v1/auth/login' -Headers @{
+  Origin = $BaseUrl
+  'Access-Control-Request-Method' = 'POST'
+  'Access-Control-Request-Headers' = 'content-type'
+} -Purpose 'trusted same-origin CORS preflight'
+$trustedCorsPass = $trustedPreflight.statusCode -eq 204 -and $trustedPreflight.accessControlAllowOrigin -eq $BaseUrl -and $trustedPreflight.accessControlAllowCredentials -eq 'true'
+Add-Check -Id 'security.cors_trusted' -Category 'CORS/CSRF' -Status $(if ($trustedCorsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Trusted same-origin preflight returns 204, exact ACAO, and credentials=true.' `
+  -Actual "HTTP $($trustedPreflight.statusCode); exact origin=$($trustedPreflight.accessControlAllowOrigin -eq $BaseUrl); credentials=$($trustedPreflight.accessControlAllowCredentials)." `
+  -Evidence 'OPTIONS /api/v1/auth/login; report excludes raw response headers other than evaluated booleans.' `
+  -Classification $(if ($trustedPreflight.statusCode -eq 0 -or $trustedPreflight.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($trustedCorsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$untrustedOrigin = 'https://untrusted.invalid'
+$untrustedPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path '/api/v1/auth/login' -Headers @{
+  Origin = $untrustedOrigin
+  'Access-Control-Request-Method' = 'POST'
+  'Access-Control-Request-Headers' = 'content-type'
+} -Purpose 'untrusted CORS preflight'
+$untrustedCorsPass = $untrustedPreflight.statusCode -eq 204 -and [string]::IsNullOrWhiteSpace($untrustedPreflight.accessControlAllowOrigin)
+Add-Check -Id 'security.cors_untrusted' -Category 'CORS/CSRF' -Status $(if ($untrustedCorsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Untrusted preflight does not receive Access-Control-Allow-Origin.' `
+  -Actual "HTTP $($untrustedPreflight.statusCode); ACAO absent=$([string]::IsNullOrWhiteSpace($untrustedPreflight.accessControlAllowOrigin))." `
+  -Evidence 'OPTIONS /api/v1/auth/login from a reserved invalid origin.' `
+  -Classification $(if ($untrustedPreflight.statusCode -eq 0 -or $untrustedPreflight.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($untrustedCorsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$csrf = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/login' -Headers @{ Origin = $untrustedOrigin } -Body '{}' -Purpose 'CSRF rejection before validation or handler execution'
+$csrfBody = Convert-JsonBody $csrf
+$csrfPass = $csrf.statusCode -eq 403 -and (Test-ErrorEnvelope $csrfBody 'CSRF_VALIDATION_FAILED')
+Add-Check -Id 'security.csrf_untrusted' -Category 'CORS/CSRF' -Status $(if ($csrfPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Untrusted state-changing request is rejected with HTTP 403 CSRF_VALIDATION_FAILED before handler execution.' `
+  -Actual "HTTP $($csrf.statusCode)." `
+  -Evidence 'POST /api/v1/auth/login used an untrusted origin and an empty body; it cannot authenticate or create a session.' `
+  -Classification $(if ($csrf.statusCode -eq 0 -or $csrf.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($csrfPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$loginEmail = "tareeq-acceptance-$([guid]::NewGuid().ToString('N'))@invalid.example"
+$loginBody = @{ email = $loginEmail; password = 'AcceptanceOnlyPassword123!' } | ConvertTo-Json -Compress
+$login = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/login' -Headers @{ Origin = $BaseUrl } -Body $loginBody -Purpose 'read-only authentication database lookup with guaranteed synthetic identity'
+$loginJson = Convert-JsonBody $login
+$loginPass = $login.statusCode -eq 401 -and (Test-ErrorEnvelope $loginJson 'INVALID_CREDENTIALS')
+Add-Check -Id 'auth.invalid_credentials' -Category 'Authentication' -Status $(if ($loginPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'A unique nonexistent identity receives HTTP 401 INVALID_CREDENTIALS without creating a session.' `
+  -Actual "HTTP $($login.statusCode)." `
+  -Evidence 'Synthetic @invalid.example identity; no credential value or response body is retained.' `
+  -Classification $(if ($login.statusCode -eq 0 -or $login.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($loginPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+Add-Check -Id 'admin.authenticated_roles' -Category 'Authorization' -Status 'BLOCKED' `
+  -Expected 'Positive ADMIN and SUPER_ADMIN access and role enforcement.' `
+  -Actual 'No disposable production Admin session was supplied, and the verifier does not collect credentials.' `
+  -Evidence 'This optional scenario is a missing test prerequisite, not a deployment failure; anonymous boundaries and OpenAPI security were verified.' `
+  -Classification 'MISSING_PREREQUISITE' -Required $false
+
+# Every received API response must carry a request ID. Transport failures are already classified elsewhere.
+$missingRequestIds = @($requests | Where-Object { $_.statusCode -gt 0 -and -not $_.requestIdPresent } | ForEach-Object { "$($_.method) $($_.path)" })
+$requestIdPass = $missingRequestIds.Count -eq 0
+Add-Check -Id 'contracts.request_ids' -Category 'Response Contracts' -Status $(if ($requestIdPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Every received response carries X-Request-Id.' `
+  -Actual "Missing on $($missingRequestIds.Count) response(s)." `
+  -Evidence $(if ($requestIdPass) { "$($requests.Count) responses carried request IDs; values were not retained." } else { $missingRequestIds -join '; ' }) `
+  -Classification $(if ($requestIdPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$requiredFailures = @($checks | Where-Object { $_.required -and $_.status -eq 'FAIL' })
+$requiredBlocks = @($checks | Where-Object { $_.required -and $_.status -eq 'BLOCKED' })
+$overallStatus = if ($requiredFailures.Count -gt 0) { 'FAIL' } elseif ($requiredBlocks.Count -gt 0) { 'BLOCKED' } else { 'PASS' }
+$summary = [ordered]@{
+  total = $checks.Count
+  passed = @($checks | Where-Object status -eq 'PASS').Count
+  failed = @($checks | Where-Object status -eq 'FAIL').Count
+  blocked = @($checks | Where-Object status -eq 'BLOCKED').Count
+  deploymentFailures = @($checks | Where-Object classification -eq 'DEPLOYMENT_FAILURE').Count
+  contractFailures = @($checks | Where-Object classification -eq 'CONTRACT_FAILURE').Count
+  missingPrerequisites = @($checks | Where-Object classification -eq 'MISSING_PREREQUISITE').Count
+}
+
+$report = [ordered]@{
+  schemaVersion = 1
+  generatedAtUtc = [DateTime]::UtcNow.ToString('o')
+  baseUrl = $BaseUrl
+  overallStatus = $overallStatus
+  readOnly = $true
+  safeguards = @(
+    'No database writes, migrations, cleanup, account creation, or destructive operations.',
+    'No credentials, cookies, response bodies, raw request IDs, tokens, or secrets are stored in this report.',
+    'Scalar browser rendering is intentionally excluded and owner-managed.'
+  )
+  summary = $summary
+  checks = @($checks)
+}
+
+New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+$jsonPath = Join-Path $OutputDirectory 'backend-acceptance.json'
+$markdownPath = Join-Path $OutputDirectory 'backend-acceptance.md'
+$report | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $jsonPath -Encoding utf8
+
+$markdown = [System.Collections.Generic.List[string]]::new()
+$markdown.Add('# Backend Post-Deployment Acceptance Report')
+$markdown.Add('')
+$markdown.Add("- Generated: $($report.generatedAtUtc)")
+$markdown.Add("- Base URL: $BaseUrl")
+$markdown.Add("- Overall: **$overallStatus**")
+$markdown.Add("- Read-only execution: **Yes**")
+$markdown.Add("- Checks: $($summary.passed) PASS / $($summary.failed) FAIL / $($summary.blocked) BLOCKED")
+$markdown.Add("- Failure classification: $($summary.deploymentFailures) deployment / $($summary.contractFailures) contract / $($summary.missingPrerequisites) missing prerequisite")
+$markdown.Add('')
+$markdown.Add('| Status | Required | Category | Check | Actual | Classification |')
+$markdown.Add('|---|---:|---|---|---|---|')
+foreach ($check in $checks) {
+  $actual = ([string]$check.actual).Replace('|', '\|').Replace("`r", ' ').Replace("`n", ' ')
+  $markdown.Add("| $($check.status) | $($check.required) | $($check.category) | $($check.id) | $actual | $($check.classification) |")
+}
+$markdown.Add('')
+$markdown.Add('## Evidence')
+$markdown.Add('')
+foreach ($check in $checks) {
+  $evidence = ([string]$check.evidence).Replace("`r", ' ').Replace("`n", ' ')
+  $markdown.Add("- **$($check.id) — $($check.status):** $evidence")
+}
+$markdown.Add('')
+$markdown.Add('## Safeguards')
+$markdown.Add('')
+foreach ($item in $report.safeguards) { $markdown.Add("- $item") }
+$markdown | Set-Content -LiteralPath $markdownPath -Encoding utf8
+
+Write-Host "Overall: $overallStatus"
+Write-Host "Checks: $($summary.passed) PASS / $($summary.failed) FAIL / $($summary.blocked) BLOCKED"
+Write-Host "JSON: $jsonPath"
+Write-Host "Markdown: $markdownPath"
+
+if ($overallStatus -eq 'FAIL') { exit 1 }
+if ($overallStatus -eq 'BLOCKED') { exit 2 }

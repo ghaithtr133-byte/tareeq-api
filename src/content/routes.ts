@@ -222,7 +222,7 @@ const registerDocumentation = (
     method: 'get',
     path: `/admin/${resource}/{id}`,
     tags: [names.adminTag],
-    summary: `Get a ${names.singular} for administration`,
+    summary: `Get ${names.article} ${names.singular} for administration`,
     description: 'ADMIN or SUPER_ADMIN only. Uses the UUID identifier and includes editable publication fields.',
     security: [{ accessCookie: [] }],
     request: { params: uuidParamSchema },
