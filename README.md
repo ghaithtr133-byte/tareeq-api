@@ -150,3 +150,5 @@ Unexpected responses include `X-Request-Id`. Provide that value when reporting a
 `src/index.ts` is the Vercel Hono entrypoint and `src/server.ts` is the standalone local Node entrypoint. The Project Owner manages deployment and all Neon/Vercel console operations.
 
 Email, uploads/media storage, analytics, audit logs, scheduled jobs, student accounts, payments, and Admin account management are outside Task #3. Content images are URL references only.
+
+##
