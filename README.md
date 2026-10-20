@@ -151,4 +151,3 @@ Unexpected responses include `X-Request-Id`. Provide that value when reporting a
 
 Email, uploads/media storage, analytics, audit logs, scheduled jobs, student accounts, payments, and Admin account management are outside Task #3. Content images are URL references only.
 
-##
