@@ -5,6 +5,12 @@ param(
 
   [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports'),
 
+  [string]$ManifestPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports\initial-seed-manifest.json'),
+
+  [string]$EnvironmentFile = (Join-Path (Split-Path -Parent $PSScriptRoot) '.env'),
+
+  [switch]$Authenticated,
+
   [ValidateRange(5, 120)]
   [int]$TimeoutSeconds = 20
 )
@@ -63,6 +69,7 @@ function Invoke-ReadOnlyRequest {
     [Parameter(Mandatory)][string]$Path,
     [hashtable]$Headers = @{},
     [AllowNull()][string]$Body = $null,
+    [AllowNull()][Microsoft.PowerShell.Commands.WebRequestSession]$WebSession = $null,
     [string]$Purpose = 'read-only verification'
   )
 
@@ -78,6 +85,9 @@ function Invoke-ReadOnlyRequest {
   if ($null -ne $Body) {
     $parameters.Body = $Body
     $parameters.ContentType = 'application/json'
+  }
+  if ($null -ne $WebSession) {
+    $parameters.WebSession = $WebSession
   }
 
   try {
@@ -114,6 +124,47 @@ function Invoke-ReadOnlyRequest {
 
   $requests.Add($result)
   return $result
+}
+
+function Get-LocalCredentialConfiguration {
+  $names = @(
+    'INITIAL_ADMIN_EMAIL',
+    'INITIAL_ADMIN_PASSWORD',
+    'INITIAL_SUPER_ADMIN_EMAIL',
+    'INITIAL_SUPER_ADMIN_PASSWORD'
+  )
+  $values = @{}
+  foreach ($name in $names) {
+    if (-not [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+      $values[$name] = [Environment]::GetEnvironmentVariable($name)
+    }
+  }
+  if (Test-Path -LiteralPath $EnvironmentFile) {
+    foreach ($line in Get-Content -LiteralPath $EnvironmentFile) {
+      if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') {
+        $name = $Matches[1]
+        if ($names -contains $name -and -not $values.ContainsKey($name)) {
+          $value = $Matches[2].Trim()
+          if (
+            $value.Length -ge 2 -and
+            (($value.StartsWith('"') -and $value.EndsWith('"')) -or
+              ($value.StartsWith("'") -and $value.EndsWith("'")))
+          ) {
+            $value = $value.Substring(1, $value.Length - 2)
+          }
+          if (-not [string]::IsNullOrWhiteSpace($value)) { $values[$name] = $value }
+        }
+      }
+    }
+  }
+  return $values
+}
+
+function Test-SuccessUserRole {
+  param([object]$Body, [string]$Role)
+  return (Test-Property $Body 'success') -and $Body.success -eq $true -and
+    (Test-Property $Body 'data') -and (Test-Property $Body.data 'user') -and
+    (Test-Property $Body.data.user 'role') -and $Body.data.user.role -eq $Role
 }
 
 function Convert-JsonBody {
@@ -174,6 +225,27 @@ function Get-OperationExampleState {
     }
   }
   return [pscustomobject]@{ response = $responseExample; request = $requestExample }
+}
+
+$seedManifest = $null
+$manifestLoadIssue = $null
+if (Test-Path -LiteralPath $ManifestPath) {
+  try {
+    $seedManifest = Get-Content -Raw -LiteralPath $ManifestPath | ConvertFrom-Json -Depth 100
+    if (
+      -not (Test-Property $seedManifest 'schemaVersion') -or
+      $seedManifest.schemaVersion -ne 1 -or
+      -not (Test-Property $seedManifest 'content')
+    ) {
+      $manifestLoadIssue = 'Manifest schema version or content collection is invalid.'
+      $seedManifest = $null
+    }
+  } catch {
+    $manifestLoadIssue = 'Manifest JSON could not be parsed.'
+    $seedManifest = $null
+  }
+} else {
+  $manifestLoadIssue = 'Manifest file is absent.'
 }
 
 # Health and request correlation.
@@ -323,6 +395,141 @@ foreach ($resource in $resources) {
     -Classification $(if ($missing.statusCode -eq 0 -or $missing.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($missingPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 }
 
+# Seed-aware public verification is derived from the sanitized manifest.
+if ($null -eq $seedManifest) {
+  Add-Check -Id 'seed.manifest' -Category 'Seeded Content' -Status 'BLOCKED' `
+    -Expected 'A valid sanitized seed manifest for exact seeded-content expectations.' `
+    -Actual $manifestLoadIssue -Evidence "Expected manifest at $ManifestPath." `
+    -Classification 'MISSING_PREREQUISITE'
+} else {
+  $manifestEntries = @($seedManifest.content)
+  $manifestCounts = @{}
+  foreach ($resource in $resources) {
+    $manifestCounts[$resource] = @($manifestEntries | Where-Object { $_.resource -eq $resource }).Count
+  }
+  $manifestPass =
+    $manifestCounts.countries -eq 3 -and
+    $manifestCounts.universities -eq 6 -and
+    $manifestCounts.scholarships -eq 3 -and
+    $manifestCounts.services -eq 3 -and
+    $manifestCounts.articles -eq 3
+  Add-Check -Id 'seed.manifest' -Category 'Seeded Content' -Status $(if ($manifestPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Sanitized manifest contains the approved 3/6/3/3/3 target records.' `
+    -Actual "countries=$($manifestCounts.countries), universities=$($manifestCounts.universities), scholarships=$($manifestCounts.scholarships), services=$($manifestCounts.services), articles=$($manifestCounts.articles)." `
+    -Evidence 'Manifest identifiers and relationships are used in memory; reports retain only aggregate evidence.' `
+    -Classification $(if ($manifestPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+  foreach ($entry in $manifestEntries) {
+    $detail = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/$($entry.resource)/$($entry.slug)" -Purpose 'seed-manifest detail visibility verification'
+    $detailBody = Convert-JsonBody $detail
+    if ($entry.status -eq 'PUBLISHED') {
+      $identityPass = $detail.statusCode -eq 200 -and
+        (Test-Property $detailBody 'success') -and $detailBody.success -eq $true -and
+        (Test-Property $detailBody 'data') -and
+        $detailBody.data.id -eq $entry.id -and $detailBody.data.slug -eq $entry.slug
+      $relationshipPass = $true
+      foreach ($relationship in $entry.relationships.PSObject.Properties) {
+        if (
+          -not (Test-Property $detailBody.data $relationship.Name) -or
+          $detailBody.data.($relationship.Name) -ne $relationship.Value
+        ) { $relationshipPass = $false }
+      }
+      if ($entry.resource -eq 'scholarships') {
+        $relationshipPass = $relationshipPass -and
+          (Test-Property $detailBody.data 'effectiveApplicationStatus') -and
+          $detailBody.data.effectiveApplicationStatus -eq 'CLOSED'
+      }
+      $detailPass = $identityPass -and $relationshipPass -and $detail.requestIdPresent
+      Add-Check -Id "seed.$($entry.resource).$($entry.slug)" -Category 'Seeded Content' -Status $(if ($detailPass) { 'PASS' } else { 'FAIL' }) `
+        -Expected 'Published seed returns its exact manifest UUID, slug, relationships, and expected computed state.' `
+        -Actual "HTTP $($detail.statusCode); identity=$identityPass; relationships/state=$relationshipPass." `
+        -Evidence "Public detail lookup for manifest slug $($entry.slug); UUID and response body are not copied into the report." `
+        -Classification $(if ($detail.statusCode -eq 0 -or $detail.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($detailPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+    } else {
+      $hiddenPass = $detail.statusCode -eq 404 -and (Test-ErrorEnvelope $detailBody 'CONTENT_NOT_FOUND')
+      Add-Check -Id "seed.$($entry.resource).$($entry.slug)" -Category 'Draft Visibility' -Status $(if ($hiddenPass) { 'PASS' } else { 'FAIL' }) `
+        -Expected 'DRAFT or ARCHIVED seed is hidden publicly with HTTP 404 CONTENT_NOT_FOUND.' `
+        -Actual "HTTP $($detail.statusCode)." `
+        -Evidence "Public detail lookup for unpublished manifest slug $($entry.slug)." `
+        -Classification $(if ($detail.statusCode -eq 0 -or $detail.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($hiddenPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+    }
+  }
+
+  foreach ($resource in $resources) {
+    $expectedPublished = @($manifestEntries | Where-Object { $_.resource -eq $resource -and $_.status -eq 'PUBLISHED' })
+    $expectedHidden = @($manifestEntries | Where-Object { $_.resource -eq $resource -and $_.status -ne 'PUBLISHED' })
+    $seedList = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/${resource}?limit=50" -Purpose 'seed-manifest collection verification'
+    $seedListBody = Convert-JsonBody $seedList
+    $items = if ($null -ne $seedListBody -and (Test-Property $seedListBody 'data')) { @($seedListBody.data.items) } else { @() }
+    $visibleSlugs = @($items | ForEach-Object { $_.slug })
+    $missingPublished = @($expectedPublished | Where-Object { $visibleSlugs -notcontains $_.slug })
+    $visibleHidden = @($expectedHidden | Where-Object { $visibleSlugs -contains $_.slug })
+    $collectionPass = $seedList.statusCode -eq 200 -and
+      (Test-PaginationEnvelope $seedListBody 1 50) -and
+      $missingPublished.Count -eq 0 -and $visibleHidden.Count -eq 0
+    Add-Check -Id "seed.$resource.collection" -Category 'Seeded Content' -Status $(if ($collectionPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected 'Collection includes every PUBLISHED manifest record and excludes every unpublished manifest record.' `
+      -Actual "HTTP $($seedList.statusCode); expected published=$($expectedPublished.Count); missing=$($missingPublished.Count); draft leaks=$($visibleHidden.Count)." `
+      -Evidence "GET /api/v1/${resource}?limit=50 compared to the sanitized manifest." `
+      -Classification $(if ($seedList.statusCode -eq 0 -or $seedList.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($collectionPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+  }
+
+  foreach ($country in @($manifestEntries | Where-Object { $_.resource -eq 'countries' })) {
+    $expectedUniversities = @($manifestEntries | Where-Object {
+      $_.resource -eq 'universities' -and $_.relationships.countryId -eq $country.id -and $_.status -eq 'PUBLISHED'
+    })
+    $filtered = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/universities?country=$($country.slug)&limit=50" -Purpose 'seed country relationship filter verification'
+    $filteredBody = Convert-JsonBody $filtered
+    $filteredSlugs = if ($null -ne $filteredBody -and (Test-Property $filteredBody 'data')) { @($filteredBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+    $filterPass = $filtered.statusCode -eq 200 -and @($expectedUniversities | Where-Object { $filteredSlugs -notcontains $_.slug }).Count -eq 0
+    Add-Check -Id "seed.universities.country_filter.$($country.slug)" -Category 'Filters/Pagination' -Status $(if ($filterPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected 'Country filter includes every published manifest university related to that country.' `
+      -Actual "HTTP $($filtered.statusCode); expected=$($expectedUniversities.Count); returned=$($filteredSlugs.Count)." `
+      -Evidence "GET /api/v1/universities?country=$($country.slug)&limit=50." `
+      -Classification $(if ($filtered.statusCode -eq 0 -or $filtered.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($filterPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+  }
+
+  $closedScholarships = @($manifestEntries | Where-Object { $_.resource -eq 'scholarships' -and $_.status -eq 'PUBLISHED' })
+  $closedResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/scholarships?applicationStatus=CLOSED&limit=50' -Purpose 'closed scholarship filter verification'
+  $closedBody = Convert-JsonBody $closedResponse
+  $closedSlugs = if ($null -ne $closedBody -and (Test-Property $closedBody 'data')) { @($closedBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+  $closedPass = $closedResponse.statusCode -eq 200 -and @($closedScholarships | Where-Object { $closedSlugs -notcontains $_.slug }).Count -eq 0
+  Add-Check -Id 'seed.scholarships.closed_filter' -Category 'Filters/Pagination' -Status $(if ($closedPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'CLOSED filter includes all three published closed scholarship calls.' `
+    -Actual "HTTP $($closedResponse.statusCode); expected=$($closedScholarships.Count); matched=$(@($closedScholarships | Where-Object { $closedSlugs -contains $_.slug }).Count)." `
+    -Evidence 'GET /api/v1/scholarships?applicationStatus=CLOSED&limit=50.' `
+    -Classification $(if ($closedResponse.statusCode -eq 0 -or $closedResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($closedPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+  $openResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/scholarships?applicationStatus=OPEN&limit=50' -Purpose 'open scholarship filter verification'
+  $openBody = Convert-JsonBody $openResponse
+  $openSlugs = if ($null -ne $openBody -and (Test-Property $openBody 'data')) { @($openBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+  $openPass = $openResponse.statusCode -eq 200 -and @($closedScholarships | Where-Object { $openSlugs -contains $_.slug }).Count -eq 0
+  Add-Check -Id 'seed.scholarships.open_filter' -Category 'Filters/Pagination' -Status $(if ($openPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'OPEN filter excludes all closed 2026 seed calls.' `
+    -Actual "HTTP $($openResponse.statusCode); closed seed leaks=$(@($closedScholarships | Where-Object { $openSlugs -contains $_.slug }).Count)." `
+    -Evidence 'GET /api/v1/scholarships?applicationStatus=OPEN&limit=50.' `
+    -Classification $(if ($openResponse.statusCode -eq 0 -or $openResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($openPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+  $searchResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/countries?search=Romania&limit=50' -Purpose 'seeded content search verification'
+  $searchBody = Convert-JsonBody $searchResponse
+  $searchPass = $searchResponse.statusCode -eq 200 -and $null -ne $searchBody -and @($searchBody.data.items | Where-Object { $_.slug -eq 'romania' }).Count -eq 1
+  Add-Check -Id 'seed.countries.search' -Category 'Filters/Pagination' -Status $(if ($searchPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Search returns the representative Romania seed record.' `
+    -Actual "HTTP $($searchResponse.statusCode); match=$searchPass." `
+    -Evidence 'GET /api/v1/countries?search=Romania&limit=50.' `
+    -Classification $(if ($searchResponse.statusCode -eq 0 -or $searchResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($searchPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+  $featuredResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/countries?featured=true&limit=50' -Purpose 'seeded featured content verification'
+  $featuredBody = Convert-JsonBody $featuredResponse
+  $featuredSlugs = if ($null -ne $featuredBody -and (Test-Property $featuredBody 'data')) { @($featuredBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+  $featuredPass = $featuredResponse.statusCode -eq 200 -and @('romania', 'turkey', 'poland' | Where-Object { $featuredSlugs -notcontains $_ }).Count -eq 0
+  Add-Check -Id 'seed.countries.featured' -Category 'Filters/Pagination' -Status $(if ($featuredPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Featured filter includes the three featured destination seeds.' `
+    -Actual "HTTP $($featuredResponse.statusCode); matched=$(@('romania', 'turkey', 'poland' | Where-Object { $featuredSlugs -contains $_ }).Count)." `
+    -Evidence 'GET /api/v1/countries?featured=true&limit=50.' `
+    -Classification $(if ($featuredResponse.statusCode -eq 0 -or $featuredResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($featuredPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
+
 # Repeat database-backed reads to detect the previously observed intermittent failure.
 for ($round = 1; $round -le 2; $round++) {
   foreach ($resource in $resources) {
@@ -400,11 +607,136 @@ Add-Check -Id 'auth.invalid_credentials' -Category 'Authentication' -Status $(if
   -Evidence 'Synthetic @invalid.example identity; no credential value or response body is retained.' `
   -Classification $(if ($login.statusCode -eq 0 -or $login.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($loginPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-Add-Check -Id 'admin.authenticated_roles' -Category 'Authorization' -Status 'BLOCKED' `
-  -Expected 'Positive ADMIN and SUPER_ADMIN access and role enforcement.' `
-  -Actual 'No disposable production Admin session was supplied, and the verifier does not collect credentials.' `
-  -Evidence 'This optional scenario is a missing test prerequisite, not a deployment failure; anonymous boundaries and OpenAPI security were verified.' `
-  -Classification 'MISSING_PREREQUISITE' -Required $false
+if (-not $Authenticated.IsPresent) {
+  Add-Check -Id 'admin.authenticated_roles' -Category 'Authorization' -Status 'BLOCKED' `
+    -Expected 'Positive ADMIN and SUPER_ADMIN login, refresh, Admin reads, and logout in explicit authenticated mode.' `
+    -Actual 'Authenticated mode was not requested.' `
+    -Evidence 'Run with -Authenticated after the four INITIAL_* email/password values are securely configured. Default mode remains read-only.' `
+    -Classification 'MISSING_PREREQUISITE' -Required $false
+} else {
+  $credentials = Get-LocalCredentialConfiguration
+  $credentialNamesByRole = @{
+    ADMIN = @('INITIAL_ADMIN_EMAIL', 'INITIAL_ADMIN_PASSWORD')
+    SUPER_ADMIN = @('INITIAL_SUPER_ADMIN_EMAIL', 'INITIAL_SUPER_ADMIN_PASSWORD')
+  }
+
+  foreach ($role in @('ADMIN', 'SUPER_ADMIN')) {
+    $requiredCredentialNames = $credentialNamesByRole[$role]
+    $missingCredentialNames = @($requiredCredentialNames | Where-Object { -not $credentials.ContainsKey($_) })
+    if ($missingCredentialNames.Count -gt 0) {
+      Add-Check -Id "auth.$($role.ToLowerInvariant()).workflow" -Category 'Authentication' -Status 'BLOCKED' `
+        -Expected "$role credentials securely configured for the explicit login/session workflow." `
+        -Actual "Missing configuration: $($missingCredentialNames -join ', ')." `
+        -Evidence 'No authentication request was attempted and no secret value was read into a report.' `
+        -Classification 'MISSING_PREREQUISITE'
+      continue
+    }
+
+    $session = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
+    $loginPayload = @{
+      email = $credentials[$requiredCredentialNames[0]]
+      password = $credentials[$requiredCredentialNames[1]]
+    } | ConvertTo-Json -Compress
+    $roleSlug = $role.ToLowerInvariant()
+    $loginResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/login' -Headers @{ Origin = $BaseUrl } -Body $loginPayload -WebSession $session -Purpose "$role authenticated login"
+    $loginResponseBody = Convert-JsonBody $loginResponse
+    $cookieNames = @($session.Cookies.GetCookies([uri]"$BaseUrl/api/v1/auth/me") | ForEach-Object { $_.Name })
+    $loginPass = $loginResponse.statusCode -eq 200 -and
+      (Test-SuccessUserRole $loginResponseBody $role) -and
+      $cookieNames -contains 'tareeq_access' -and $cookieNames -contains 'tareeq_refresh'
+    Add-Check -Id "auth.$roleSlug.login" -Category 'Authentication' -Status $(if ($loginPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected "HTTP 200, /auth user role $role, and both HttpOnly session cookies accepted by an isolated jar." `
+      -Actual "HTTP $($loginResponse.statusCode); role correct=$(Test-SuccessUserRole $loginResponseBody $role); cookie names present=$($cookieNames.Count -ge 2)." `
+      -Evidence 'Credential values, cookie values, user identity fields, and response bodies are excluded from reports.' `
+      -Classification $(if ($loginResponse.statusCode -eq 0 -or $loginResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($loginPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    if (-not $loginPass) { continue }
+
+    $meResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -WebSession $session -Purpose "$role current-user verification"
+    $meResponseBody = Convert-JsonBody $meResponse
+    $meRolePass = $meResponse.statusCode -eq 200 -and (Test-SuccessUserRole $meResponseBody $role)
+    Add-Check -Id "auth.$roleSlug.me" -Category 'Authentication' -Status $(if ($meRolePass) { 'PASS' } else { 'FAIL' }) `
+      -Expected "/auth/me returns the authoritative $role role for the saved cookie context." `
+      -Actual "HTTP $($meResponse.statusCode); role correct=$(Test-SuccessUserRole $meResponseBody $role)." `
+      -Evidence 'GET /api/v1/auth/me with an isolated in-memory cookie jar.' `
+      -Classification $(if ($meResponse.statusCode -eq 0 -or $meResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($meRolePass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $refreshResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/refresh' -Headers @{ Origin = $BaseUrl } -WebSession $session -Purpose "$role refresh-session rotation"
+    $refreshResponseBody = Convert-JsonBody $refreshResponse
+    $refreshPass = $refreshResponse.statusCode -eq 200 -and (Test-SuccessUserRole $refreshResponseBody $role)
+    Add-Check -Id "auth.$roleSlug.refresh" -Category 'Authentication' -Status $(if ($refreshPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected 'Refresh credential rotates successfully and returns the same authoritative role.' `
+      -Actual "HTTP $($refreshResponse.statusCode); role correct=$(Test-SuccessUserRole $refreshResponseBody $role)." `
+      -Evidence 'POST /api/v1/auth/refresh; old and replacement cookie values are never inspected or retained.' `
+      -Classification $(if ($refreshResponse.statusCode -eq 0 -or $refreshResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($refreshPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $restoredMe = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -WebSession $session -Purpose "$role restored session verification"
+    $restoredMeBody = Convert-JsonBody $restoredMe
+    $restoredPass = $restoredMe.statusCode -eq 200 -and (Test-SuccessUserRole $restoredMeBody $role)
+    Add-Check -Id "auth.$roleSlug.me_after_refresh" -Category 'Authentication' -Status $(if ($restoredPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected '/auth/me succeeds with the saved replacement-cookie context after refresh.' `
+      -Actual "HTTP $($restoredMe.statusCode); role correct=$(Test-SuccessUserRole $restoredMeBody $role)." `
+      -Evidence 'GET /api/v1/auth/me after rotating the same isolated session.' `
+      -Classification $(if ($restoredMe.statusCode -eq 0 -or $restoredMe.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($restoredPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $adminReadFailures = [System.Collections.Generic.List[string]]::new()
+    foreach ($resource in $resources) {
+      $adminRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/${resource}?limit=50" -WebSession $session -Purpose "$role Admin content read"
+      $adminReadBody = Convert-JsonBody $adminRead
+      if ($adminRead.statusCode -ne 200 -or -not (Test-PaginationEnvelope $adminReadBody 1 50)) {
+        $adminReadFailures.Add("$resource HTTP $($adminRead.statusCode)")
+      }
+    }
+    $adminReadsPass = $adminReadFailures.Count -eq 0
+    Add-Check -Id "admin.$roleSlug.content_reads" -Category 'Authorization' -Status $(if ($adminReadsPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected "$role can read all five approved Admin content collections." `
+      -Actual "Failures=$($adminReadFailures.Count)." `
+      -Evidence $(if ($adminReadsPass) { 'All five authenticated GET collection requests returned valid pagination envelopes.' } else { @($adminReadFailures) -join '; ' }) `
+      -Classification $(if ($adminReadsPass) { 'NONE' } elseif (@($adminReadFailures | Where-Object { $_ -match 'HTTP (0|5\d\d)' }).Count -gt 0) { 'DEPLOYMENT_FAILURE' } else { 'CONTRACT_FAILURE' })
+
+    if ($null -ne $seedManifest) {
+      $unpublishedEntries = @($seedManifest.content | Where-Object { $_.status -ne 'PUBLISHED' })
+      $adminDraftFailures = [System.Collections.Generic.List[string]]::new()
+      foreach ($entry in $unpublishedEntries) {
+        $draftRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/$($entry.resource)/$($entry.id)" -WebSession $session -Purpose "$role Admin draft visibility"
+        $draftReadBody = Convert-JsonBody $draftRead
+        if (
+          $draftRead.statusCode -ne 200 -or
+          -not (Test-Property $draftReadBody 'data') -or
+          $draftReadBody.data.id -ne $entry.id -or
+          $draftReadBody.data.status -ne $entry.status
+        ) {
+          $adminDraftFailures.Add("$($entry.resource) HTTP $($draftRead.statusCode)")
+        }
+      }
+      $adminDraftPass = $adminDraftFailures.Count -eq 0
+      Add-Check -Id "admin.$roleSlug.draft_visibility" -Category 'Authorization' -Status $(if ($adminDraftPass) { 'PASS' } else { 'FAIL' }) `
+        -Expected "$role can read every unpublished manifest record by UUID while public routes hide them." `
+        -Actual "Checked=$($unpublishedEntries.Count); failures=$($adminDraftFailures.Count)." `
+        -Evidence 'Authenticated Admin detail responses were matched to manifest IDs without copying IDs or bodies into reports.' `
+        -Classification $(if ($adminDraftPass) { 'NONE' } elseif (@($adminDraftFailures | Where-Object { $_ -match 'HTTP (0|5\d\d)' }).Count -gt 0) { 'DEPLOYMENT_FAILURE' } else { 'CONTRACT_FAILURE' })
+    }
+
+    $logoutResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/logout' -Headers @{ Origin = $BaseUrl } -WebSession $session -Purpose "$role logout and revocation"
+    $logoutBody = Convert-JsonBody $logoutResponse
+    $logoutPass = $logoutResponse.statusCode -eq 200 -and
+      (Test-Property $logoutBody 'success') -and $logoutBody.success -eq $true
+    Add-Check -Id "auth.$roleSlug.logout" -Category 'Authentication' -Status $(if ($logoutPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected 'Logout returns HTTP 200 and clears/revokes the current session.' `
+      -Actual "HTTP $($logoutResponse.statusCode)." `
+      -Evidence 'POST /api/v1/auth/logout using the isolated refreshed session.' `
+      -Classification $(if ($logoutResponse.statusCode -eq 0 -or $logoutResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($logoutPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $afterLogout = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -WebSession $session -Purpose "$role post-logout invalidation"
+    $afterLogoutBody = Convert-JsonBody $afterLogout
+    $invalidationPass = $afterLogout.statusCode -eq 401 -and (Test-ErrorEnvelope $afterLogoutBody 'AUTHENTICATION_REQUIRED')
+    Add-Check -Id "auth.$roleSlug.logout_invalidation" -Category 'Authentication' -Status $(if ($invalidationPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected 'The same cookie context is unauthorized after logout.' `
+      -Actual "HTTP $($afterLogout.statusCode)." `
+      -Evidence 'GET /api/v1/auth/me after logout using the same isolated in-memory jar.' `
+      -Classification $(if ($afterLogout.statusCode -eq 0 -or $afterLogout.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($invalidationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+  }
+}
 
 # Every received API response must carry a request ID. Transport failures are already classified elsewhere.
 $missingRequestIds = @($requests | Where-Object { $_.statusCode -gt 0 -and -not $_.requestIdPresent } | ForEach-Object { "$($_.method) $($_.path)" })
@@ -429,13 +761,14 @@ $summary = [ordered]@{
 }
 
 $report = [ordered]@{
-  schemaVersion = 1
+  schemaVersion = 2
   generatedAtUtc = [DateTime]::UtcNow.ToString('o')
   baseUrl = $BaseUrl
   overallStatus = $overallStatus
-  readOnly = $true
+  mode = if ($Authenticated.IsPresent) { 'AUTHENTICATED_SESSION' } else { 'READ_ONLY' }
+  readOnly = -not $Authenticated.IsPresent
   safeguards = @(
-    'No database writes, migrations, cleanup, account creation, or destructive operations.',
+    $(if ($Authenticated.IsPresent) { 'No account or content writes, migrations, cleanup, or destructive operations; only authorized login/refresh/logout session records may change.' } else { 'No database writes, migrations, cleanup, account creation, or destructive operations.' }),
     'No credentials, cookies, response bodies, raw request IDs, tokens, or secrets are stored in this report.',
     'Scalar browser rendering is intentionally excluded and owner-managed.'
   )
@@ -444,8 +777,9 @@ $report = [ordered]@{
 }
 
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
-$jsonPath = Join-Path $OutputDirectory 'backend-acceptance.json'
-$markdownPath = Join-Path $OutputDirectory 'backend-acceptance.md'
+$reportStem = if ($Authenticated.IsPresent) { 'backend-acceptance-authenticated' } else { 'backend-acceptance' }
+$jsonPath = Join-Path $OutputDirectory "$reportStem.json"
+$markdownPath = Join-Path $OutputDirectory "$reportStem.md"
 $report | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $jsonPath -Encoding utf8
 
 $markdown = [System.Collections.Generic.List[string]]::new()
@@ -454,7 +788,8 @@ $markdown.Add('')
 $markdown.Add("- Generated: $($report.generatedAtUtc)")
 $markdown.Add("- Base URL: $BaseUrl")
 $markdown.Add("- Overall: **$overallStatus**")
-$markdown.Add("- Read-only execution: **Yes**")
+$markdown.Add("- Mode: **$($report.mode)**")
+$markdown.Add("- Read-only execution: **$($report.readOnly)**")
 $markdown.Add("- Checks: $($summary.passed) PASS / $($summary.failed) FAIL / $($summary.blocked) BLOCKED")
 $markdown.Add("- Failure classification: $($summary.deploymentFailures) deployment / $($summary.contractFailures) contract / $($summary.missingPrerequisites) missing prerequisite")
 $markdown.Add('')
@@ -469,7 +804,7 @@ $markdown.Add('## Evidence')
 $markdown.Add('')
 foreach ($check in $checks) {
   $evidence = ([string]$check.evidence).Replace("`r", ' ').Replace("`n", ' ')
-  $markdown.Add("- **$($check.id) — $($check.status):** $evidence")
+  $markdown.Add("- **$($check.id) - $($check.status):** $evidence")
 }
 $markdown.Add('')
 $markdown.Add('## Safeguards')

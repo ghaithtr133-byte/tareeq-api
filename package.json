@@ -24,7 +24,10 @@
     "prisma:migrate:status": "prisma migrate status",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "auth:bootstrap": "tsx --env-file-if-exists=.env scripts/bootstrap-super-admin.ts"
+    "auth:bootstrap": "tsx --env-file-if-exists=.env scripts/bootstrap-super-admin.ts",
+    "seed:inspect": "tsx --env-file-if-exists=.env scripts/initial-data.ts inspect",
+    "admins:provision": "tsx --env-file-if-exists=.env scripts/initial-data.ts provision-admins",
+    "content:seed": "tsx --env-file-if-exists=.env scripts/initial-data.ts seed-content"
   },
   "dependencies": {
     "@hono/node-server": "2.1.5",

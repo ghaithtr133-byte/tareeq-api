@@ -48,6 +48,12 @@ If `PORT` is changed, use that port in all three URLs.
 | `BOOTSTRAP_SUPER_ADMIN_NAME` | Bootstrap only | `npm run auth:bootstrap` | Non-empty name, maximum 120 characters |
 | `BOOTSTRAP_SUPER_ADMIN_EMAIL` | Bootstrap only | `npm run auth:bootstrap` | Valid administrator email |
 | `BOOTSTRAP_SUPER_ADMIN_PASSWORD` | Bootstrap only | `npm run auth:bootstrap` | 12–128 characters with lowercase, uppercase, and numeric characters |
+| `INITIAL_ADMIN_NAME` | Task #4 provisioning only | `npm run admins:provision` | Non-empty name, maximum 120 characters |
+| `INITIAL_ADMIN_EMAIL` | Task #4 provisioning only | `npm run admins:provision` and authenticated verification | Valid administrator email |
+| `INITIAL_ADMIN_PASSWORD` | Task #4 provisioning only | Provisioning and authenticated verification | 9–128 characters with at least one lowercase and one uppercase English letter; numbers and special characters are optional |
+| `INITIAL_SUPER_ADMIN_NAME` | Task #4 provisioning only | `npm run admins:provision` | Non-empty name, maximum 120 characters |
+| `INITIAL_SUPER_ADMIN_EMAIL` | Task #4 provisioning only | `npm run admins:provision` and authenticated verification | Valid administrator email distinct from the ADMIN email |
+| `INITIAL_SUPER_ADMIN_PASSWORD` | Task #4 provisioning only | Provisioning and authenticated verification | 9–128 characters with at least one lowercase and one uppercase English letter; numbers and special characters are optional |
 
 `DATABASE_URL` is used by the running application through `src/database/client.ts`. `DIRECT_DATABASE_URL` is preferred by `prisma7.config.ts` for Prisma migrations; the configuration technically falls back to `DATABASE_URL`, but the approved Neon workflow uses the direct URL.
 
@@ -66,6 +72,9 @@ npm run build                  # Compile production output to dist/
 npm start                      # Run the compiled local Node server
 npm test                       # Safe default Vitest suite; DB suites remain gated
 npm run test:api               # Safe isolated health/auth/content API regression
+npm run seed:inspect           # Read-only database counts and deterministic seed plan
+npm run admins:provision       # Explicit idempotent permanent Admin provisioning
+npm run content:seed           # Explicit idempotent initial content seed
 ```
 
 The repository uses the custom root configuration file `prisma7.config.ts`. Prisma `7.10.0` discovers it when commands run from the repository root, which is how the npm scripts are defined. The file loads `.env`, uses `DIRECT_DATABASE_URL` before `DATABASE_URL`, and points Prisma at `prisma/schema.prisma` and `prisma/migrations`.
@@ -122,6 +131,34 @@ npm run auth:bootstrap
 ```
 
 The command refuses to run when an administrator already exists, creates no default account, and does not print credentials or hashes. Remove bootstrap values from the environment afterward.
+
+## Initial Admin accounts and content
+
+Task #4 adds a separate idempotent provisioning path for the permanent `ADMIN` and `SUPER_ADMIN`. Put the six `INITIAL_*` values in the Git-ignored `.env` file, inspect first, then run the explicit commands:
+
+```powershell
+npm run seed:inspect
+npm run admins:provision
+npm run content:seed
+npm run seed:inspect
+```
+
+Provisioning refuses conflicting role, active-state, name, or password data and refuses unrelated administrator records; it never resets or overwrites an account. Content seeding uses deterministic slugs, validates through the existing Zod schemas and content service, preserves exact matches, and stops on a conflicting record instead of updating it. Repeating either command performs no write for matching records.
+
+Initial-account passwords use a provisioning-only policy: 9–128 characters with at least one lowercase and one uppercase English letter. Numbers and special characters are optional. The shared Authentication API and one-time bootstrap password policy remain unchanged.
+
+The initial public dataset contains three published destinations, six published universities verified from their official sites, and three officially sourced 2026 scholarship calls published with `CLOSED` application state. Proposed consulting services and editorial articles remain `DRAFT` until Tareeq Academy approves their business and editorial content. The article samples retain the flat structured-block contract.
+
+Every successful provisioning or seed result is recorded in the Git-ignored `reports/initial-seed-manifest.json`, including its UUID, outcome, publication state, relationships, and relevant official source. The manifest is permanent verification evidence; the seed command does not clean up these records.
+
+The deployed acceptance verifier remains read-only by default and consumes the manifest when present:
+
+```powershell
+pwsh -File scripts/verify-backend.ps1
+pwsh -File scripts/verify-backend.ps1 -Authenticated
+```
+
+`-Authenticated` reads only the four required email/password values from the current environment or local `.env`, uses isolated in-memory cookie jars for each role, and performs the authorized login/refresh/Admin-read/logout workflows. It changes only authentication session records and never writes content or account data. Missing credentials are reported as `BLOCKED — MISSING_PREREQUISITE`; secrets, cookies, identities, and raw response bodies are excluded from reports.
 
 ## Content behavior
 
