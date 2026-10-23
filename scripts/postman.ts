@@ -72,18 +72,14 @@ const methods: HttpMethod[] = ['get', 'post', 'patch', 'put', 'delete']
 const resources = ['countries', 'universities', 'scholarships', 'services', 'articles'] as const
 
 const folderNames = [
-  'System & Health',
+  'System',
   'Authentication',
   'Public — Countries',
   'Public — Universities',
   'Public — Scholarships',
   'Public — Services',
   'Public — Articles',
-  'Admin — Countries',
-  'Admin — Universities',
-  'Admin — Scholarships',
-  'Admin — Services',
-  'Admin — Articles',
+  'Admin — Content Management',
 ] as const
 
 const variableDefaults = [
@@ -125,28 +121,30 @@ const resourceForPath = (path: string) =>
   resources.find((resource) => path === `/api/v1/${resource}` || path.startsWith(`/api/v1/${resource}/`) || path === `/api/v1/admin/${resource}` || path.startsWith(`/api/v1/admin/${resource}/`))
 
 const folderFor = (entry: OperationEntry) => {
-  if (entry.path === '/api/v1/health') return 'System & Health'
+  if (entry.path === '/api/v1/health') return 'System'
   if (entry.path.startsWith('/api/v1/auth/')) return 'Authentication'
   const resource = resourceForPath(entry.path)
   if (!resource) throw new Error(`No Postman folder mapping for ${entry.method.toUpperCase()} ${entry.path}.`)
   const label = resource[0]?.toUpperCase() + resource.slice(1)
-  return entry.path.startsWith('/api/v1/admin/') ? `Admin — ${label}` : `Public — ${label}`
+  return entry.path.startsWith('/api/v1/admin/') ? 'Admin — Content Management' : `Public — ${label}`
 }
 
 const operationRank = (entry: OperationEntry) => {
   if (entry.path.startsWith('/api/v1/auth/')) {
     const ranks: Record<string, number> = {
       '/api/v1/auth/login': 1,
-      '/api/v1/auth/refresh': 2,
-      '/api/v1/auth/logout': 3,
-      '/api/v1/auth/me': 4,
+      '/api/v1/auth/me': 2,
+      '/api/v1/auth/refresh': 3,
+      '/api/v1/auth/logout': 4,
       '/api/v1/auth/change-password': 5,
     }
     return ranks[entry.path] ?? 99
   }
   const hasParameter = entry.path.includes('{')
   const methodRanks: Record<HttpMethod, number> = { get: hasParameter ? 2 : 1, post: 3, patch: 4, put: 5, delete: 6 }
-  return methodRanks[entry.method]
+  const resource = resourceForPath(entry.path)
+  const resourceRank = resource ? resources.indexOf(resource) * 10 : 0
+  return resourceRank + methodRanks[entry.method]
 }
 
 const parameterValue = (parameter: OpenApiParameter) => {
@@ -368,8 +366,8 @@ const buildSmokeCollection = (document: OpenApiDocument) => {
 const buildEnvironment = (kind: 'local' | 'vercel') => {
   const local = kind === 'local'
   const values = collectionVariables(
-    local ? 'http://localhost:3000' : 'https://tareeq-api.vercel.app',
-    local ? 'http://localhost:3001' : 'https://tareeq-api.vercel.app',
+    local ? 'http://localhost:3000' : 'https://api.tareeq-academy.com',
+    local ? 'http://localhost:3001' : 'https://admin.tareeq-academy.com',
   ).map((variable) => ({ key: variable.key, value: variable.value, type: 'default', enabled: true }))
   return {
     id: local ? '1ccbd13e-034b-445e-8438-d86cd5824b72' : 'ac7ba828-8019-4d44-9754-94637fc62d0e',

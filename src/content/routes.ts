@@ -30,16 +30,17 @@ import type {
 
 const metadata: Record<ContentResource, {
   publicTag: string
-  adminTag: string
   singular: string
   article: 'a' | 'an'
 }> = {
-  countries: { publicTag: 'Countries', adminTag: 'Admin Countries', singular: 'country', article: 'a' },
-  universities: { publicTag: 'Universities', adminTag: 'Admin Universities', singular: 'university', article: 'a' },
-  scholarships: { publicTag: 'Scholarships', adminTag: 'Admin Scholarships', singular: 'scholarship', article: 'a' },
-  services: { publicTag: 'Services', adminTag: 'Admin Services', singular: 'service', article: 'a' },
-  articles: { publicTag: 'Articles', adminTag: 'Admin Articles', singular: 'article', article: 'an' },
+  countries: { publicTag: 'Public — Countries', singular: 'country', article: 'a' },
+  universities: { publicTag: 'Public — Universities', singular: 'university', article: 'a' },
+  scholarships: { publicTag: 'Public — Scholarships', singular: 'scholarship', article: 'a' },
+  services: { publicTag: 'Public — Services', singular: 'service', article: 'a' },
+  articles: { publicTag: 'Public — Articles', singular: 'article', article: 'an' },
 }
+
+const adminTag = 'Admin — Content Management'
 
 const createExamples: Record<ContentResource, Record<string, unknown>> = {
   countries: {
@@ -212,7 +213,7 @@ const registerDocumentation = (
   routes.openAPIRegistry.registerPath({
     method: 'get',
     path: `/admin/${resource}`,
-    tags: [names.adminTag],
+    tags: [adminTag],
     summary: `List ${resource} for administration`,
     description: 'ADMIN or SUPER_ADMIN only. Includes draft, published, and archived records and supports publication-status filtering.',
     security: [{ accessCookie: [] }],
@@ -225,7 +226,7 @@ const registerDocumentation = (
   routes.openAPIRegistry.registerPath({
     method: 'get',
     path: `/admin/${resource}/{id}`,
-    tags: [names.adminTag],
+    tags: [adminTag],
     summary: `Get ${names.article} ${names.singular} for administration`,
     description: 'ADMIN or SUPER_ADMIN only. Uses the UUID identifier and includes editable publication fields.',
     security: [{ accessCookie: [] }],
@@ -238,7 +239,7 @@ const registerDocumentation = (
   routes.openAPIRegistry.registerPath({
     method: 'post',
     path: `/admin/${resource}`,
-    tags: [names.adminTag],
+    tags: [adminTag],
     summary: `Create ${names.article} ${names.singular}`,
     description: 'ADMIN or SUPER_ADMIN only. New records default to DRAFT unless a valid PUBLISHED state is explicitly requested.',
     security: [{ accessCookie: [] }],
@@ -255,7 +256,7 @@ const registerDocumentation = (
   routes.openAPIRegistry.registerPath({
     method: 'patch',
     path: `/admin/${resource}/{id}`,
-    tags: [names.adminTag],
+    tags: [adminTag],
     summary: `Update ${names.article} ${names.singular}`,
     description: 'ADMIN or SUPER_ADMIN only. Supports publication transitions; the first publication timestamp and any previously published slug are preserved.',
     security: [{ accessCookie: [] }],

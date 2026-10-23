@@ -107,6 +107,8 @@ describe('Tareeq Academy API foundation', () => {
   it('documents the complete 36-operation API with descriptions, examples, and Admin security', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
+      tags?: Array<{ name: string }>
+      externalDocs?: { url?: string }
       paths: Record<string, Record<string, {
         summary?: string
         description?: string
@@ -128,6 +130,34 @@ describe('Tareeq Academy API foundation', () => {
     )
 
     expect(operations).toHaveLength(36)
+    const contentResources = '(countries|universities|scholarships|services|articles)'
+    const operationGroups = {
+      system: operations.filter(({ path }) => path === '/api/v1/health'),
+      authentication: operations.filter(({ path }) => path.startsWith('/api/v1/auth/')),
+      publicContent: operations.filter(({ path }) =>
+        new RegExp(`^/api/v1/${contentResources}(/\\{slug\\})?$`).test(path),
+      ),
+      adminContent: operations.filter(({ path }) =>
+        new RegExp(`^/api/v1/admin/${contentResources}(/\\{id\\})?$`).test(path),
+      ),
+    }
+    expect(Object.fromEntries(
+      Object.entries(operationGroups).map(([group, entries]) => [group, entries.length]),
+    )).toEqual({ system: 1, authentication: 5, publicContent: 10, adminContent: 20 })
+    expect(operations.some(({ path }) =>
+      /(applications|inquiries|uploads|analytics|admin-users|admin\/users)/i.test(path),
+    )).toBe(false)
+    expect(document.tags?.map(({ name }) => name)).toEqual([
+      'System',
+      'Authentication',
+      'Public — Countries',
+      'Public — Universities',
+      'Public — Scholarships',
+      'Public — Services',
+      'Public — Articles',
+      'Admin — Content Management',
+    ])
+    expect(document.externalDocs?.url).toContain('docs/frontend-integration.md')
     for (const { path, method, operation } of operations) {
       expect(operation.summary, `${method.toUpperCase()} ${path} summary`).toBeTruthy()
       expect(operation.description, `${method.toUpperCase()} ${path} description`).toBeTruthy()

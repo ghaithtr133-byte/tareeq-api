@@ -92,7 +92,7 @@
   ],
   "item": [
     {
-      "name": "System & Health",
+      "name": "System",
       "item": [
         {
           "name": "Check API health",
@@ -496,6 +496,108 @@
           ]
         },
         {
+          "name": "Get the current administrator",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns the administrator represented by a valid access cookie. The access JWT has a 15-minute lifetime.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nRead-only operation.\n\nExpected responses:\n200: Current administrator profile.\n401: Authentication failed or is required."
+          },
+          "response": [
+            {
+              "name": "200 Current administrator profile.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Returns the administrator represented by a valid access cookie. The access JWT has a 15-minute lifetime.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nRead-only operation.\n\nExpected responses:\n200: Current administrator profile.\n401: Authentication failed or is required."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.com\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Authentication failed or is required.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Returns the administrator represented by a valid access cookie. The access JWT has a 15-minute lifetime.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nRead-only operation.\n\nExpected responses:\n200: Current administrator profile.\n401: Authentication failed or is required."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "[MANUAL] Rotate the refresh session",
           "request": {
             "method": "POST",
@@ -775,108 +877,6 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CSRF_VALIDATION_FAILED\",\n    \"message\": \"Request origin is not allowed.\",\n    \"details\": {}\n  }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get the current administrator",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "auth",
-                "me"
-              ]
-            },
-            "description": "Returns the administrator represented by a valid access cookie. The access JWT has a 15-minute lifetime.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nRead-only operation.\n\nExpected responses:\n200: Current administrator profile.\n401: Authentication failed or is required."
-          },
-          "response": [
-            {
-              "name": "200 Current administrator profile.",
-              "originalRequest": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/auth/me",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "auth",
-                    "me"
-                  ]
-                },
-                "description": "Returns the administrator represented by a valid access cookie. The access JWT has a 15-minute lifetime.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nRead-only operation.\n\nExpected responses:\n200: Current administrator profile.\n401: Authentication failed or is required."
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.com\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
-            },
-            {
-              "name": "401 Authentication failed or is required.",
-              "originalRequest": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/auth/me",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "auth",
-                    "me"
-                  ]
-                },
-                "description": "Returns the administrator represented by a valid access cookie. The access JWT has a 15-minute lifetime.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nRead-only operation.\n\nExpected responses:\n200: Current administrator profile.\n401: Authentication failed or is required."
-              },
-              "status": "Unauthorized",
-              "code": 401,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         },
@@ -3159,7 +3159,7 @@
       ]
     },
     {
-      "name": "Admin — Countries",
+      "name": "Admin — Content Management",
       "item": [
         {
           "name": "List countries for administration",
@@ -4688,12 +4688,7 @@
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Admin — Universities",
-      "item": [
+        },
         {
           "name": "List universities for administration",
           "request": {
@@ -6251,12 +6246,7 @@
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Admin — Scholarships",
-      "item": [
+        },
         {
           "name": "List scholarships for administration",
           "request": {
@@ -7934,12 +7924,7 @@
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Admin — Services",
-      "item": [
+        },
         {
           "name": "List services for administration",
           "request": {
@@ -9437,12 +9422,7 @@
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Admin — Articles",
-      "item": [
+        },
         {
           "name": "List articles for administration",
           "request": {

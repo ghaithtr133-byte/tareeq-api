@@ -443,9 +443,14 @@ describe('administrative authentication', () => {
   it('documents all authentication operations and both cookie security schemes', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
-      paths: Record<string, unknown>
+      paths: Record<string, Record<string, { security?: Array<Record<string, unknown>> }>>
       components: { securitySchemes: Record<string, unknown> }
     }
+    expect(document.paths['/api/v1/auth/login']?.post?.security).toBeUndefined()
+    expect(document.paths['/api/v1/auth/me']?.get?.security).toEqual([{ accessCookie: [] }])
+    expect(document.paths['/api/v1/auth/refresh']?.post?.security).toEqual([{ refreshCookie: [] }])
+    expect(document.paths['/api/v1/auth/logout']?.post?.security).toEqual([{}, { refreshCookie: [] }])
+    expect(document.paths['/api/v1/auth/change-password']?.post?.security).toEqual([{ accessCookie: [] }])
 
     expect(response.status).toBe(200)
     for (const path of [

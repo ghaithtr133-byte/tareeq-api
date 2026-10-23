@@ -346,8 +346,9 @@ describe('content management APIs', () => {
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.get).toBeDefined()
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.patch).toBeDefined()
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeUndefined()
-      expect(document.paths[`/api/v1/${resource}`]?.get?.tags?.[0]).toBeTruthy()
-      expect(document.paths[`/api/v1/admin/${resource}`]?.post?.tags?.[0]).toContain('Admin')
+      const label = resource[0]?.toUpperCase() + resource.slice(1)
+      expect(document.paths[`/api/v1/${resource}`]?.get?.tags).toEqual([`Public — ${label}`])
+      expect(document.paths[`/api/v1/admin/${resource}`]?.post?.tags).toEqual(['Admin — Content Management'])
     }
   })
 })

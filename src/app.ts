@@ -62,7 +62,25 @@ export const createApp = (options: AppOptions = {}) => {
     info: {
       title: 'Tareeq Academy API',
       version: '0.1.0',
-      description: 'Backend API for the Tareeq Academy educational consulting platform.',
+      description: 'Start with the Frontend Quick Start before using this endpoint reference. The API exposes public educational content plus cookie-authenticated content management for ADMIN and SUPER_ADMIN users.',
+    },
+    servers: [
+      { url: 'https://api.tareeq-academy.com', description: 'Production' },
+      { url: 'http://localhost:3000', description: 'Local Backend' },
+    ],
+    tags: [
+      { name: 'System', description: 'Public process-health operation.' },
+      { name: 'Authentication', description: 'Administrator login, session restoration, refresh, logout, and password change.' },
+      { name: 'Public — Countries', description: 'Published country collections and slug details. No authentication required.' },
+      { name: 'Public — Universities', description: 'Published university collections and slug details. No authentication required.' },
+      { name: 'Public — Scholarships', description: 'Published scholarship collections and slug details, including effective application status. No authentication required.' },
+      { name: 'Public — Services', description: 'Published service collections and slug details. No authentication required.' },
+      { name: 'Public — Articles', description: 'Published article collections and slug details. No authentication required.' },
+      { name: 'Admin — Content Management', description: 'ADMIN or SUPER_ADMIN content listing, details, creation, updates, and publication-state transitions. No dedicated SUPER_ADMIN management endpoints are implemented.' },
+    ],
+    externalDocs: {
+      description: 'Frontend Quick Start and integration examples',
+      url: 'https://github.com/ghaithtr133-byte/tareeq-api/blob/main/docs/frontend-integration.md',
     },
   })
 
