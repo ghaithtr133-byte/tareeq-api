@@ -26,6 +26,26 @@ export const authCors = (runtime: AuthRuntime): MiddlewareHandler<AuthEnv> =>
     return middleware(c, next)
   }
 
+export const publicReadCors = (
+  runtime: AuthRuntime,
+): MiddlewareHandler<AuthEnv> => async (c, next) => {
+  if (
+    !c.req.header('Origin') ||
+    (c.req.method !== 'GET' && c.req.method !== 'HEAD' && c.req.method !== 'OPTIONS')
+  ) {
+    await next()
+    return
+  }
+
+  const middleware = cors({
+    origin: (origin) =>
+      runtime.getConfig().publicAllowedOrigins.includes(origin) ? origin : '',
+    allowMethods: ['GET', 'HEAD', 'OPTIONS'],
+    maxAge: 600,
+  })
+  return middleware(c, next)
+}
+
 export const requireTrustedOrigin = (
   runtime: AuthRuntime,
 ): MiddlewareHandler<AuthEnv> => async (c, next) => {

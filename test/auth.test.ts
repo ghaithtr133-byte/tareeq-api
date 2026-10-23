@@ -17,7 +17,8 @@ import type { AuthEnv } from '../src/auth/types.js'
 import type { AuthConfig } from '../src/config/env.js'
 import { InMemoryAuthRepository } from './helpers/in-memory-auth-repository.js'
 
-const ORIGIN = 'https://admin.example.test'
+const ORIGIN = 'https://admin.tareeq-academy.com'
+const PUBLIC_ORIGIN = 'https://tareeq-academy.com'
 const JWT_SECRET = 'test-only-secret-that-is-at-least-thirty-two-characters-long'
 const USER_ID = 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20'
 const CURRENT_PASSWORD = 'CurrentPassword123'
@@ -27,6 +28,7 @@ const config: AuthConfig = {
   databaseUrl: 'postgresql://unused:unused@localhost:5432/unused',
   jwtSecret: JWT_SECRET,
   allowedOrigins: [ORIGIN],
+  publicAllowedOrigins: [PUBLIC_ORIGIN],
   isProduction: false,
 }
 
@@ -380,7 +382,7 @@ describe('administrative authentication', () => {
       ...jsonRequest({ email: 'admin@example.com', password: CURRENT_PASSWORD }),
       headers: {
         'Content-Type': 'application/json',
-        Origin: 'https://evil.example.test',
+        Origin: PUBLIC_ORIGIN,
       },
     })
     expect(disallowed.status).toBe(403)

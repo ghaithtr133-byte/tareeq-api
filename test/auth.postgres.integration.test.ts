@@ -30,6 +30,7 @@ const RUN_DATABASE_INTEGRATION = process.env.RUN_DATABASE_INTEGRATION === '1'
 const RUN_ID = `${Date.now()}-${randomUUID().slice(0, 8)}`
 const EMAIL_PREFIX = `tareeq-integration-${RUN_ID}`
 const ORIGIN = 'http://localhost:3001'
+const PUBLIC_ORIGIN = 'https://tareeq-academy.com'
 const DISALLOWED_ORIGIN = 'https://unauthorized.example.test'
 const CURRENT_PASSWORD = `Current-${randomBytes(18).toString('base64url')}9aA`
 const NEW_PASSWORD = `Changed-${randomBytes(18).toString('base64url')}8bB`
@@ -43,6 +44,7 @@ const config = (isProduction = false): AuthConfig => ({
   databaseUrl: process.env.DATABASE_URL!,
   jwtSecret: process.env.JWT_SECRET!,
   allowedOrigins: [ORIGIN],
+  publicAllowedOrigins: [PUBLIC_ORIGIN],
   isProduction,
 })
 

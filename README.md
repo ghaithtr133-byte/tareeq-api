@@ -45,6 +45,7 @@ If `PORT` is changed, use that port in all three URLs.
 | `DIRECT_DATABASE_URL` | Required by the approved migration workflow | Prisma CLI | Direct/unpooled URL for the same Neon database |
 | `JWT_SECRET` | Required for authentication/Admin routes | JWT signing and verification | Private random string, at least 32 characters |
 | `AUTH_ALLOWED_ORIGINS` | Required for authentication/Admin routes | Credentialed CORS and origin/CSRF checks | Comma-separated exact origins without paths |
+| `PUBLIC_ALLOWED_ORIGINS` | Optional; required for cross-origin public browser reads | Non-credentialed CORS for the public read route category | Comma-separated exact origins without paths |
 | `BOOTSTRAP_SUPER_ADMIN_NAME` | Bootstrap only | `npm run auth:bootstrap` | Non-empty name, maximum 120 characters |
 | `BOOTSTRAP_SUPER_ADMIN_EMAIL` | Bootstrap only | `npm run auth:bootstrap` | Valid administrator email |
 | `BOOTSTRAP_SUPER_ADMIN_PASSWORD` | Bootstrap only | `npm run auth:bootstrap` | 12–128 characters with lowercase, uppercase, and numeric characters |
@@ -57,7 +58,7 @@ If `PORT` is changed, use that port in all three URLs.
 
 `DATABASE_URL` is used by the running application through `src/database/client.ts`. `DIRECT_DATABASE_URL` is preferred by `prisma7.config.ts` for Prisma migrations; the configuration technically falls back to `DATABASE_URL`, but the approved Neon workflow uses the direct URL.
 
-`AUTH_ALLOWED_ORIGINS` values must be exact origins such as `http://localhost:3001` or `https://admin.example.com`. Do not include paths and do not use `*` with credentialed requests.
+`AUTH_ALLOWED_ORIGINS` values must be exact Admin origins such as `http://localhost:3001` or `https://admin.tareeq-academy.com`. It controls both credentialed CORS and trusted-origin/CSRF checks for authentication and Admin routes. `PUBLIC_ALLOWED_ORIGINS` independently permits non-credentialed browser reads from exact student/frontend origins such as `https://tareeq-academy.com`; it does not grant credentialed access or CSRF trust. Do not include paths. Never use `*` with credentialed requests.
 
 ## Commands
 
@@ -116,7 +117,7 @@ Project Leadership formally approved one Neon PostgreSQL database for developmen
 
 The API uses host-only HttpOnly cookies: a signed 15-minute access JWT and an opaque rotating refresh credential valid for seven days. Tokens are never returned in JSON and must never be stored in `localStorage` or `sessionStorage`.
 
-Cookies use `SameSite=Lax`, explicit paths, and `Secure` when `NODE_ENV=production`. State-changing authenticated requests require an `Origin` that exactly matches the request origin or `AUTH_ALLOWED_ORIGINS`. Credentialed CORS never uses a wildcard.
+Cookies use `SameSite=Lax`, explicit paths, and `Secure` when `NODE_ENV=production`. State-changing authenticated requests require an `Origin` that exactly matches the request origin or `AUTH_ALLOWED_ORIGINS`. Credentialed CORS never uses a wildcard. Public route-category CORS is separate, never enables credentials, and is limited to `GET`, `HEAD`, and their preflight requests; future public mutations require an explicit security review and policy change.
 
 The supported roles are exactly `ADMIN` and `SUPER_ADMIN`; both can manage Task #3 content. The accepted V1 limitation is that an already signed access token may remain usable for up to its 15-minute expiry after session revocation or account deactivation. Login and refresh reject inactive accounts.
 
@@ -156,9 +157,14 @@ The deployed acceptance verifier remains read-only by default and consumes the m
 ```powershell
 pwsh -File scripts/verify-backend.ps1
 pwsh -File scripts/verify-backend.ps1 -Authenticated
+npm run verify:browser-auth
 ```
 
-`-Authenticated` reads only the four required email/password values from the current environment or local `.env`, uses isolated in-memory cookie jars for each role, and performs the authorized login/refresh/Admin-read/logout workflows. It changes only authentication session records and never writes content or account data. Missing credentials are reported as `BLOCKED — MISSING_PREREQUISITE`; secrets, cookies, identities, and raw response bodies are excluded from reports.
+The verifier defaults to `https://tareeq-academy.com` for `-PublicOrigin` and `https://admin.tareeq-academy.com` for `-AdminOrigin`. It verifies public non-credentialed reads separately from credentialed Admin CORS and CSRF rejection. Override these exact origins when checking an approved local or preview topology.
+
+`-Authenticated` reads only the four required email/password values from the current environment or local `.env`, uses isolated in-memory cookie jars for each role, and performs the authorized login/refresh/Admin-read/logout workflows. It also verifies that the public-only origin cannot make credentialed state-changing requests. It changes only authentication session records and never writes content or account data. Missing credentials are reported as `BLOCKED — MISSING_PREREQUISITE`; secrets, cookies, identities, and raw response bodies are excluded from reports.
+
+`npm run verify:browser-auth` is a separate real-browser check for local same-site cookie persistence. It launches installed Google Chrome through Playwright, serves a temporary frontend at `http://localhost:3001`, starts the local Backend at `http://localhost:3002`, and verifies browser-managed login, reload persistence, refresh, Admin reads, logout, and cookie invalidation for both roles. Playwright may be installed as a development dependency or supplied through `PLAYWRIGHT_MODULE_PATH`; it is not a production dependency. The sanitized `reports/backend-browser-auth.{json,md}` results are incorporated into subsequent PowerShell acceptance reports so HTTP cookie-jar and browser persistence outcomes remain distinct. This harness proves cookie-policy compatibility, not full Admin Dashboard integration.
 
 ## Content behavior
 
@@ -176,7 +182,7 @@ Article bodies are validated arrays of plain-text blocks, not HTML and not nativ
 - **Prisma configuration not detected:** run the npm scripts from the repository root and confirm `prisma7.config.ts` exists.
 - **Pending migrations:** run `npm run prisma:migrate:status`. Apply with `npm run prisma:migrate:deploy` only after reviewing SQL and receiving authorization.
 - **Invalid JWT configuration:** `JWT_SECRET` must be at least 32 characters and identical for every instance serving the same environment.
-- **CORS or CSRF rejection:** add the exact Frontend origin to `AUTH_ALLOWED_ORIGINS`, send browser credentials for cookie-authenticated requests, and include the browser-generated `Origin` on POST/PATCH.
+- **CORS or CSRF rejection:** add Admin origins only to `AUTH_ALLOWED_ORIGINS`; add student/frontend origins that need public reads to `PUBLIC_ALLOWED_ORIGINS`. Send browser credentials only for cookie-authenticated requests, and include the browser-generated `Origin` on POST/PATCH.
 - **Authentication cookies absent:** verify HTTPS and `NODE_ENV=production` in production, exact API/Frontend domain relationships, and browser cookie restrictions. Cross-site preview domains are not a reliable final cookie topology.
 - **Bootstrap variables missing:** they are required only for the explicitly invoked one-time bootstrap command, not normal startup.
 

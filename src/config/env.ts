@@ -17,6 +17,15 @@ const authEnvSchema = z.object({
       (origins) => origins.every((origin) => new URL(origin).origin === origin),
       'Origins must not include paths, query strings, or fragments.',
     ),
+  PUBLIC_ALLOWED_ORIGINS: z
+    .string()
+    .default('')
+    .transform((value) => value.split(',').map((origin) => origin.trim()).filter(Boolean))
+    .pipe(z.array(z.url()))
+    .refine(
+      (origins) => origins.every((origin) => new URL(origin).origin === origin),
+      'Origins must not include paths, query strings, or fragments.',
+    ),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 })
 
@@ -24,6 +33,7 @@ export type AuthConfig = {
   databaseUrl: string
   jwtSecret: string
   allowedOrigins: string[]
+  publicAllowedOrigins: string[]
   isProduction: boolean
 }
 
@@ -39,6 +49,7 @@ export const getAuthConfig = (): AuthConfig => {
     databaseUrl: parsed.DATABASE_URL,
     jwtSecret: parsed.JWT_SECRET,
     allowedOrigins: parsed.AUTH_ALLOWED_ORIGINS,
+    publicAllowedOrigins: parsed.PUBLIC_ALLOWED_ORIGINS,
     isProduction: parsed.NODE_ENV === 'production',
   }
 

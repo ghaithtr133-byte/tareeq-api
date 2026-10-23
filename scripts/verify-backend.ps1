@@ -1,13 +1,21 @@
 [CmdletBinding()]
 param(
-  [ValidatePattern('^https://')]
+  [ValidatePattern('^(https://.+|http://(localhost|127\.0\.0\.1)(:\d+)?)$')]
   [string]$BaseUrl = 'https://tareeq-api.vercel.app',
+
+  [ValidatePattern('^https?://')]
+  [string]$PublicOrigin = 'https://tareeq-academy.com',
+
+  [ValidatePattern('^https?://')]
+  [string]$AdminOrigin = 'https://admin.tareeq-academy.com',
 
   [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports'),
 
   [string]$ManifestPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports\initial-seed-manifest.json'),
 
   [string]$EnvironmentFile = (Join-Path (Split-Path -Parent $PSScriptRoot) '.env'),
+
+  [string]$BrowserReportPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports\backend-browser-auth.json'),
 
   [switch]$Authenticated,
 
@@ -103,6 +111,7 @@ function Invoke-ReadOnlyRequest {
       requestIdMatchesSupplied = if ($Headers.ContainsKey('X-Request-Id')) { $responseRequestId -eq [string]$Headers['X-Request-Id'] } else { $null }
       accessControlAllowOrigin = Get-Header $response 'Access-Control-Allow-Origin'
       accessControlAllowCredentials = Get-Header $response 'Access-Control-Allow-Credentials'
+      accessControlAllowMethods = Get-Header $response 'Access-Control-Allow-Methods'
       body = [string]$response.Content
       transportError = $null
     }
@@ -117,6 +126,7 @@ function Invoke-ReadOnlyRequest {
       requestIdMatchesSupplied = $null
       accessControlAllowOrigin = $null
       accessControlAllowCredentials = $null
+      accessControlAllowMethods = $null
       body = ''
       transportError = $_.Exception.Message
     }
@@ -427,14 +437,16 @@ if ($null -eq $seedManifest) {
         (Test-Property $detailBody 'success') -and $detailBody.success -eq $true -and
         (Test-Property $detailBody 'data') -and
         $detailBody.data.id -eq $entry.id -and $detailBody.data.slug -eq $entry.slug
-      $relationshipPass = $true
-      foreach ($relationship in $entry.relationships.PSObject.Properties) {
-        if (
-          -not (Test-Property $detailBody.data $relationship.Name) -or
-          $detailBody.data.($relationship.Name) -ne $relationship.Value
-        ) { $relationshipPass = $false }
+      $relationshipPass = $identityPass
+      if ($identityPass) {
+        foreach ($relationship in $entry.relationships.PSObject.Properties) {
+          if (
+            -not (Test-Property $detailBody.data $relationship.Name) -or
+            $detailBody.data.($relationship.Name) -ne $relationship.Value
+          ) { $relationshipPass = $false }
+        }
       }
-      if ($entry.resource -eq 'scholarships') {
+      if ($identityPass -and $entry.resource -eq 'scholarships') {
         $relationshipPass = $relationshipPass -and
           (Test-Property $detailBody.data 'effectiveApplicationStatus') -and
           $detailBody.data.effectiveApplicationStatus -eq 'CLOSED'
@@ -460,7 +472,9 @@ if ($null -eq $seedManifest) {
     $expectedHidden = @($manifestEntries | Where-Object { $_.resource -eq $resource -and $_.status -ne 'PUBLISHED' })
     $seedList = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/${resource}?limit=50" -Purpose 'seed-manifest collection verification'
     $seedListBody = Convert-JsonBody $seedList
-    $items = if ($null -ne $seedListBody -and (Test-Property $seedListBody 'data')) { @($seedListBody.data.items) } else { @() }
+    $items = @(
+      if ($null -ne $seedListBody -and (Test-Property $seedListBody 'data')) { $seedListBody.data.items }
+    )
     $visibleSlugs = @($items | ForEach-Object { $_.slug })
     $missingPublished = @($expectedPublished | Where-Object { $visibleSlugs -notcontains $_.slug })
     $visibleHidden = @($expectedHidden | Where-Object { $visibleSlugs -contains $_.slug })
@@ -480,7 +494,9 @@ if ($null -eq $seedManifest) {
     })
     $filtered = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/universities?country=$($country.slug)&limit=50" -Purpose 'seed country relationship filter verification'
     $filteredBody = Convert-JsonBody $filtered
-    $filteredSlugs = if ($null -ne $filteredBody -and (Test-Property $filteredBody 'data')) { @($filteredBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+    $filteredSlugs = @(
+      if ($null -ne $filteredBody -and (Test-Property $filteredBody 'data')) { $filteredBody.data.items | ForEach-Object { $_.slug } }
+    )
     $filterPass = $filtered.statusCode -eq 200 -and @($expectedUniversities | Where-Object { $filteredSlugs -notcontains $_.slug }).Count -eq 0
     Add-Check -Id "seed.universities.country_filter.$($country.slug)" -Category 'Filters/Pagination' -Status $(if ($filterPass) { 'PASS' } else { 'FAIL' }) `
       -Expected 'Country filter includes every published manifest university related to that country.' `
@@ -492,7 +508,9 @@ if ($null -eq $seedManifest) {
   $closedScholarships = @($manifestEntries | Where-Object { $_.resource -eq 'scholarships' -and $_.status -eq 'PUBLISHED' })
   $closedResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/scholarships?applicationStatus=CLOSED&limit=50' -Purpose 'closed scholarship filter verification'
   $closedBody = Convert-JsonBody $closedResponse
-  $closedSlugs = if ($null -ne $closedBody -and (Test-Property $closedBody 'data')) { @($closedBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+  $closedSlugs = @(
+    if ($null -ne $closedBody -and (Test-Property $closedBody 'data')) { $closedBody.data.items | ForEach-Object { $_.slug } }
+  )
   $closedPass = $closedResponse.statusCode -eq 200 -and @($closedScholarships | Where-Object { $closedSlugs -notcontains $_.slug }).Count -eq 0
   Add-Check -Id 'seed.scholarships.closed_filter' -Category 'Filters/Pagination' -Status $(if ($closedPass) { 'PASS' } else { 'FAIL' }) `
     -Expected 'CLOSED filter includes all three published closed scholarship calls.' `
@@ -502,7 +520,9 @@ if ($null -eq $seedManifest) {
 
   $openResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/scholarships?applicationStatus=OPEN&limit=50' -Purpose 'open scholarship filter verification'
   $openBody = Convert-JsonBody $openResponse
-  $openSlugs = if ($null -ne $openBody -and (Test-Property $openBody 'data')) { @($openBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+  $openSlugs = @(
+    if ($null -ne $openBody -and (Test-Property $openBody 'data')) { $openBody.data.items | ForEach-Object { $_.slug } }
+  )
   $openPass = $openResponse.statusCode -eq 200 -and @($closedScholarships | Where-Object { $openSlugs -contains $_.slug }).Count -eq 0
   Add-Check -Id 'seed.scholarships.open_filter' -Category 'Filters/Pagination' -Status $(if ($openPass) { 'PASS' } else { 'FAIL' }) `
     -Expected 'OPEN filter excludes all closed 2026 seed calls.' `
@@ -521,7 +541,9 @@ if ($null -eq $seedManifest) {
 
   $featuredResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/countries?featured=true&limit=50' -Purpose 'seeded featured content verification'
   $featuredBody = Convert-JsonBody $featuredResponse
-  $featuredSlugs = if ($null -ne $featuredBody -and (Test-Property $featuredBody 'data')) { @($featuredBody.data.items | ForEach-Object { $_.slug }) } else { @() }
+  $featuredSlugs = @(
+    if ($null -ne $featuredBody -and (Test-Property $featuredBody 'data')) { $featuredBody.data.items | ForEach-Object { $_.slug } }
+  )
   $featuredPass = $featuredResponse.statusCode -eq 200 -and @('romania', 'turkey', 'poland' | Where-Object { $featuredSlugs -notcontains $_ }).Count -eq 0
   Add-Check -Id 'seed.countries.featured' -Category 'Filters/Pagination' -Status $(if ($featuredPass) { 'PASS' } else { 'FAIL' }) `
     -Expected 'Featured filter includes the three featured destination seeds.' `
@@ -562,17 +584,70 @@ foreach ($resource in $resources) {
     -Classification $(if ($admin.statusCode -eq 0 -or $admin.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($adminPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 }
 
+$publicCorsFailures = [System.Collections.Generic.List[string]]::new()
+foreach ($resource in $resources) {
+  $publicRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/${resource}?limit=1" -Headers @{ Origin = $PublicOrigin } -Purpose 'student-origin public CORS read'
+  if (
+    $publicRead.statusCode -ne 200 -or
+    $publicRead.accessControlAllowOrigin -ne $PublicOrigin -or
+    -not [string]::IsNullOrWhiteSpace($publicRead.accessControlAllowCredentials)
+  ) {
+    $publicCorsFailures.Add("$resource HTTP $($publicRead.statusCode); exactOrigin=$($publicRead.accessControlAllowOrigin -eq $PublicOrigin); credentialsAbsent=$([string]::IsNullOrWhiteSpace($publicRead.accessControlAllowCredentials))")
+  }
+}
+$publicCorsPass = $publicCorsFailures.Count -eq 0
+Add-Check -Id 'security.public_cors_reads' -Category 'CORS/CSRF' -Status $(if ($publicCorsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'The configured student origin can read all five public collections with exact ACAO and without credentialed CORS.' `
+  -Actual "Failures=$($publicCorsFailures.Count)." `
+  -Evidence $(if ($publicCorsPass) { 'All five public GET responses allowed the configured student origin and omitted Access-Control-Allow-Credentials.' } else { @($publicCorsFailures) -join '; ' }) `
+  -Classification $(if ($publicCorsPass) { 'NONE' } elseif (@($publicCorsFailures | Where-Object { $_ -match 'HTTP (0|5\d\d)' }).Count -gt 0) { 'DEPLOYMENT_FAILURE' } else { 'CONTRACT_FAILURE' })
+
+$publicReadPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path '/api/v1/countries' -Headers @{
+  Origin = $PublicOrigin
+  'Access-Control-Request-Method' = 'GET'
+} -Purpose 'student-origin public read preflight'
+$publicReadPreflightPass = $publicReadPreflight.statusCode -eq 204 -and
+  $publicReadPreflight.accessControlAllowOrigin -eq $PublicOrigin -and
+  [string]::IsNullOrWhiteSpace($publicReadPreflight.accessControlAllowCredentials) -and
+  $publicReadPreflight.accessControlAllowMethods -match '(^|,\s*)GET(\s*,|$)' -and
+  $publicReadPreflight.accessControlAllowMethods -notmatch '(^|,\s*)POST(\s*,|$)'
+Add-Check -Id 'security.public_cors_read_preflight' -Category 'CORS/CSRF' -Status $(if ($publicReadPreflightPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Public preflight allows GET without credentials and does not advertise POST.' `
+  -Actual "HTTP $($publicReadPreflight.statusCode); exact origin=$($publicReadPreflight.accessControlAllowOrigin -eq $PublicOrigin); credentials absent=$([string]::IsNullOrWhiteSpace($publicReadPreflight.accessControlAllowCredentials)); GET allowed=$($publicReadPreflight.accessControlAllowMethods -match '(^|,\s*)GET(\s*,|$)'); POST excluded=$($publicReadPreflight.accessControlAllowMethods -notmatch '(^|,\s*)POST(\s*,|$)')." `
+  -Evidence 'OPTIONS /api/v1/countries from the configured student origin.' `
+  -Classification $(if ($publicReadPreflight.statusCode -eq 0 -or $publicReadPreflight.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($publicReadPreflightPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$untrustedPublicRead = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/countries?limit=1' -Headers @{ Origin = 'https://untrusted.invalid' } -Purpose 'untrusted public browser-origin read'
+$untrustedPublicReadPass = $untrustedPublicRead.statusCode -eq 200 -and [string]::IsNullOrWhiteSpace($untrustedPublicRead.accessControlAllowOrigin)
+Add-Check -Id 'security.public_cors_untrusted' -Category 'CORS/CSRF' -Status $(if ($untrustedPublicReadPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'The public resource remains HTTP-readable while an untrusted browser origin receives no ACAO permission.' `
+  -Actual "HTTP $($untrustedPublicRead.statusCode); ACAO absent=$([string]::IsNullOrWhiteSpace($untrustedPublicRead.accessControlAllowOrigin))." `
+  -Evidence 'GET /api/v1/countries from a reserved invalid origin.' `
+  -Classification $(if ($untrustedPublicRead.statusCode -eq 0 -or $untrustedPublicRead.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($untrustedPublicReadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
 $trustedPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path '/api/v1/auth/login' -Headers @{
-  Origin = $BaseUrl
+  Origin = $AdminOrigin
   'Access-Control-Request-Method' = 'POST'
   'Access-Control-Request-Headers' = 'content-type'
-} -Purpose 'trusted same-origin CORS preflight'
-$trustedCorsPass = $trustedPreflight.statusCode -eq 204 -and $trustedPreflight.accessControlAllowOrigin -eq $BaseUrl -and $trustedPreflight.accessControlAllowCredentials -eq 'true'
+} -Purpose 'trusted Admin-origin CORS preflight'
+$trustedCorsPass = $trustedPreflight.statusCode -eq 204 -and $trustedPreflight.accessControlAllowOrigin -eq $AdminOrigin -and $trustedPreflight.accessControlAllowCredentials -eq 'true'
 Add-Check -Id 'security.cors_trusted' -Category 'CORS/CSRF' -Status $(if ($trustedCorsPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Trusted same-origin preflight returns 204, exact ACAO, and credentials=true.' `
-  -Actual "HTTP $($trustedPreflight.statusCode); exact origin=$($trustedPreflight.accessControlAllowOrigin -eq $BaseUrl); credentials=$($trustedPreflight.accessControlAllowCredentials)." `
+  -Expected 'Trusted Admin-origin preflight returns 204, exact ACAO, and credentials=true.' `
+  -Actual "HTTP $($trustedPreflight.statusCode); exact origin=$($trustedPreflight.accessControlAllowOrigin -eq $AdminOrigin); credentials=$($trustedPreflight.accessControlAllowCredentials)." `
   -Evidence 'OPTIONS /api/v1/auth/login; report excludes raw response headers other than evaluated booleans.' `
   -Classification $(if ($trustedPreflight.statusCode -eq 0 -or $trustedPreflight.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($trustedCorsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$publicOriginAuthPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path '/api/v1/auth/login' -Headers @{
+  Origin = $PublicOrigin
+  'Access-Control-Request-Method' = 'POST'
+  'Access-Control-Request-Headers' = 'content-type'
+} -Purpose 'student origin excluded from credentialed authentication CORS'
+$publicOriginAuthCorsPass = $publicOriginAuthPreflight.statusCode -eq 204 -and [string]::IsNullOrWhiteSpace($publicOriginAuthPreflight.accessControlAllowOrigin)
+Add-Check -Id 'security.auth_cors_public_origin_rejected' -Category 'CORS/CSRF' -Status $(if ($publicOriginAuthCorsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'The public student origin receives no credentialed authentication CORS permission.' `
+  -Actual "HTTP $($publicOriginAuthPreflight.statusCode); ACAO absent=$([string]::IsNullOrWhiteSpace($publicOriginAuthPreflight.accessControlAllowOrigin))." `
+  -Evidence 'OPTIONS /api/v1/auth/login from the configured public-only origin.' `
+  -Classification $(if ($publicOriginAuthPreflight.statusCode -eq 0 -or $publicOriginAuthPreflight.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($publicOriginAuthCorsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
 $untrustedOrigin = 'https://untrusted.invalid'
 $untrustedPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path '/api/v1/auth/login' -Headers @{
@@ -598,7 +673,7 @@ Add-Check -Id 'security.csrf_untrusted' -Category 'CORS/CSRF' -Status $(if ($csr
 
 $loginEmail = "tareeq-acceptance-$([guid]::NewGuid().ToString('N'))@invalid.example"
 $loginBody = @{ email = $loginEmail; password = 'AcceptanceOnlyPassword123!' } | ConvertTo-Json -Compress
-$login = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/login' -Headers @{ Origin = $BaseUrl } -Body $loginBody -Purpose 'read-only authentication database lookup with guaranteed synthetic identity'
+$login = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/login' -Headers @{ Origin = $AdminOrigin } -Body $loginBody -Purpose 'read-only authentication database lookup with guaranteed synthetic identity'
 $loginJson = Convert-JsonBody $login
 $loginPass = $login.statusCode -eq 401 -and (Test-ErrorEnvelope $loginJson 'INVALID_CREDENTIALS')
 Add-Check -Id 'auth.invalid_credentials' -Category 'Authentication' -Status $(if ($loginPass) { 'PASS' } else { 'FAIL' }) `
@@ -638,21 +713,34 @@ if (-not $Authenticated.IsPresent) {
       password = $credentials[$requiredCredentialNames[1]]
     } | ConvertTo-Json -Compress
     $roleSlug = $role.ToLowerInvariant()
-    $loginResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/login' -Headers @{ Origin = $BaseUrl } -Body $loginPayload -WebSession $session -Purpose "$role authenticated login"
+    $loginResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/login' -Headers @{ Origin = $AdminOrigin } -Body $loginPayload -WebSession $session -Purpose "$role authenticated login"
     $loginResponseBody = Convert-JsonBody $loginResponse
     $cookieNames = @($session.Cookies.GetCookies([uri]"$BaseUrl/api/v1/auth/me") | ForEach-Object { $_.Name })
     $loginPass = $loginResponse.statusCode -eq 200 -and
       (Test-SuccessUserRole $loginResponseBody $role) -and
+      $loginResponse.accessControlAllowOrigin -eq $AdminOrigin -and
+      $loginResponse.accessControlAllowCredentials -eq 'true' -and
       $cookieNames -contains 'tareeq_access' -and $cookieNames -contains 'tareeq_refresh'
     Add-Check -Id "auth.$roleSlug.login" -Category 'Authentication' -Status $(if ($loginPass) { 'PASS' } else { 'FAIL' }) `
       -Expected "HTTP 200, /auth user role $role, and both HttpOnly session cookies accepted by an isolated jar." `
-      -Actual "HTTP $($loginResponse.statusCode); role correct=$(Test-SuccessUserRole $loginResponseBody $role); cookie names present=$($cookieNames.Count -ge 2)." `
+      -Actual "HTTP $($loginResponse.statusCode); role correct=$(Test-SuccessUserRole $loginResponseBody $role); Admin CORS exact=$($loginResponse.accessControlAllowOrigin -eq $AdminOrigin); credentials allowed=$($loginResponse.accessControlAllowCredentials -eq 'true'); cookie names present=$($cookieNames.Count -ge 2)." `
       -Evidence 'Credential values, cookie values, user identity fields, and response bodies are excluded from reports.' `
       -Classification $(if ($loginResponse.statusCode -eq 0 -or $loginResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($loginPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
     if (-not $loginPass) { continue }
 
-    $meResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -WebSession $session -Purpose "$role current-user verification"
+    $credentialedPublicOrigin = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/change-password' -Headers @{ Origin = $PublicOrigin } -Body '{}' -WebSession $session -Purpose "$role credentialed request from public-only origin"
+    $credentialedPublicOriginBody = Convert-JsonBody $credentialedPublicOrigin
+    $credentialedPublicOriginPass = $credentialedPublicOrigin.statusCode -eq 403 -and
+      (Test-ErrorEnvelope $credentialedPublicOriginBody 'CSRF_VALIDATION_FAILED') -and
+      [string]::IsNullOrWhiteSpace($credentialedPublicOrigin.accessControlAllowOrigin)
+    Add-Check -Id "security.$roleSlug.credentialed_public_origin_rejected" -Category 'CORS/CSRF' -Status $(if ($credentialedPublicOriginPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected 'A credentialed state-changing request from the public-only origin is rejected with HTTP 403 CSRF_VALIDATION_FAILED and no ACAO.' `
+      -Actual "HTTP $($credentialedPublicOrigin.statusCode); correct error=$(Test-ErrorEnvelope $credentialedPublicOriginBody 'CSRF_VALIDATION_FAILED'); ACAO absent=$([string]::IsNullOrWhiteSpace($credentialedPublicOrigin.accessControlAllowOrigin))." `
+      -Evidence 'POST /api/v1/auth/change-password used the authenticated cookie jar and an empty body, so it cannot change a password even if the boundary regresses.' `
+      -Classification $(if ($credentialedPublicOrigin.statusCode -eq 0 -or $credentialedPublicOrigin.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($credentialedPublicOriginPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $meResponse = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role current-user verification"
     $meResponseBody = Convert-JsonBody $meResponse
     $meRolePass = $meResponse.statusCode -eq 200 -and (Test-SuccessUserRole $meResponseBody $role)
     Add-Check -Id "auth.$roleSlug.me" -Category 'Authentication' -Status $(if ($meRolePass) { 'PASS' } else { 'FAIL' }) `
@@ -661,7 +749,7 @@ if (-not $Authenticated.IsPresent) {
       -Evidence 'GET /api/v1/auth/me with an isolated in-memory cookie jar.' `
       -Classification $(if ($meResponse.statusCode -eq 0 -or $meResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($meRolePass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-    $refreshResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/refresh' -Headers @{ Origin = $BaseUrl } -WebSession $session -Purpose "$role refresh-session rotation"
+    $refreshResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/refresh' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role refresh-session rotation"
     $refreshResponseBody = Convert-JsonBody $refreshResponse
     $refreshPass = $refreshResponse.statusCode -eq 200 -and (Test-SuccessUserRole $refreshResponseBody $role)
     Add-Check -Id "auth.$roleSlug.refresh" -Category 'Authentication' -Status $(if ($refreshPass) { 'PASS' } else { 'FAIL' }) `
@@ -670,7 +758,7 @@ if (-not $Authenticated.IsPresent) {
       -Evidence 'POST /api/v1/auth/refresh; old and replacement cookie values are never inspected or retained.' `
       -Classification $(if ($refreshResponse.statusCode -eq 0 -or $refreshResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($refreshPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-    $restoredMe = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -WebSession $session -Purpose "$role restored session verification"
+    $restoredMe = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role restored session verification"
     $restoredMeBody = Convert-JsonBody $restoredMe
     $restoredPass = $restoredMe.statusCode -eq 200 -and (Test-SuccessUserRole $restoredMeBody $role)
     Add-Check -Id "auth.$roleSlug.me_after_refresh" -Category 'Authentication' -Status $(if ($restoredPass) { 'PASS' } else { 'FAIL' }) `
@@ -681,9 +769,14 @@ if (-not $Authenticated.IsPresent) {
 
     $adminReadFailures = [System.Collections.Generic.List[string]]::new()
     foreach ($resource in $resources) {
-      $adminRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/${resource}?limit=50" -WebSession $session -Purpose "$role Admin content read"
+      $adminRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/${resource}?limit=50" -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role Admin content read"
       $adminReadBody = Convert-JsonBody $adminRead
-      if ($adminRead.statusCode -ne 200 -or -not (Test-PaginationEnvelope $adminReadBody 1 50)) {
+      if (
+        $adminRead.statusCode -ne 200 -or
+        -not (Test-PaginationEnvelope $adminReadBody 1 50) -or
+        $adminRead.accessControlAllowOrigin -ne $AdminOrigin -or
+        $adminRead.accessControlAllowCredentials -ne 'true'
+      ) {
         $adminReadFailures.Add("$resource HTTP $($adminRead.statusCode)")
       }
     }
@@ -698,7 +791,7 @@ if (-not $Authenticated.IsPresent) {
       $unpublishedEntries = @($seedManifest.content | Where-Object { $_.status -ne 'PUBLISHED' })
       $adminDraftFailures = [System.Collections.Generic.List[string]]::new()
       foreach ($entry in $unpublishedEntries) {
-        $draftRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/$($entry.resource)/$($entry.id)" -WebSession $session -Purpose "$role Admin draft visibility"
+        $draftRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/$($entry.resource)/$($entry.id)" -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role Admin draft visibility"
         $draftReadBody = Convert-JsonBody $draftRead
         if (
           $draftRead.statusCode -ne 200 -or
@@ -717,7 +810,7 @@ if (-not $Authenticated.IsPresent) {
         -Classification $(if ($adminDraftPass) { 'NONE' } elseif (@($adminDraftFailures | Where-Object { $_ -match 'HTTP (0|5\d\d)' }).Count -gt 0) { 'DEPLOYMENT_FAILURE' } else { 'CONTRACT_FAILURE' })
     }
 
-    $logoutResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/logout' -Headers @{ Origin = $BaseUrl } -WebSession $session -Purpose "$role logout and revocation"
+    $logoutResponse = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/auth/logout' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role logout and revocation"
     $logoutBody = Convert-JsonBody $logoutResponse
     $logoutPass = $logoutResponse.statusCode -eq 200 -and
       (Test-Property $logoutBody 'success') -and $logoutBody.success -eq $true
@@ -727,7 +820,7 @@ if (-not $Authenticated.IsPresent) {
       -Evidence 'POST /api/v1/auth/logout using the isolated refreshed session.' `
       -Classification $(if ($logoutResponse.statusCode -eq 0 -or $logoutResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($logoutPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-    $afterLogout = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -WebSession $session -Purpose "$role post-logout invalidation"
+    $afterLogout = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role post-logout invalidation"
     $afterLogoutBody = Convert-JsonBody $afterLogout
     $invalidationPass = $afterLogout.statusCode -eq 401 -and (Test-ErrorEnvelope $afterLogoutBody 'AUTHENTICATION_REQUIRED')
     Add-Check -Id "auth.$roleSlug.logout_invalidation" -Category 'Authentication' -Status $(if ($invalidationPass) { 'PASS' } else { 'FAIL' }) `
@@ -760,6 +853,53 @@ $summary = [ordered]@{
   missingPrerequisites = @($checks | Where-Object classification -eq 'MISSING_PREREQUISITE').Count
 }
 
+$httpCookieJarStatus = if (-not $Authenticated.IsPresent) {
+  'BLOCKED'
+} else {
+  $httpAuthenticationChecks = @($checks | Where-Object {
+    $_.id -match '^auth\.(admin|super_admin)\.(login|me|refresh|me_after_refresh|logout|logout_invalidation)$'
+  })
+  if (@($httpAuthenticationChecks | Where-Object status -eq 'FAIL').Count -gt 0) {
+    'FAIL'
+  } elseif (@($httpAuthenticationChecks | Where-Object status -eq 'BLOCKED').Count -gt 0 -or $httpAuthenticationChecks.Count -eq 0) {
+    'BLOCKED'
+  } else {
+    'PASS'
+  }
+}
+
+$browserVerification = [ordered]@{
+  status = 'BLOCKED'
+  browserEngine = 'Not executed'
+  frontendOrigin = 'http://localhost:3001'
+  apiOrigin = 'http://localhost:3002'
+  authenticationFlow = 'No valid sanitized browser report was available.'
+  remainingFrontendIntegrationRisks = @(
+    'Browser cookie persistence remains unverified.',
+    'The local harness does not verify the real Admin Dashboard implementation.'
+  )
+}
+if (Test-Path -LiteralPath $BrowserReportPath) {
+  try {
+    $browserReport = Get-Content -Raw -LiteralPath $BrowserReportPath | ConvertFrom-Json -Depth 100
+    if (
+      $browserReport.schemaVersion -eq 1 -and
+      $browserReport.overallStatus -in @('PASS', 'FAIL', 'BLOCKED') -and
+      $browserReport.frontendOrigin -eq 'http://localhost:3001' -and
+      $browserReport.apiOrigin -eq 'http://localhost:3002'
+    ) {
+      $browserVerification.status = $browserReport.browserCookiePersistence
+      $browserVerification.browserEngine = $browserReport.browserEngine
+      $browserVerification.frontendOrigin = $browserReport.frontendOrigin
+      $browserVerification.apiOrigin = $browserReport.apiOrigin
+      $browserVerification.authenticationFlow = $browserReport.authenticationFlow
+      $browserVerification.remainingFrontendIntegrationRisks = @($browserReport.remainingFrontendIntegrationRisks)
+    }
+  } catch {
+    $browserVerification.authenticationFlow = 'The browser report exists but could not be parsed or validated.'
+  }
+}
+
 $report = [ordered]@{
   schemaVersion = 2
   generatedAtUtc = [DateTime]::UtcNow.ToString('o')
@@ -767,6 +907,21 @@ $report = [ordered]@{
   overallStatus = $overallStatus
   mode = if ($Authenticated.IsPresent) { 'AUTHENTICATED_SESSION' } else { 'READ_ONLY' }
   readOnly = -not $Authenticated.IsPresent
+  corsVerification = [ordered]@{
+    publicOrigin = $PublicOrigin
+    adminOrigin = $AdminOrigin
+    publicPolicy = 'Exact-origin, non-credentialed GET/HEAD/OPTIONS on public route category.'
+    adminPolicy = 'Exact-origin credentialed CORS plus CSRF trusted-origin enforcement on Auth/Admin route categories.'
+  }
+  authenticationVerification = [ordered]@{
+    httpCookieJar = $httpCookieJarStatus
+    browserCookiePersistence = $browserVerification.status
+    browserEngine = $browserVerification.browserEngine
+    frontendOrigin = $browserVerification.frontendOrigin
+    apiOrigin = $browserVerification.apiOrigin
+    authenticationFlow = $browserVerification.authenticationFlow
+    remainingFrontendIntegrationRisks = $browserVerification.remainingFrontendIntegrationRisks
+  }
   safeguards = @(
     $(if ($Authenticated.IsPresent) { 'No account or content writes, migrations, cleanup, or destructive operations; only authorized login/refresh/logout session records may change.' } else { 'No database writes, migrations, cleanup, account creation, or destructive operations.' }),
     'No credentials, cookies, response bodies, raw request IDs, tokens, or secrets are stored in this report.',
@@ -790,8 +945,23 @@ $markdown.Add("- Base URL: $BaseUrl")
 $markdown.Add("- Overall: **$overallStatus**")
 $markdown.Add("- Mode: **$($report.mode)**")
 $markdown.Add("- Read-only execution: **$($report.readOnly)**")
+$markdown.Add("- Public browser origin: $PublicOrigin")
+$markdown.Add("- Admin browser origin: $AdminOrigin")
 $markdown.Add("- Checks: $($summary.passed) PASS / $($summary.failed) FAIL / $($summary.blocked) BLOCKED")
 $markdown.Add("- Failure classification: $($summary.deploymentFailures) deployment / $($summary.contractFailures) contract / $($summary.missingPrerequisites) missing prerequisite")
+$markdown.Add('')
+$markdown.Add('## Authentication Verification Modes')
+$markdown.Add('')
+$markdown.Add("- HTTP Cookie Jar: **$httpCookieJarStatus**")
+$markdown.Add("- Browser Cookie Persistence: **$($browserVerification.status)**")
+$markdown.Add("- Browser Engine: $($browserVerification.browserEngine)")
+$markdown.Add("- Frontend Origin: $($browserVerification.frontendOrigin)")
+$markdown.Add("- API Origin: $($browserVerification.apiOrigin)")
+$markdown.Add("- Authentication Flow: $($browserVerification.authenticationFlow)")
+$markdown.Add('')
+$markdown.Add('### Remaining Frontend Integration Risks')
+$markdown.Add('')
+foreach ($risk in $browserVerification.remainingFrontendIntegrationRisks) { $markdown.Add("- $risk") }
 $markdown.Add('')
 $markdown.Add('| Status | Required | Category | Check | Actual | Classification |')
 $markdown.Add('|---|---:|---|---|---|---|')

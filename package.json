@@ -19,6 +19,7 @@
     "test:api": "vitest run test/app.test.ts test/auth.test.ts test/content.api.test.ts",
     "postman:generate": "tsx scripts/postman.ts generate",
     "postman:check": "tsx scripts/postman.ts check",
+    "verify:browser-auth": "node --env-file-if-exists=.env scripts/verify-browser-auth.mjs",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:status": "prisma migrate status",

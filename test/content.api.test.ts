@@ -12,7 +12,8 @@ import { ContentService } from '../src/content/service.js'
 import { InMemoryAuthRepository } from './helpers/in-memory-auth-repository.js'
 import { InMemoryContentRepository } from './helpers/in-memory-content-repository.js'
 
-const ORIGIN = 'https://admin.example.test'
+const ORIGIN = 'https://admin.tareeq-academy.com'
+const PUBLIC_ORIGIN = 'https://tareeq-academy.com'
 const JWT_SECRET = 'content-api-test-secret-that-is-longer-than-thirty-two-characters'
 const FIXED_NOW = new Date('2026-10-19T12:00:00.000Z')
 const ADMIN_ID = 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20'
@@ -21,6 +22,7 @@ const config: AuthConfig = {
   databaseUrl: 'postgresql://unused:unused@localhost:5432/unused',
   jwtSecret: JWT_SECRET,
   allowedOrigins: [ORIGIN],
+  publicAllowedOrigins: [PUBLIC_ORIGIN],
   isProduction: false,
 }
 
@@ -101,6 +103,68 @@ describe('content management APIs', () => {
 
     expect((await adminRequest('/api/v1/admin/countries')).status).toBe(200)
     expect((await adminRequest('/api/v1/admin/countries', 'GET', undefined, 'SUPER_ADMIN')).status).toBe(200)
+  })
+
+  it('separates public read CORS from credentialed Admin CORS and CSRF trust', async () => {
+    for (const resource of ['countries', 'universities', 'scholarships', 'services', 'articles']) {
+      const response = await app.request(`/api/v1/${resource}`, {
+        headers: { Origin: PUBLIC_ORIGIN },
+      })
+      expect(response.status).toBe(200)
+      expect(response.headers.get('access-control-allow-origin')).toBe(PUBLIC_ORIGIN)
+      expect(response.headers.get('access-control-allow-credentials')).toBeNull()
+    }
+
+    const readPreflight = await app.request('/api/v1/countries', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: PUBLIC_ORIGIN,
+        'Access-Control-Request-Method': 'GET',
+      },
+    })
+    expect(readPreflight.status).toBe(204)
+    expect(readPreflight.headers.get('access-control-allow-origin')).toBe(PUBLIC_ORIGIN)
+    expect(readPreflight.headers.get('access-control-allow-methods')).toContain('GET')
+    expect(readPreflight.headers.get('access-control-allow-methods')).not.toContain('POST')
+    expect(readPreflight.headers.get('access-control-allow-credentials')).toBeNull()
+
+    const publicMutation = await app.request('/api/v1/countries', {
+      method: 'POST',
+      headers: {
+        Origin: PUBLIC_ORIGIN,
+        'Content-Type': 'application/json',
+      },
+      body: '{}',
+    })
+    expect(publicMutation.status).toBe(404)
+    expect(publicMutation.headers.get('access-control-allow-origin')).toBeNull()
+
+    const untrustedPublicRead = await app.request('/api/v1/countries', {
+      headers: { Origin: 'https://untrusted.invalid' },
+    })
+    expect(untrustedPublicRead.status).toBe(200)
+    expect(untrustedPublicRead.headers.get('access-control-allow-origin')).toBeNull()
+
+    const adminRead = await adminRequest('/api/v1/admin/countries')
+    expect(adminRead.status).toBe(200)
+    expect(adminRead.headers.get('access-control-allow-origin')).toBe(ORIGIN)
+    expect(adminRead.headers.get('access-control-allow-credentials')).toBe('true')
+
+    const publicOriginAdminMutation = await app.request('/api/v1/admin/countries', {
+      method: 'POST',
+      headers: {
+        Origin: PUBLIC_ORIGIN,
+        Cookie: `${ACCESS_COOKIE_NAME}=${adminToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(countryInput()),
+    })
+    expect(publicOriginAdminMutation.status).toBe(403)
+    expect(publicOriginAdminMutation.headers.get('access-control-allow-origin')).toBeNull()
+    await expect(publicOriginAdminMutation.json()).resolves.toMatchObject({
+      success: false,
+      error: { code: 'CSRF_VALIDATION_FAILED' },
+    })
   })
 
   it('creates drafts, publishes them, preserves publication time and published slugs, and supports unpublish/archive', async () => {

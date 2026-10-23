@@ -2,7 +2,11 @@ import { OpenAPIHono, type z } from '@hono/zod-openapi'
 
 import { requireAuthentication, requireRole } from '../auth/middleware.js'
 import type { AuthRuntime } from '../auth/runtime.js'
-import { authCors, requireTrustedOrigin } from '../auth/security.js'
+import {
+  authCors,
+  publicReadCors,
+  requireTrustedOrigin,
+} from '../auth/security.js'
 import type { AuthEnv } from '../auth/types.js'
 import { ApiError, successResponse } from '../shared/http.js'
 import type { ContentRuntime } from './runtime.js'
@@ -276,16 +280,19 @@ export const createContentRoutes = (
   authRuntime: AuthRuntime,
 ) => {
   const routes = new OpenAPIHono<AuthEnv>()
+  const publicRoutes = new OpenAPIHono<AuthEnv>()
+  const adminRoutes = new OpenAPIHono<AuthEnv>()
 
-  routes.use('/admin/*', authCors(authRuntime))
-  routes.use('/admin/*', requireTrustedOrigin(authRuntime))
-  routes.use('/admin/*', requireAuthentication(authRuntime))
-  routes.use('/admin/*', requireRole('ADMIN', 'SUPER_ADMIN'))
+  publicRoutes.use('*', publicReadCors(authRuntime))
+  adminRoutes.use('*', authCors(authRuntime))
+  adminRoutes.use('*', requireTrustedOrigin(authRuntime))
+  adminRoutes.use('*', requireAuthentication(authRuntime))
+  adminRoutes.use('*', requireRole('ADMIN', 'SUPER_ADMIN'))
 
   for (const resource of contentResources) {
     registerDocumentation(routes, resource)
 
-    routes.get(`/${resource}`, async (c) => {
+    publicRoutes.get(`/${resource}`, async (c) => {
       const query = parse(
         publicQuerySchemas[resource],
         queryObject(c.req.url),
@@ -296,7 +303,7 @@ export const createContentRoutes = (
       )
     })
 
-    routes.get(`/${resource}/:slug`, async (c) => {
+    publicRoutes.get(`/${resource}/:slug`, async (c) => {
       const { slug } = parse(slugParamSchema, { slug: c.req.param('slug') })
       return c.json(
         successResponse(await contentRuntime.getService().getPublic(resource, slug)),
@@ -304,7 +311,7 @@ export const createContentRoutes = (
       )
     })
 
-    routes.get(`/admin/${resource}`, async (c) => {
+    adminRoutes.get(`/${resource}`, async (c) => {
       const query = parse(
         adminQuerySchemas[resource],
         queryObject(c.req.url),
@@ -315,7 +322,7 @@ export const createContentRoutes = (
       )
     })
 
-    routes.get(`/admin/${resource}/:id`, async (c) => {
+    adminRoutes.get(`/${resource}/:id`, async (c) => {
       const { id } = parse(uuidParamSchema, { id: c.req.param('id') })
       return c.json(
         successResponse(await contentRuntime.getService().getAdmin(resource, id)),
@@ -323,7 +330,7 @@ export const createContentRoutes = (
       )
     })
 
-    routes.post(`/admin/${resource}`, async (c) => {
+    adminRoutes.post(`/${resource}`, async (c) => {
       const input = parse(
         contentCreateSchemas[resource] as z.ZodType<unknown>,
         await readJson(c.req.raw),
@@ -334,7 +341,7 @@ export const createContentRoutes = (
       )
     })
 
-    routes.patch(`/admin/${resource}/:id`, async (c) => {
+    adminRoutes.patch(`/${resource}/:id`, async (c) => {
       const { id } = parse(uuidParamSchema, { id: c.req.param('id') })
       const input = parse(
         contentPatchSchemas[resource] as z.ZodType<unknown>,
@@ -346,6 +353,9 @@ export const createContentRoutes = (
       )
     })
   }
+
+  routes.route('/', publicRoutes)
+  routes.route('/admin', adminRoutes)
 
   return routes
 }
