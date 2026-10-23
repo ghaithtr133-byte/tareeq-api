@@ -20,6 +20,7 @@
     "postman:generate": "tsx scripts/postman.ts generate",
     "postman:check": "tsx scripts/postman.ts check",
     "verify:browser-auth": "node --env-file-if-exists=.env scripts/verify-browser-auth.mjs",
+    "verify:browser-auth:production": "node --env-file-if-exists=.env scripts/verify-browser-auth.mjs --production",
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "prisma:migrate:status": "prisma migrate status",

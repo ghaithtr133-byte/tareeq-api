@@ -566,6 +566,71 @@ Add-Check -Id 'database.read_connectivity' -Category 'Database' -Status $(if ($d
   -Evidence $(if ($databasePass) { 'Five initial reads plus two repeat rounds completed without a database-facing HTTP failure.' } else { @($databaseFailures) -join '; ' }) `
   -Classification $(if ($databasePass) { 'NONE' } else { 'DEPLOYMENT_FAILURE' })
 
+$concurrentTargets = @(
+  for ($round = 1; $round -le 3; $round++) {
+    foreach ($resource in $resources) {
+      [pscustomobject]@{ round = $round; resource = $resource; path = "/api/v1/${resource}?limit=1" }
+    }
+  }
+)
+$concurrentResults = @($concurrentTargets | ForEach-Object -ThrottleLimit 5 -Parallel {
+  try {
+    $response = Invoke-WebRequest `
+      -Uri "$($using:BaseUrl)$($_.path)" `
+      -Method GET `
+      -TimeoutSec $using:TimeoutSeconds `
+      -SkipHttpErrorCheck `
+      -UseBasicParsing `
+      -MaximumRedirection 3
+    $requestId = [string](($response.Headers['X-Request-Id'] -join ', '))
+    [pscustomobject]@{
+      round = $_.round
+      resource = $_.resource
+      path = $_.path
+      statusCode = [int]$response.StatusCode
+      requestId = $requestId
+      transportError = $null
+    }
+  } catch {
+    [pscustomobject]@{
+      round = $_.round
+      resource = $_.resource
+      path = $_.path
+      statusCode = 0
+      requestId = ''
+      transportError = $_.Exception.Message
+    }
+  }
+})
+$concurrentFailures = [System.Collections.Generic.List[string]]::new()
+foreach ($result in $concurrentResults) {
+  $requestIdPresent = -not [string]::IsNullOrWhiteSpace($result.requestId)
+  $requests.Add([pscustomobject]@{
+    method = 'GET'
+    path = $result.path
+    purpose = 'concurrent database read stability verification'
+    statusCode = $result.statusCode
+    contentType = $null
+    requestIdPresent = $requestIdPresent
+    requestIdMatchesSupplied = $null
+    accessControlAllowOrigin = $null
+    accessControlAllowCredentials = $null
+    accessControlAllowMethods = $null
+    body = ''
+    transportError = $result.transportError
+  })
+  if ($result.statusCode -ne 200 -or -not $requestIdPresent) {
+    $failureRequestId = if ($requestIdPresent) { $result.requestId } else { 'missing' }
+    $concurrentFailures.Add("round $($result.round) $($result.resource) HTTP $($result.statusCode) requestId=$failureRequestId")
+  }
+}
+$concurrentDatabasePass = $concurrentFailures.Count -eq 0
+Add-Check -Id 'database.concurrent_read_stability' -Category 'Database' -Status $(if ($concurrentDatabasePass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Three concurrent rounds across all five public collections return HTTP 200 with request IDs.' `
+  -Actual "Requests=$($concurrentResults.Count); failures=$($concurrentFailures.Count)." `
+  -Evidence $(if ($concurrentDatabasePass) { 'All 15 concurrent read-only requests returned HTTP 200 with request IDs.' } else { @($concurrentFailures) -join '; ' }) `
+  -Classification $(if ($concurrentDatabasePass) { 'NONE' } else { 'DEPLOYMENT_FAILURE' })
+
 # Authentication, Admin authorization, CORS, and CSRF boundaries without credentials.
 $me = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/auth/me' -Purpose 'anonymous authentication boundary'
 $meBody = Convert-JsonBody $me
@@ -871,8 +936,8 @@ $httpCookieJarStatus = if (-not $Authenticated.IsPresent) {
 $browserVerification = [ordered]@{
   status = 'BLOCKED'
   browserEngine = 'Not executed'
-  frontendOrigin = 'http://localhost:3001'
-  apiOrigin = 'http://localhost:3002'
+  frontendOrigin = $AdminOrigin
+  apiOrigin = $BaseUrl
   authenticationFlow = 'No valid sanitized browser report was available.'
   remainingFrontendIntegrationRisks = @(
     'Browser cookie persistence remains unverified.',
@@ -885,8 +950,8 @@ if (Test-Path -LiteralPath $BrowserReportPath) {
     if (
       $browserReport.schemaVersion -eq 1 -and
       $browserReport.overallStatus -in @('PASS', 'FAIL', 'BLOCKED') -and
-      $browserReport.frontendOrigin -eq 'http://localhost:3001' -and
-      $browserReport.apiOrigin -eq 'http://localhost:3002'
+      $browserReport.frontendOrigin -eq $AdminOrigin -and
+      $browserReport.apiOrigin -eq $BaseUrl
     ) {
       $browserVerification.status = $browserReport.browserCookiePersistence
       $browserVerification.browserEngine = $browserReport.browserEngine
@@ -896,7 +961,7 @@ if (Test-Path -LiteralPath $BrowserReportPath) {
       $browserVerification.remainingFrontendIntegrationRisks = @($browserReport.remainingFrontendIntegrationRisks)
     }
   } catch {
-    $browserVerification.authenticationFlow = 'The browser report exists but could not be parsed or validated.'
+    $browserVerification.authenticationFlow = 'The browser report exists but could not be parsed or did not match this verifier target.'
   }
 }
 

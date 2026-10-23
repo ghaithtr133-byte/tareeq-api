@@ -5,8 +5,14 @@ import { createServer } from 'node:http'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-const FRONTEND_ORIGIN = 'http://localhost:3001'
-const API_ORIGIN = 'http://localhost:3002'
+const PRODUCTION_MODE = process.argv.includes('--production')
+const FRONTEND_ORIGIN = PRODUCTION_MODE
+  ? 'https://admin.tareeq-academy.com'
+  : 'http://localhost:3001'
+const API_ORIGIN = PRODUCTION_MODE
+  ? 'https://api.tareeq-academy.com'
+  : 'http://localhost:3002'
+const API_HOSTNAME = new URL(API_ORIGIN).hostname
 const REPORT_DIRECTORY = resolve(process.cwd(), 'reports')
 const JSON_REPORT_PATH = resolve(REPORT_DIRECTORY, 'backend-browser-auth.json')
 const MARKDOWN_REPORT_PATH = resolve(REPORT_DIRECTORY, 'backend-browser-auth.md')
@@ -36,7 +42,7 @@ const wait = (milliseconds) =>
 
 const waitForApi = async () => {
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    if (backendProcess?.exitCode !== null) {
+    if (backendProcess && backendProcess.exitCode !== null) {
       throw new MissingPrerequisiteError(
         'The local Backend process exited before becoming healthy.',
       )
@@ -50,7 +56,7 @@ const waitForApi = async () => {
     await wait(250)
   }
   throw new MissingPrerequisiteError(
-    'The local Backend did not become healthy on localhost:3002.',
+    `The Backend did not become healthy at ${API_ORIGIN}.`,
   )
 }
 
@@ -95,19 +101,23 @@ const loadPlaywright = () => {
 const browserRequest = (page, path, options = {}) =>
   page.evaluate(
     async ({ apiOrigin, requestPath, requestOptions }) => {
-      const response = await fetch(`${apiOrigin}${requestPath}`, {
-        credentials: 'include',
-        ...requestOptions,
-      })
-      let body = null
       try {
-        body = await response.json()
+        const response = await fetch(`${apiOrigin}${requestPath}`, {
+          credentials: 'include',
+          ...requestOptions,
+        })
+        let body = null
+        try {
+          body = await response.json()
+        } catch {
+          // Status and browser-managed cookies remain sufficient evidence.
+        }
+        return {
+          status: response.status,
+          role: body?.data?.user?.role ?? null,
+        }
       } catch {
-        // Status and browser-managed cookies remain sufficient evidence.
-      }
-      return {
-        status: response.status,
-        role: body?.data?.user?.role ?? null,
+        return { status: 0, role: null }
       }
     },
     { apiOrigin: API_ORIGIN, requestPath: path, requestOptions: options },
@@ -117,7 +127,14 @@ const verifyRole = async (role, email, password) => {
   const context = await browser.newContext()
   const page = await context.newPage()
   try {
-    await page.goto(FRONTEND_ORIGIN, { waitUntil: 'domcontentloaded' })
+    const navigation = await page.goto(FRONTEND_ORIGIN, {
+      waitUntil: 'domcontentloaded',
+    })
+    if (!navigation?.ok()) {
+      throw new MissingPrerequisiteError(
+        `The browser could not load the Admin origin; HTTP ${navigation?.status() ?? 0}.`,
+      )
+    }
 
     const login = await browserRequest(page, '/api/v1/auth/login', {
       method: 'POST',
@@ -147,13 +164,16 @@ const verifyRole = async (role, email, password) => {
       cookies.length === 2 &&
       cookies.every(
         ({ httpOnly, sameSite, secure, domain }) =>
-          httpOnly && sameSite === 'Lax' && !secure && domain === 'localhost',
+          httpOnly &&
+          sameSite === 'Lax' &&
+          secure === PRODUCTION_MODE &&
+          domain === API_HOSTNAME,
       )
     addCheck(
       'cookies.attributes',
       role,
       attributesCorrect ? 'PASS' : 'FAIL',
-      `HttpOnly/Lax/development-Secure/host attributes correct=${attributesCorrect}.`,
+      `HttpOnly/Lax/${PRODUCTION_MODE ? 'production' : 'development'}-Secure/host attributes correct=${attributesCorrect}.`,
     )
 
     const me = await browserRequest(page, '/api/v1/auth/me')
@@ -245,48 +265,50 @@ const execute = async () => {
       'The four INITIAL_* email/password variables are not configured.',
     )
   }
-  const allowedOrigins = (process.env.AUTH_ALLOWED_ORIGINS ?? '')
-    .split(',')
-    .map((origin) => origin.trim())
-  if (!allowedOrigins.includes(FRONTEND_ORIGIN)) {
-    throw new MissingPrerequisiteError(
-      'AUTH_ALLOWED_ORIGINS does not include http://localhost:3001.',
-    )
-  }
-
-  harnessServer = createServer((request, response) => {
-    const requestUrl = new URL(request.url ?? '/', FRONTEND_ORIGIN)
-    if (requestUrl.pathname !== '/') {
-      response.writeHead(404)
-      response.end()
-      return
+  if (!PRODUCTION_MODE) {
+    const allowedOrigins = (process.env.AUTH_ALLOWED_ORIGINS ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+    if (!allowedOrigins.includes(FRONTEND_ORIGIN)) {
+      throw new MissingPrerequisiteError(
+        'AUTH_ALLOWED_ORIGINS does not include http://localhost:3001.',
+      )
     }
-    response.writeHead(200, {
-      'Cache-Control': 'no-store',
-      'Content-Type': 'text/html; charset=utf-8',
-    })
-    response.end(
-      '<!doctype html><html><head><meta charset="utf-8"><title>Tareeq browser authentication verification</title></head><body><h1>Tareeq browser authentication verification</h1></body></html>',
-    )
-  })
-  try {
-    await listen(harnessServer, 3001)
-  } catch {
-    throw new MissingPrerequisiteError(
-      'The temporary browser harness could not listen on localhost:3001.',
-    )
-  }
 
-  backendProcess = spawn(process.execPath, ['dist/server.js'], {
-    cwd: process.cwd(),
-    env: {
-      ...process.env,
-      NODE_ENV: 'development',
-      PORT: '3002',
-    },
-    stdio: 'ignore',
-    windowsHide: true,
-  })
+    harnessServer = createServer((request, response) => {
+      const requestUrl = new URL(request.url ?? '/', FRONTEND_ORIGIN)
+      if (requestUrl.pathname !== '/') {
+        response.writeHead(404)
+        response.end()
+        return
+      }
+      response.writeHead(200, {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'text/html; charset=utf-8',
+      })
+      response.end(
+        '<!doctype html><html><head><meta charset="utf-8"><title>Tareeq browser authentication verification</title></head><body><h1>Tareeq browser authentication verification</h1></body></html>',
+      )
+    })
+    try {
+      await listen(harnessServer, 3001)
+    } catch {
+      throw new MissingPrerequisiteError(
+        'The temporary browser harness could not listen on localhost:3001.',
+      )
+    }
+
+    backendProcess = spawn(process.execPath, ['dist/server.js'], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        NODE_ENV: 'development',
+        PORT: '3002',
+      },
+      stdio: 'ignore',
+      windowsHide: true,
+    })
+  }
   await waitForApi()
 
   const { chromium } = loadPlaywright()
@@ -349,10 +371,12 @@ const report = {
   browserChannel: 'chrome',
   frontendOrigin: FRONTEND_ORIGIN,
   apiOrigin: API_ORIGIN,
-  authenticationFlow:
-    'Playwright-controlled Google Chrome fetch requests with credentials enabled and browser-managed HttpOnly cookies; no Cookie header was constructed.',
-  scope:
-    'Local same-site browser cookie-policy compatibility; not full Admin Dashboard integration.',
+  authenticationFlow: prerequisiteIssue
+    ? `Not executed: ${prerequisiteIssue}`
+    : 'Playwright-controlled Google Chrome fetch requests with credentials enabled and browser-managed HttpOnly cookies; no Cookie header was constructed.',
+  scope: PRODUCTION_MODE
+    ? 'Production browser cookie, CORS, and session persistence from the deployed Admin origin; not Admin Dashboard UI workflow verification.'
+    : 'Local same-site browser cookie-policy compatibility; not full Admin Dashboard integration.',
   prerequisiteIssue,
   summary,
   checks,
@@ -361,10 +385,18 @@ const report = {
     'SameSite=Lax, HttpOnly, credentialed CORS, and CSRF Origin enforcement remained enabled.',
     'Only login, refresh, read-only Admin GET requests, and logout were exercised.',
   ],
-  remainingFrontendIntegrationRisks: [
-    'The local harness does not verify the real Admin Dashboard implementation.',
-    'Production DNS, TLS, CORS configuration, and shared-site subdomains require separate deployment verification.',
-  ],
+  remainingFrontendIntegrationRisks: prerequisiteIssue
+    ? [
+        `${prerequisiteIssue} Browser session persistence could not be evaluated.`,
+      ]
+    : PRODUCTION_MODE
+    ? [
+        'The browser verification uses fetch from the deployed Admin origin and does not exercise the Dashboard login form or application state management.',
+      ]
+    : [
+        'The local harness does not verify the real Admin Dashboard implementation.',
+        'Production DNS, TLS, CORS configuration, and shared-site subdomains require separate deployment verification.',
+      ],
 }
 
 await mkdir(REPORT_DIRECTORY, { recursive: true })
