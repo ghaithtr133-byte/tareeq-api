@@ -263,7 +263,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.com\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.invalid\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
             },
             {
               "name": "400 The request is invalid.",
@@ -556,7 +556,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.com\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.invalid\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
             },
             {
               "name": "401 Authentication failed or is required.",
@@ -670,7 +670,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.com\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.invalid\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
             },
             {
               "name": "401 Authentication failed or is required.",

@@ -8,7 +8,7 @@ export const publicAdminSchema = z
   .object({
     id: z.uuid().openapi({ example: 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20' }),
     name: z.string().openapi({ example: 'Admin Name' }),
-    email: z.email().openapi({ example: 'admin@example.com' }),
+    email: z.email().openapi({ example: 'admin@example.invalid' }),
     role: adminRoleSchema,
   })
   .openapi('AdminUser')
@@ -20,7 +20,7 @@ export const normalizedEmailSchema = z
   .pipe(z.email().max(254))
   .openapi({
     description: 'Administrator email. Input is trimmed and normalized to lowercase.',
-    example: 'admin@example.com',
+    example: 'admin@example.invalid',
     format: 'email',
   })
 

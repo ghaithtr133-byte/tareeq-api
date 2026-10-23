@@ -348,7 +348,7 @@ describe('content management APIs', () => {
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeUndefined()
       const label = resource[0]?.toUpperCase() + resource.slice(1)
       expect(document.paths[`/api/v1/${resource}`]?.get?.tags).toEqual([`Public — ${label}`])
-      expect(document.paths[`/api/v1/admin/${resource}`]?.post?.tags).toEqual(['Admin — Content Management'])
+      expect(document.paths[`/api/v1/admin/${resource}`]?.post?.tags).toEqual([`Admin — ${label}`])
     }
   })
 })

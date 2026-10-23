@@ -187,6 +187,67 @@ function Convert-JsonBody {
   }
 }
 
+function Invoke-DownloadRequest {
+  param(
+    [Parameter(Mandatory)][string]$Path,
+    [string]$Purpose = 'public documentation download verification'
+  )
+
+  try {
+    $response = Invoke-WebRequest -Uri "$BaseUrl$Path" -Method GET -TimeoutSec $TimeoutSeconds `
+      -SkipHttpErrorCheck -UseBasicParsing -MaximumRedirection 3
+    $memory = [System.IO.MemoryStream]::new()
+    $response.RawContentStream.CopyTo($memory)
+    $bytes = $memory.ToArray()
+    $memory.Dispose()
+    $requestId = Get-Header $response 'X-Request-Id'
+    $result = [pscustomobject]@{
+      method = 'GET'
+      path = $Path
+      purpose = $Purpose
+      statusCode = [int]$response.StatusCode
+      contentType = Get-Header $response 'Content-Type'
+      contentDisposition = Get-Header $response 'Content-Disposition'
+      requestIdPresent = -not [string]::IsNullOrWhiteSpace($requestId)
+      requestIdMatchesSupplied = $null
+      accessControlAllowOrigin = Get-Header $response 'Access-Control-Allow-Origin'
+      accessControlAllowCredentials = Get-Header $response 'Access-Control-Allow-Credentials'
+      accessControlAllowMethods = Get-Header $response 'Access-Control-Allow-Methods'
+      bytes = $bytes
+      transportError = $null
+    }
+  } catch {
+    $result = [pscustomobject]@{
+      method = 'GET'
+      path = $Path
+      purpose = $Purpose
+      statusCode = 0
+      contentType = $null
+      contentDisposition = $null
+      requestIdPresent = $false
+      requestIdMatchesSupplied = $null
+      accessControlAllowOrigin = $null
+      accessControlAllowCredentials = $null
+      accessControlAllowMethods = $null
+      bytes = [byte[]]::new(0)
+      transportError = $_.Exception.Message
+    }
+  }
+
+  $requests.Add($result)
+  return $result
+}
+
+function Measure-PostmanRequests {
+  param([object[]]$Items)
+  $count = 0
+  foreach ($item in $Items) {
+    if (Test-Property $item 'request') { $count += 1 }
+    if (Test-Property $item 'item') { $count += Measure-PostmanRequests @($item.item) }
+  }
+  return $count
+}
+
 function Test-ErrorEnvelope {
   param([object]$Body, [string]$Code)
   if (-not (Test-Property $Body 'success') -or $Body.success -ne $false) { return $false }
@@ -356,6 +417,59 @@ Add-Check -Id 'scalar.endpoint' -Category 'Documentation' -Status $(if ($scalarP
   -Actual "HTTP $($scalar.statusCode); content type=$($scalar.contentType)." `
   -Evidence 'GET /docs; interactive browser rendering is outside this automated verifier.' `
   -Classification $(if ($scalar.statusCode -eq 0 -or $scalar.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($scalarPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+# Generated Postman downloads remain outside the business OpenAPI operation surface.
+$collectionDownload = Invoke-DownloadRequest -Path '/postman/collection.json' -Purpose 'Postman Collection download verification'
+$downloadedCollection = $null
+try {
+  $downloadedCollection = [Text.Encoding]::UTF8.GetString($collectionDownload.bytes) | ConvertFrom-Json -Depth 100
+} catch {
+  $downloadedCollection = $null
+}
+$downloadedRequestCount = if ($null -ne $downloadedCollection -and (Test-Property $downloadedCollection 'item')) {
+  Measure-PostmanRequests @($downloadedCollection.item)
+} else { 0 }
+$collectionDownloadPass = $collectionDownload.statusCode -eq 200 -and
+  $collectionDownload.contentType -match 'application/json' -and
+  $collectionDownload.contentDisposition -match 'attachment;\s*filename="tareeq-api\.postman_collection\.json"' -and
+  (Test-Property $downloadedCollection 'info') -and
+  $downloadedCollection.info.schema -eq 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' -and
+  $downloadedRequestCount -eq 36
+Add-Check -Id 'postman.collection_download' -Category 'Documentation' -Status $(if ($collectionDownloadPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 36 requests.' `
+  -Actual "HTTP $($collectionDownload.statusCode); requests=$downloadedRequestCount; content type=$($collectionDownload.contentType); attachment=$(-not [string]::IsNullOrWhiteSpace($collectionDownload.contentDisposition))." `
+  -Evidence 'GET /postman/collection.json; downloaded content is parsed in memory and is not retained in reports.' `
+  -Classification $(if ($collectionDownload.statusCode -eq 0 -or $collectionDownload.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($collectionDownloadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$zipDownload = Invoke-DownloadRequest -Path '/postman/download.zip' -Purpose 'Postman ZIP package download verification'
+$zipEntries = @()
+$zipValid = $false
+try {
+  $zipStream = [System.IO.MemoryStream]::new($zipDownload.bytes)
+  $zipArchive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Read)
+  $zipEntries = @($zipArchive.Entries | ForEach-Object FullName)
+  $zipArchive.Dispose()
+  $zipStream.Dispose()
+  $zipValid = $true
+} catch {
+  $zipValid = $false
+}
+$expectedZipEntries = @(
+  'postman/tareeq-api.postman_collection.json',
+  'postman/tareeq-api.read-only-smoke.postman_collection.json',
+  'postman/tareeq-api.local.postman_environment.json',
+  'postman/tareeq-api.vercel.postman_environment.json'
+)
+$zipDifference = @(Compare-Object -ReferenceObject $expectedZipEntries -DifferenceObject $zipEntries)
+$zipDownloadPass = $zipDownload.statusCode -eq 200 -and
+  $zipDownload.contentType -match 'application/zip' -and
+  $zipDownload.contentDisposition -match 'attachment;\s*filename="tareeq-api-postman\.zip"' -and
+  $zipValid -and $zipEntries.Count -eq 4 -and $zipDifference.Count -eq 0
+Add-Check -Id 'postman.zip_download' -Category 'Documentation' -Status $(if ($zipDownloadPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 200 valid ZIP with the complete Collection, read-only smoke Collection, and two sanitized environments.' `
+  -Actual "HTTP $($zipDownload.statusCode); valid ZIP=$zipValid; entries=$($zipEntries.Count); differences=$($zipDifference.Count); attachment=$(-not [string]::IsNullOrWhiteSpace($zipDownload.contentDisposition))." `
+  -Evidence 'GET /postman/download.zip; the archive is inspected in memory and is not retained in reports.' `
+  -Classification $(if ($zipDownload.statusCode -eq 0 -or $zipDownload.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($zipDownloadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
 # Public content reads, pagination, empty pages, validation, and not-found behavior.
 $databaseFailures = [System.Collections.Generic.List[string]]::new()

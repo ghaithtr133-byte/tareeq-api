@@ -29,7 +29,7 @@ const userResponseExample = {
     user: {
       id: 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20',
       name: 'Admin Name',
-      email: 'admin@example.com',
+      email: 'admin@example.invalid',
       role: 'ADMIN',
     },
   },
@@ -48,7 +48,7 @@ const loginRoute = createRoute({
       required: true,
       content: { 'application/json': {
         schema: loginRequestSchema,
-        example: { email: 'admin@example.com', password: 'ExamplePassword123' },
+        example: { email: 'admin@example.invalid', password: 'ExamplePassword123' },
       } },
     },
   },
