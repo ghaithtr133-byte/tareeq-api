@@ -68,7 +68,7 @@ export class PrismaContentRepository implements ContentRepository {
           query.sort === 'newest'
             ? [{ createdAt: 'desc' }, { id: 'asc' }]
             : [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
-        const [items, total] = await prisma.$transaction([
+        const [items, total] = await Promise.all([
           prisma.country.findMany({ where, orderBy, ...pagination }),
           prisma.country.count({ where }),
         ])
@@ -92,7 +92,7 @@ export class PrismaContentRepository implements ContentRepository {
           query.sort === 'name'
             ? [{ nameAr: 'asc' }, { id: 'asc' }]
             : [{ createdAt: 'desc' }, { id: 'asc' }]
-        const [items, total] = await prisma.$transaction([
+        const [items, total] = await Promise.all([
           prisma.university.findMany({
             where, orderBy, ...pagination,
             include: { country: relationSelections.country },
@@ -142,7 +142,7 @@ export class PrismaContentRepository implements ContentRepository {
           query.sort === 'deadline'
             ? [{ verifiedDeadline: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]
             : [{ createdAt: 'desc' }, { id: 'asc' }]
-        const [items, total] = await prisma.$transaction([
+        const [items, total] = await Promise.all([
           prisma.scholarship.findMany({
             where, orderBy, ...pagination,
             include: {
@@ -163,7 +163,7 @@ export class PrismaContentRepository implements ContentRepository {
           query.sort === 'newest'
             ? [{ createdAt: 'desc' }, { id: 'asc' }]
             : [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
-        const [items, total] = await prisma.$transaction([
+        const [items, total] = await Promise.all([
           prisma.service.findMany({ where, orderBy, ...pagination }),
           prisma.service.count({ where }),
         ])
@@ -182,7 +182,7 @@ export class PrismaContentRepository implements ContentRepository {
               ] }
             : {}),
         }
-        const [items, total] = await prisma.$transaction([
+        const [items, total] = await Promise.all([
           prisma.article.findMany({
             where,
             orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],

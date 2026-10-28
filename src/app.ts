@@ -12,14 +12,26 @@ import {
   productionContentRuntime,
   type ContentRuntime,
 } from './content/runtime.js'
+import { getCronSecret } from './config/env.js'
+import { createEmailDispatchRoutes } from './email/routes.js'
+import { getProductionEmailDispatcher } from './email/runtime.js'
+import type { EmailDispatchTrigger } from './email/types.js'
 import { healthRoutes } from './routes/health.js'
 import { landingRoutes } from './routes/landing.js'
 import { postmanDownloadRoutes } from './routes/postman.js'
 import { errorResponse, handleError, handleNotFound } from './shared/http.js'
+import { createSubmissionRoutes } from './submissions/routes.js'
+import {
+  productionSubmissionRuntime,
+  type SubmissionRuntime,
+} from './submissions/runtime.js'
 
 type AppOptions = {
   authRuntime?: AuthRuntime
   contentRuntime?: ContentRuntime
+  submissionRuntime?: SubmissionRuntime
+  emailDispatcher?: EmailDispatchTrigger
+  cronSecret?: string
 }
 
 const gettingStartedDescription = [
@@ -69,6 +81,12 @@ const gettingStartedDescription = [
   '',
   'ADMIN and SUPER_ADMIN currently share the documented content-management permissions; there are no SUPER_ADMIN-only endpoints.',
   '',
+  '### Student forms',
+  '',
+  'The Public Website submits non-credentialed JSON to `POST /api/v1/applications` or `POST /api/v1/inquiries`. Send `privacyAccepted: true`, leave the `website` honeypot empty, and display field messages from `error.details.fields`. Scholarship assistance does not require a `scholarshipId`.',
+  '',
+  'A successful `201` confirms that the submission was stored. Arabic student confirmations and Admin notifications are dispatched separately through a durable outbox; email delivery is not guaranteed by the API response.',
+  '',
   '### Downloads',
   '',
   '[**Download Postman Collection**](/postman/collection.json) · [**Download Postman Package (ZIP)**](/postman/download.zip)',
@@ -107,8 +125,22 @@ export const createApp = (options: AppOptions = {}) => {
   app.route('/', landingRoutes)
   app.route('/postman', postmanDownloadRoutes)
   app.route('/', healthRoutes)
+  app.route(
+    '/',
+    createEmailDispatchRoutes(
+      options.emailDispatcher ?? getProductionEmailDispatcher(),
+      options.cronSecret ?? getCronSecret(),
+    ),
+  )
   const authRuntime = options.authRuntime ?? productionAuthRuntime
   app.route('/api/v1/auth', createAuthRoutes(authRuntime))
+  app.route(
+    '/api/v1',
+    createSubmissionRoutes(
+      options.submissionRuntime ?? productionSubmissionRuntime,
+      authRuntime,
+    ),
+  )
   app.route(
     '/api/v1',
     createContentRoutes(
@@ -136,11 +168,15 @@ export const createApp = (options: AppOptions = {}) => {
       { name: 'Public — Scholarships', description: 'Published scholarship collections and slug details, including effective application status. No authentication required.' },
       { name: 'Public — Services', description: 'Published service collections and slug details. No authentication required.' },
       { name: 'Public — Articles', description: 'Published article collections and slug details. No authentication required.' },
+      { name: 'Public — Applications', description: 'Non-credentialed student application submission with consent, spam protection, and shared rate limiting.' },
+      { name: 'Public — Inquiries', description: 'Non-credentialed general inquiry submission with consent, spam protection, and shared rate limiting.' },
       { name: 'Admin — Countries', description: 'Country content management for ADMIN and SUPER_ADMIN.' },
       { name: 'Admin — Universities', description: 'University content management for ADMIN and SUPER_ADMIN.' },
       { name: 'Admin — Scholarships', description: 'Scholarship content management for ADMIN and SUPER_ADMIN.' },
       { name: 'Admin — Services', description: 'Service content management for ADMIN and SUPER_ADMIN.' },
       { name: 'Admin — Articles', description: 'Article content management for ADMIN and SUPER_ADMIN.' },
+      { name: 'Admin — Applications', description: 'Student application review for ADMIN and SUPER_ADMIN.' },
+      { name: 'Admin — Inquiries', description: 'General inquiry review for ADMIN and SUPER_ADMIN.' },
     ],
     'x-tagGroups': [
       { name: 'System', tags: ['System'] },
@@ -153,6 +189,8 @@ export const createApp = (options: AppOptions = {}) => {
           'Public — Scholarships',
           'Public — Services',
           'Public — Articles',
+          'Public — Applications',
+          'Public — Inquiries',
         ],
       },
       {
@@ -163,6 +201,8 @@ export const createApp = (options: AppOptions = {}) => {
           'Admin — Scholarships',
           'Admin — Services',
           'Admin — Articles',
+          'Admin — Applications',
+          'Admin — Inquiries',
         ],
       },
     ],

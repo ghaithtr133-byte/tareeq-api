@@ -19,7 +19,13 @@
       "key": "origin",
       "value": "http://localhost:3001",
       "type": "string",
-      "description": "Trusted Origin header used by POST/PATCH requests."
+      "description": "Trusted Admin Origin header used by authenticated POST/PATCH requests."
+    },
+    {
+      "key": "publicOrigin",
+      "value": "http://localhost:3001",
+      "type": "string",
+      "description": "Allowed Public Website Origin header used by student submission requests."
     },
     {
       "key": "adminEmail",
@@ -87,6 +93,16 @@
     {
       "key": "articleId",
       "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+      "type": "string"
+    },
+    {
+      "key": "applicationId",
+      "value": "b7fc1a1b-7878-4f97-9431-58baaf8c493e",
+      "type": "string"
+    },
+    {
+      "key": "inquiryId",
+      "value": "6de33e44-6cb8-4514-a35d-e1a9c2fbb8f3",
       "type": "string"
     }
   ],

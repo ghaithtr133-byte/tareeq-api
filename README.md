@@ -45,7 +45,11 @@ The local server defaults to `http://localhost:3000`:
 | `DIRECT_DATABASE_URL` | Migration workflow required | Direct URL for the same database; Prisma falls back to `DATABASE_URL` |
 | `JWT_SECRET` | Authentication required | Private string of at least 32 characters |
 | `AUTH_ALLOWED_ORIGINS` | Authentication/Admin required | Comma-separated exact origins for credentialed CORS and CSRF trust |
-| `PUBLIC_ALLOWED_ORIGINS` | Optional; needed for cross-origin public browser reads | Comma-separated exact origins for non-credentialed public `GET`/`HEAD` CORS |
+| `PUBLIC_ALLOWED_ORIGINS` | Optional; needed for Public Website browser access | Comma-separated exact origins for non-credentialed public content reads and the approved application/inquiry submissions |
+| `RESEND_API_KEY` | Email delivery only | Server-only Resend API key; never expose to Frontend code |
+| `RESEND_FROM_EMAIL` | Email delivery only | Sender address configured and verified by the Project Owner |
+| `RESEND_REPLY_TO_EMAIL` | Optional | Reply-to address for transactional notifications |
+| `CRON_SECRET` | Scheduled email retries only | Server-only random secret used to authenticate Vercel Cron; never expose it to Frontend code |
 
 Production uses:
 
@@ -54,7 +58,7 @@ AUTH_ALLOWED_ORIGINS=https://admin.tareeq-academy.com
 PUBLIC_ALLOWED_ORIGINS=https://tareeq-academy.com
 ```
 
-Origins must contain only scheme, host, and optional port—no path, query, or fragment. Never use `*` for credentialed requests. Public CORS does not grant Admin access or CSRF trust; future public mutations require a separate security review. Server-to-server calls are not restricted by browser CORS.
+Origins must contain only scheme, host, and optional port—no path, query, or fragment. Never use `*` for credentialed requests. Public content CORS remains read-only; only the separately reviewed application and inquiry routes allow non-credentialed `POST`. Public CORS does not grant Admin access or CSRF trust. Server-to-server calls are not restricted by browser CORS.
 
 Bootstrap and `INITIAL_*` variables are documented in `.env.example` beside sanitized placeholders. Keep real values only in `.env`.
 
@@ -67,9 +71,10 @@ npm run lint                   # ESLint
 npm run build                  # Production compilation
 npm start                      # Run compiled local server
 npm test                       # Safe default Vitest suite
-npm run test:api               # Isolated health/auth/content regression
+npm run test:api               # Isolated health/auth/content/submission regression
 npm run postman:generate       # Regenerate Postman artifacts from OpenAPI
-npm run postman:check          # Verify all 36 Collection operations
+npm run postman:check          # Verify all 44 Collection operations
+npm run notifications:dispatch # Safely retry pending email outbox records
 npm run prisma:generate        # Generate Prisma Client
 npm run prisma:validate        # Validate Prisma configuration/schema
 npm run prisma:migrate:status  # Read-only migration status
@@ -102,7 +107,27 @@ The gated suites use `RUN_DATABASE_INTEGRATION=1` and `RUN_CONTENT_DATABASE_INTE
 
 Authentication uses host-only HttpOnly cookies: a signed 15-minute access JWT and a rotating seven-day refresh credential. Production cookies are `Secure` and use `SameSite=Lax`. Tokens are never returned in JSON and must not be stored in browser storage.
 
-State-changing Authentication/Admin requests require an exact trusted `Origin`. Both `ADMIN` and `SUPER_ADMIN` can manage the five content resources. No dedicated SUPER_ADMIN or Admin account-management endpoint exists.
+State-changing Authentication/Admin requests require an exact trusted `Origin`. Both `ADMIN` and `SUPER_ADMIN` can manage the five content resources and review applications/inquiries. Public application and inquiry submissions use a separate non-credentialed CORS policy, explicit consent, a honeypot, bounded inputs, and a PostgreSQL-backed rate limit. No dedicated SUPER_ADMIN or Admin account-management endpoint exists.
+
+Successful application and inquiry responses confirm database persistence, not email delivery. The same transaction stores notification intents for the student and currently active ADMIN/SUPER_ADMIN recipients. A best-effort dispatch is awaited after the commit; missing configuration, a terminated request, or provider failure leaves bounded, idempotent retry state in PostgreSQL. Retries use stable Resend idempotency keys, at most four attempts, short exponential delays, a two-minute claim lease, and a 23-hour retry window that stays inside Resend's documented 24-hour provider retention.
+
+The reusable `npm run notifications:dispatch` worker processes up to 25 pending records for an authorized operator. Vercel scheduling uses `GET /internal/cron/email-notifications`, which rejects requests unless `Authorization: Bearer <CRON_SECRET>` exactly matches the server-only environment variable. The route is intentionally absent from OpenAPI and Postman because it is an internal operational endpoint. Automatic retry scheduling is not active until the owner configures `CRON_SECRET`, adds a compatible Vercel Cron schedule, deploys, and verifies an invocation. The worker and route return aggregate counts only and never print message bodies, recipients, or credentials.
+
+For a Vercel plan that supports hourly Cron Jobs, the minimal project configuration is:
+
+```json
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/internal/cron/email-notifications",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
+```
+
+The owner must first set a randomly generated 32-or-more-character `CRON_SECRET` in the Production environment. Vercel supplies it as a bearer authorization header. Deploy the route and schedule together, confirm an unauthenticated request returns `401`, then verify one scheduled production invocation. Do not add this hourly configuration to a plan limited to daily Cron Jobs: a daily schedule does not reliably fit the 23-hour retry window.
 
 Cross-site preview or localhost-to-production combinations cannot reliably persist `SameSite=Lax` cookies. Use shared-site production domains or a same-site localhost topology; do not weaken cookie policy or assume a Server Action forwards API-host cookies.
 
@@ -146,4 +171,4 @@ The PowerShell verifier is read-only by default. Authenticated mode performs the
 
 `src/index.ts` is the Vercel Hono entrypoint and `src/server.ts` is the local Node entrypoint. The Project Owner manages Git publishing, deployment, and management consoles.
 
-The implemented API contains exactly 36 operations: 1 Health, 5 Authentication, 10 Public Content, and 20 Admin Content. Applications, inquiries, uploads, analytics, audit logs, scheduled jobs, student accounts, payments, and Admin account management are not available endpoints.
+The implemented API contains exactly 44 operations: 1 Health, 5 Authentication, 10 Public Content, 20 Admin Content, 2 Public Submissions, and 6 Admin Submission Management operations. Uploads, analytics, audit logs, scheduled jobs, student accounts, payments, and Admin account management are not available endpoints.

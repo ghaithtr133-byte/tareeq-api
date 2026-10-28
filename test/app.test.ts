@@ -51,7 +51,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(collection.info.schema).toBe(
       'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     )
-    expect(collectRequests(collection.item)).toHaveLength(36)
+    expect(collectRequests(collection.item)).toHaveLength(44)
 
     const zipResponse = await app.request('/postman/download.zip')
     const zip = Buffer.from(await zipResponse.arrayBuffer())
@@ -168,7 +168,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(document.components.schemas.HealthResponse).toBeDefined()
   })
 
-  it('documents the complete 36-operation API with descriptions, examples, and Admin security', async () => {
+  it('documents the complete 44-operation API with descriptions, examples, and Admin security', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
       info?: { description?: string }
@@ -195,7 +195,7 @@ describe('Tareeq Academy API foundation', () => {
         .map(([method, operation]) => ({ path, method, operation })),
     )
 
-    expect(operations).toHaveLength(36)
+    expect(operations).toHaveLength(44)
     const contentResources = '(countries|universities|scholarships|services|articles)'
     const operationGroups = {
       system: operations.filter(({ path }) => path === '/api/v1/health'),
@@ -211,7 +211,7 @@ describe('Tareeq Academy API foundation', () => {
       Object.entries(operationGroups).map(([group, entries]) => [group, entries.length]),
     )).toEqual({ system: 1, authentication: 5, publicContent: 10, adminContent: 20 })
     expect(operations.some(({ path }) =>
-      /(applications|inquiries|uploads|analytics|admin-users|admin\/users)/i.test(path),
+      /(uploads|analytics|admin-users|admin\/users)/i.test(path),
     )).toBe(false)
     expect(document.tags?.map(({ name }) => name)).toEqual([
       'System',
@@ -221,11 +221,15 @@ describe('Tareeq Academy API foundation', () => {
       'Public — Scholarships',
       'Public — Services',
       'Public — Articles',
+      'Public — Applications',
+      'Public — Inquiries',
       'Admin — Countries',
       'Admin — Universities',
       'Admin — Scholarships',
       'Admin — Services',
       'Admin — Articles',
+      'Admin — Applications',
+      'Admin — Inquiries',
     ])
     expect(document['x-tagGroups']).toEqual([
       { name: 'System', tags: ['System'] },
@@ -238,6 +242,8 @@ describe('Tareeq Academy API foundation', () => {
           'Public — Scholarships',
           'Public — Services',
           'Public — Articles',
+          'Public — Applications',
+          'Public — Inquiries',
         ],
       },
       {
@@ -248,6 +254,8 @@ describe('Tareeq Academy API foundation', () => {
           'Admin — Scholarships',
           'Admin — Services',
           'Admin — Articles',
+          'Admin — Applications',
+          'Admin — Inquiries',
         ],
       },
     ])
@@ -267,6 +275,8 @@ describe('Tareeq Academy API foundation', () => {
       scholarships: 'Admin — Scholarships',
       services: 'Admin — Services',
       articles: 'Admin — Articles',
+      applications: 'Admin — Applications',
+      inquiries: 'Admin — Inquiries',
     }
     for (const { path, method, operation } of operations) {
       expect(operation.summary, `${method.toUpperCase()} ${path} summary`).toBeTruthy()

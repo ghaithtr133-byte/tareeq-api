@@ -333,6 +333,20 @@ Add-Check -Id 'health.endpoint' -Category 'Health' -Status $(if ($healthPass) { 
   -Evidence 'GET /api/v1/health used a synthetic correlation ID; response bodies are not retained in reports.' `
   -Classification $(if ($health.statusCode -eq 0 -or $health.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($healthPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
+# The internal retry route must fail closed before it can claim database work.
+$cronDispatch = Invoke-ReadOnlyRequest -Method GET -Path '/internal/cron/email-notifications' -Purpose 'unauthorized email dispatch boundary verification'
+$cronDispatchBody = Convert-JsonBody $cronDispatch
+$cronDispatchPass = $cronDispatch.statusCode -eq 401 -and
+  (Test-Property $cronDispatchBody 'success') -and $cronDispatchBody.success -eq $false -and
+  (Test-Property $cronDispatchBody 'error') -and
+  (Test-Property $cronDispatchBody.error 'code') -and
+  $cronDispatchBody.error.code -eq 'EMAIL_DISPATCH_UNAUTHORIZED'
+Add-Check -Id 'security.email_dispatch_unauthorized' -Category 'Authorization' -Status $(if ($cronDispatchPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 401 with EMAIL_DISPATCH_UNAUTHORIZED and no dispatch attempt when the cron bearer secret is absent.' `
+  -Actual "HTTP $($cronDispatch.statusCode); safe error code=$(if (Test-Property $cronDispatchBody 'error') { $cronDispatchBody.error.code } else { 'unavailable' })." `
+  -Evidence 'Unauthenticated GET /internal/cron/email-notifications; no authorization value or response body is retained in reports.' `
+  -Classification $(if ($cronDispatch.statusCode -eq 0 -or $cronDispatch.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($cronDispatchPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
 # OpenAPI document and exact operation contract.
 $openApiResponse = Invoke-ReadOnlyRequest -Method GET -Path '/openapi.json' -Purpose 'OpenAPI verification'
 $openApi = Convert-JsonBody $openApiResponse
@@ -360,6 +374,16 @@ foreach ($resource in $resources) {
     "PATCH /api/v1/admin/$resource/{id}"
   )) { $expectedOperations.Add($entry) }
 }
+foreach ($entry in @(
+  'POST /api/v1/applications',
+  'GET /api/v1/admin/applications',
+  'GET /api/v1/admin/applications/{id}',
+  'PATCH /api/v1/admin/applications/{id}/status',
+  'POST /api/v1/inquiries',
+  'GET /api/v1/admin/inquiries',
+  'GET /api/v1/admin/inquiries/{id}',
+  'PATCH /api/v1/admin/inquiries/{id}/status'
+)) { $expectedOperations.Add($entry) }
 
 $actualOperations = [System.Collections.Generic.List[string]]::new()
 $documentationIssues = [System.Collections.Generic.List[string]]::new()
@@ -389,16 +413,16 @@ if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
   }
 }
 $operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
-$operationPass = $actualOperations.Count -eq 36 -and $operationDifference.Count -eq 0
+$operationPass = $actualOperations.Count -eq 44 -and $operationDifference.Count -eq 0
 Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Exactly the approved 36 operations with no missing or unexpected operations.' `
+  -Expected 'Exactly the approved 44 operations with no missing or unexpected operations.' `
   -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
-  -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, and five-resource content surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
+  -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, application, and inquiry surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
   -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 36
+$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 44
 $documentationEvidence = if ($documentationIssues.Count -eq 0) {
-  'All 36 live operations passed documentation metadata checks.'
+  'All 44 live operations passed documentation metadata checks.'
 } else {
   $issueLimit = [Math]::Min(10, $documentationIssues.Count)
   @($documentationIssues.GetRange(0, $issueLimit)) -join '; '
@@ -408,6 +432,19 @@ Add-Check -Id 'openapi.operation_documentation' -Category 'Documentation' -Statu
   -Actual "$($documentationIssues.Count) documentation issue(s)." `
   -Evidence $documentationEvidence `
   -Classification $(if ($documentationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$applicationDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/applications'.post.description } else { '' }
+$inquiryDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/inquiries'.post.description } else { '' }
+$emailSemanticsPass =
+  $applicationDescription -match 'database acceptance' -and
+  $applicationDescription -match 'not guaranteed' -and
+  $inquiryDescription -match 'database acceptance' -and
+  $inquiryDescription -match 'not guaranteed'
+Add-Check -Id 'openapi.submission_email_semantics' -Category 'Documentation' -Status $(if ($emailSemanticsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Both public submission operations state that HTTP 201 confirms database acceptance rather than guaranteed email delivery.' `
+  -Actual "Application documented=$($applicationDescription -match 'database acceptance' -and $applicationDescription -match 'not guaranteed'); inquiry documented=$($inquiryDescription -match 'database acceptance' -and $inquiryDescription -match 'not guaranteed')." `
+  -Evidence 'OpenAPI descriptions only; no submission or email is sent by the read-only verifier.' `
+  -Classification $(if ($emailSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
 # Scalar HTML availability only; manual rendering is intentionally owner-managed.
 $scalar = Invoke-ReadOnlyRequest -Method GET -Path '/docs' -Purpose 'Scalar HTML availability'
@@ -434,9 +471,9 @@ $collectionDownloadPass = $collectionDownload.statusCode -eq 200 -and
   $collectionDownload.contentDisposition -match 'attachment;\s*filename="tareeq-api\.postman_collection\.json"' -and
   (Test-Property $downloadedCollection 'info') -and
   $downloadedCollection.info.schema -eq 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' -and
-  $downloadedRequestCount -eq 36
+  $downloadedRequestCount -eq 44
 Add-Check -Id 'postman.collection_download' -Category 'Documentation' -Status $(if ($collectionDownloadPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 36 requests.' `
+  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 44 requests.' `
   -Actual "HTTP $($collectionDownload.statusCode); requests=$downloadedRequestCount; content type=$($collectionDownload.contentType); attachment=$(-not [string]::IsNullOrWhiteSpace($collectionDownload.contentDisposition))." `
   -Evidence 'GET /postman/collection.json; downloaded content is parsed in memory and is not retained in reports.' `
   -Classification $(if ($collectionDownload.statusCode -eq 0 -or $collectionDownload.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($collectionDownloadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
@@ -762,6 +799,15 @@ foreach ($resource in $resources) {
     -Evidence "GET /api/v1/admin/$resource without cookies." `
     -Classification $(if ($admin.statusCode -eq 0 -or $admin.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($adminPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 }
+foreach ($resource in @('applications', 'inquiries')) {
+  $admin = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/$resource" -Purpose 'anonymous private-submission authorization boundary'
+  $adminBody = Convert-JsonBody $admin
+  $adminPass = $admin.statusCode -eq 401 -and (Test-ErrorEnvelope $adminBody 'AUTHENTICATION_REQUIRED')
+  Add-Check -Id "admin.$resource.anonymous" -Category 'Authorization' -Status $(if ($adminPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Anonymous submission-management request receives HTTP 401 AUTHENTICATION_REQUIRED.' -Actual "HTTP $($admin.statusCode)." `
+    -Evidence "GET /api/v1/admin/$resource without cookies; no private response body is retained." `
+    -Classification $(if ($admin.statusCode -eq 0 -or $admin.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($adminPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
 
 $publicCorsFailures = [System.Collections.Generic.List[string]]::new()
 foreach ($resource in $resources) {
@@ -795,6 +841,48 @@ Add-Check -Id 'security.public_cors_read_preflight' -Category 'CORS/CSRF' -Statu
   -Actual "HTTP $($publicReadPreflight.statusCode); exact origin=$($publicReadPreflight.accessControlAllowOrigin -eq $PublicOrigin); credentials absent=$([string]::IsNullOrWhiteSpace($publicReadPreflight.accessControlAllowCredentials)); GET allowed=$($publicReadPreflight.accessControlAllowMethods -match '(^|,\s*)GET(\s*,|$)'); POST excluded=$($publicReadPreflight.accessControlAllowMethods -notmatch '(^|,\s*)POST(\s*,|$)')." `
   -Evidence 'OPTIONS /api/v1/countries from the configured student origin.' `
   -Classification $(if ($publicReadPreflight.statusCode -eq 0 -or $publicReadPreflight.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($publicReadPreflightPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$publicSubmissionFailures = [System.Collections.Generic.List[string]]::new()
+foreach ($resource in @('applications', 'inquiries')) {
+  $submissionPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path "/api/v1/$resource" -Headers @{
+    Origin = $PublicOrigin
+    'Access-Control-Request-Method' = 'POST'
+    'Access-Control-Request-Headers' = 'content-type'
+  } -Purpose 'student-origin public submission preflight'
+  if (
+    $submissionPreflight.statusCode -ne 204 -or
+    $submissionPreflight.accessControlAllowOrigin -ne $PublicOrigin -or
+    -not [string]::IsNullOrWhiteSpace($submissionPreflight.accessControlAllowCredentials) -or
+    $submissionPreflight.accessControlAllowMethods -notmatch '(^|,\s*)POST(\s*,|$)' -or
+    $submissionPreflight.accessControlAllowMethods -match '(^|,\s*)GET(\s*,|$)'
+  ) {
+    $publicSubmissionFailures.Add("$resource HTTP $($submissionPreflight.statusCode); exactOrigin=$($submissionPreflight.accessControlAllowOrigin -eq $PublicOrigin); credentialsAbsent=$([string]::IsNullOrWhiteSpace($submissionPreflight.accessControlAllowCredentials))")
+  }
+
+  $untrustedSubmissionPreflight = Invoke-ReadOnlyRequest -Method OPTIONS -Path "/api/v1/$resource" -Headers @{
+    Origin = 'https://untrusted.invalid'
+    'Access-Control-Request-Method' = 'POST'
+    'Access-Control-Request-Headers' = 'content-type'
+  } -Purpose 'untrusted public submission preflight'
+  if (-not [string]::IsNullOrWhiteSpace($untrustedSubmissionPreflight.accessControlAllowOrigin)) {
+    $publicSubmissionFailures.Add("$resource untrusted preflight unexpectedly received ACAO")
+  }
+}
+$publicSubmissionCorsPass = $publicSubmissionFailures.Count -eq 0
+Add-Check -Id 'security.public_submission_cors' -Category 'CORS/CSRF' -Status $(if ($publicSubmissionCorsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Public Website preflights allow POST without credentialed CORS or GET permission; untrusted origins receive no ACAO.' `
+  -Actual "Failures=$($publicSubmissionFailures.Count)." `
+  -Evidence $(if ($publicSubmissionCorsPass) { 'Applications and inquiries expose only non-credentialed POST/OPTIONS CORS to the configured Public Website origin.' } else { @($publicSubmissionFailures) -join '; ' }) `
+  -Classification $(if ($publicSubmissionCorsPass) { 'NONE' } elseif (@($publicSubmissionFailures | Where-Object { $_ -match 'HTTP (0|5\d\d)' }).Count -gt 0) { 'DEPLOYMENT_FAILURE' } else { 'CONTRACT_FAILURE' })
+
+$publicLookup = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/applications' -Headers @{ Origin = $PublicOrigin } -Purpose 'absence of public submission-history lookup'
+$publicLookupBody = Convert-JsonBody $publicLookup
+$publicLookupPass = $publicLookup.statusCode -eq 404 -and (Test-ErrorEnvelope $publicLookupBody 'NOT_FOUND')
+Add-Check -Id 'submissions.public_lookup_absent' -Category 'Privacy' -Status $(if ($publicLookupPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'GET /api/v1/applications is not implemented and returns standardized HTTP 404.' `
+  -Actual "HTTP $($publicLookup.statusCode)." `
+  -Evidence 'Read-only verification that submission history is not publicly exposed.' `
+  -Classification $(if ($publicLookup.statusCode -eq 0 -or $publicLookup.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($publicLookupPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
 $untrustedPublicRead = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/countries?limit=1' -Headers @{ Origin = 'https://untrusted.invalid' } -Purpose 'untrusted public browser-origin read'
 $untrustedPublicReadPass = $untrustedPublicRead.statusCode -eq 200 -and [string]::IsNullOrWhiteSpace($untrustedPublicRead.accessControlAllowOrigin)
@@ -947,8 +1035,8 @@ if (-not $Authenticated.IsPresent) {
       -Classification $(if ($restoredMe.statusCode -eq 0 -or $restoredMe.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($restoredPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
     $adminReadFailures = [System.Collections.Generic.List[string]]::new()
-    foreach ($resource in $resources) {
-      $adminRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/${resource}?limit=50" -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role Admin content read"
+    foreach ($resource in @($resources) + @('applications', 'inquiries')) {
+      $adminRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/admin/${resource}?limit=50" -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role Admin collection read"
       $adminReadBody = Convert-JsonBody $adminRead
       if (
         $adminRead.statusCode -ne 200 -or
@@ -961,9 +1049,9 @@ if (-not $Authenticated.IsPresent) {
     }
     $adminReadsPass = $adminReadFailures.Count -eq 0
     Add-Check -Id "admin.$roleSlug.content_reads" -Category 'Authorization' -Status $(if ($adminReadsPass) { 'PASS' } else { 'FAIL' }) `
-      -Expected "$role can read all five approved Admin content collections." `
+      -Expected "$role can read all seven approved Admin content and submission collections." `
       -Actual "Failures=$($adminReadFailures.Count)." `
-      -Evidence $(if ($adminReadsPass) { 'All five authenticated GET collection requests returned valid pagination envelopes.' } else { @($adminReadFailures) -join '; ' }) `
+      -Evidence $(if ($adminReadsPass) { 'All seven authenticated GET collection requests returned valid pagination envelopes.' } else { @($adminReadFailures) -join '; ' }) `
       -Classification $(if ($adminReadsPass) { 'NONE' } elseif (@($adminReadFailures | Where-Object { $_ -match 'HTTP (0|5\d\d)' }).Count -gt 0) { 'DEPLOYMENT_FAILURE' } else { 'CONTRACT_FAILURE' })
 
     if ($null -ne $seedManifest) {

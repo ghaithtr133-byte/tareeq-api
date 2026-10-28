@@ -6,7 +6,7 @@ Production uses these shared-site HTTPS domains:
 
 | Application | URL | API behavior |
 | --- | --- | --- |
-| Public Website | `https://tareeq-academy.com` | Reads published content without cookies |
+| Public Website | `https://tareeq-academy.com` | Reads published content and submits applications/inquiries without cookies |
 | Admin Dashboard | `https://admin.tareeq-academy.com` | Uses Backend-owned HttpOnly cookies |
 | Backend | `https://api.tareeq-academy.com` | API, OpenAPI, and Scalar |
 
@@ -51,12 +51,12 @@ console.log(response.data.success) // true
 
 ## Public Website vs Admin Dashboard
 
-- Public content `GET` requests require no authentication cookies. Browser requests are allowed from the configured `PUBLIC_ALLOWED_ORIGINS`; server-to-server requests are not governed by browser CORS.
+- Public content `GET` and the approved application/inquiry `POST` requests require no authentication cookies. Browser requests are allowed from the configured `PUBLIC_ALLOWED_ORIGINS`; server-to-server requests are not governed by browser CORS.
 - Admin and Authentication requests use exact trusted origins. Set `withCredentials: true` so the browser stores and sends the API host's cookies.
 - Login credentials come from authorized users. The Frontend learns the authoritative role from `GET /auth/me`.
 - Access and refresh credentials remain in host-only HttpOnly cookies. Never copy them into `localStorage`, `sessionStorage`, JavaScript state, or Authorization headers.
 - CSRF origin checks remain active for state-changing Authentication and Admin requests. Public CORS does not grant Admin permission.
-- Future public mutation endpoints require a separate security decision; the current public CORS policy is read-only.
+- Public content CORS remains read-only. Applications and inquiries have a separate, narrowly scoped non-credentialed `POST`/`OPTIONS` policy; future public mutations still require individual security review.
 
 ### Local authenticated development
 
@@ -72,11 +72,13 @@ For real authenticated browser testing, use the shared-site production domains o
 | Start an Admin session | Authorized Admin credentials required | Yes | Yes |
 | Use `/auth/me`, refresh, logout, or change password | No | Yes | Yes |
 | List, create, update, publish, unpublish, or archive content | No | Yes | Yes |
+| Submit an application or inquiry | Yes | Yes | Yes |
+| Review applications/inquiries and update workflow status or internal notes | No | Yes | Yes |
 | Manage administrator accounts | No | No endpoint | No endpoint |
 
 `ADMIN` and `SUPER_ADMIN` currently have the same Content Management permissions. There are no dedicated SUPER_ADMIN management endpoints.
 
-The approved API contains exactly 36 operations:
+The approved API contains exactly 44 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
@@ -84,6 +86,8 @@ The approved API contains exactly 36 operations:
 | Authentication | 5 | Login plus cookie-session operations |
 | Public Content | 10 | List and slug detail for five resources |
 | Admin Content | 20 | List, UUID detail, create, and update for five resources |
+| Public Submissions | 2 | Create an application or general inquiry |
+| Admin Submissions | 6 | List, UUID detail, and workflow update |
 
 Resources are `countries`, `universities`, `scholarships`, `services`, and `articles`.
 
@@ -97,13 +101,19 @@ POST /auth/change-password
 GET  /{resource}                 GET   /{resource}/{slug}
 GET  /admin/{resource}           GET   /admin/{resource}/{id}
 POST /admin/{resource}           PATCH /admin/{resource}/{id}
+
+POST /applications               POST  /inquiries
+GET  /admin/applications         GET   /admin/inquiries
+GET  /admin/applications/{id}    GET   /admin/inquiries/{id}
+PATCH /admin/applications/{id}/status
+PATCH /admin/inquiries/{id}/status
 ```
 
 All paths above are relative to `https://api.tareeq-academy.com/api/v1`. Publication changes use the normal Admin `PATCH`; there is no separate publish endpoint and no DELETE operation.
 
 Authentication endpoints are implemented even when an anonymous request correctly returns `401`. For example, `GET /auth/me` requires a valid access cookie.
 
-Applications, inquiries, uploads, analytics, student accounts, and Admin account-management APIs are not implemented.
+Uploads, analytics, student accounts, and Admin account-management APIs are not implemented.
 
 ## Practical Requests
 
@@ -172,6 +182,91 @@ Admin detail and update routes use UUIDs, while public detail routes use slugs. 
 
 Use Scalar for each resource's required fields and relationship rules. In particular, Universities require a Country, Scholarship relationships must be consistent, and publishing a Scholarship requires an HTTP(S) `officialSourceUrl`.
 
+## Student Applications and Inquiries
+
+Public forms use `publicApi` without `withCredentials`. Always send `privacyAccepted: true`, include an empty hidden `website` field as the honeypot, and do not retain or display an application identifier—the API intentionally returns only a minimal confirmation.
+
+University admission example:
+
+```ts
+await publicApi.post('/applications', {
+  applicationType: 'UNIVERSITY_ADMISSION',
+  countryId: selectedCountryId || null,
+  universityId: selectedUniversityId || null,
+  studyLevel: selectedStudyLevel || null,
+  intendedMajor: intendedMajor || null,
+  fullName,
+  email,
+  phone: phone || null,
+  message,
+  privacyAccepted: true,
+  website: '',
+})
+```
+
+Scholarship assistance works with or without a specific scholarship:
+
+```ts
+await publicApi.post('/applications', {
+  applicationType: 'SCHOLARSHIP_ASSISTANCE',
+  scholarshipId: selectedScholarshipId || null,
+  countryId: selectedCountryId || null,
+  universityId: selectedUniversityId || null,
+  studyLevel: selectedStudyLevel || null,
+  intendedMajor: intendedMajor || null,
+  fullName,
+  email,
+  phone: phone || null,
+  message,
+  privacyAccepted: true,
+  website: '',
+})
+```
+
+When supplied, Country and University IDs must refer to published records and be mutually consistent. A Scholarship ID must identify a published, currently open opportunity and must be consistent with any supplied Country or University. Study levels currently use the same bounded text values exposed by Scholarship content; there is no separate study-level enumeration.
+
+General inquiry example:
+
+```ts
+await publicApi.post('/inquiries', {
+  fullName,
+  email,
+  phone: phone || null,
+  subject,
+  message,
+  privacyAccepted: true,
+  website: '',
+})
+```
+
+Both endpoints return HTTP `201`:
+
+```json
+{
+  "success": true,
+  "data": { "message": "Submission received." }
+}
+```
+
+HTTP `201` confirms that the Backend committed the submission to PostgreSQL. It does not guarantee that the Arabic confirmation email or Admin notification has already been delivered. Email delivery runs independently through a durable retryable outbox, so the Frontend must use the API response—not email arrival—as the submission result.
+
+Bind `error.details.fields` to the matching form fields. HTTP `429` with `SUBMISSION_RATE_LIMITED` means the shared 15-minute limit was reached. Do not retry automatically. The Backend stores the consent timestamp; it never exposes submissions through public lookup endpoints.
+
+Admin review uses `adminApi` with cookies:
+
+```ts
+const applications = await adminApi.get('/admin/applications', {
+  params: { status: 'NEW', applicationType: 'SCHOLARSHIP_ASSISTANCE', sort: 'newest' },
+})
+
+await adminApi.patch(`/admin/applications/${id}/status`, {
+  status: 'IN_REVIEW',
+  internalNote: 'تمت مراجعة الطلب.',
+})
+```
+
+The same list/detail/status pattern exists under `/admin/inquiries`. Allowed workflow statuses are `NEW`, `IN_REVIEW`, `RESOLVED`, and `CLOSED`. Internal notes are private Admin fields.
+
 ## Responses and Validation
 
 Success responses use one envelope:
@@ -216,7 +311,7 @@ export function apiError(error: unknown) {
 }
 ```
 
-Important codes include `VALIDATION_ERROR`, `AUTHENTICATION_REQUIRED`, `INVALID_CREDENTIALS`, `INVALID_REFRESH_SESSION`, `CSRF_VALIDATION_FAILED`, `CONTENT_NOT_FOUND`, `RELATIONSHIP_INVALID`, `PUBLICATION_REQUIREMENTS_NOT_MET`, `SLUG_CONFLICT`, and `PUBLISHED_SLUG_IMMUTABLE`.
+Important codes include `VALIDATION_ERROR`, `AUTHENTICATION_REQUIRED`, `INVALID_CREDENTIALS`, `INVALID_REFRESH_SESSION`, `CSRF_VALIDATION_FAILED`, `CONTENT_NOT_FOUND`, `RELATIONSHIP_INVALID`, `COUNTRY_UNAVAILABLE`, `UNIVERSITY_UNAVAILABLE`, `SCHOLARSHIP_UNAVAILABLE`, `APPLICATION_NOT_FOUND`, `INQUIRY_NOT_FOUND`, `SUBMISSION_RATE_LIMITED`, `PUBLICATION_REQUIREMENTS_NOT_MET`, `SLUG_CONFLICT`, and `PUBLISHED_SLUG_IMMUTABLE`.
 
 ## Article Editor Contract
 
@@ -235,7 +330,7 @@ Allowed types are `paragraph`, `heading2`, `heading3`, `bulleted-list`, `numbere
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 36 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 44 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

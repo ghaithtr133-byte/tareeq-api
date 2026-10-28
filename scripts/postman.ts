@@ -73,6 +73,7 @@ const files = {
 const collectionSchema = 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
 const methods: HttpMethod[] = ['get', 'post', 'patch', 'put', 'delete']
 const resources = ['countries', 'universities', 'scholarships', 'services', 'articles'] as const
+const submissionResources = ['applications', 'inquiries'] as const
 
 const folderNames = [
   'System',
@@ -82,12 +83,17 @@ const folderNames = [
   'Public — Scholarships',
   'Public — Services',
   'Public — Articles',
+  'Public — Applications',
+  'Public — Inquiries',
   'Admin — Content Management',
+  'Admin — Applications',
+  'Admin — Inquiries',
 ] as const
 
 const variableDefaults = [
   { key: 'baseUrl', value: 'http://localhost:3000', description: 'Backend origin without a trailing slash.' },
-  { key: 'origin', value: 'http://localhost:3001', description: 'Trusted Origin header used by POST/PATCH requests.' },
+  { key: 'origin', value: 'http://localhost:3001', description: 'Trusted Admin Origin header used by authenticated POST/PATCH requests.' },
+  { key: 'publicOrigin', value: 'http://localhost:3001', description: 'Allowed Public Website Origin header used by student submission requests.' },
   { key: 'adminEmail', value: 'replace-with-authorized-admin@example.invalid', description: 'Set locally; never commit a real account email.' },
   { key: 'adminPassword', value: 'replace-with-authorized-admin-password', description: 'Set locally; never commit a real password.' },
   { key: 'newAdminPassword', value: 'replace-with-new-admin-password', description: 'Manual password-change placeholder.' },
@@ -101,6 +107,8 @@ const variableDefaults = [
   { key: 'serviceId', value: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d' },
   { key: 'articleSlug', value: 'study-guide' },
   { key: 'articleId', value: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d' },
+  { key: 'applicationId', value: 'b7fc1a1b-7878-4f97-9431-58baaf8c493e' },
+  { key: 'inquiryId', value: '6de33e44-6cb8-4514-a35d-e1a9c2fbb8f3' },
 ] as const
 
 const isRecord = (value: unknown): value is JsonRecord =>
@@ -123,9 +131,17 @@ const operationEntries = (document: OpenApiDocument): OperationEntry[] =>
 const resourceForPath = (path: string) =>
   resources.find((resource) => path === `/api/v1/${resource}` || path.startsWith(`/api/v1/${resource}/`) || path === `/api/v1/admin/${resource}` || path.startsWith(`/api/v1/admin/${resource}/`))
 
+const submissionResourceForPath = (path: string) =>
+  submissionResources.find((resource) => path === `/api/v1/${resource}` || path.startsWith(`/api/v1/${resource}/`) || path === `/api/v1/admin/${resource}` || path.startsWith(`/api/v1/admin/${resource}/`))
+
 const folderFor = (entry: OperationEntry) => {
   if (entry.path === '/api/v1/health') return 'System'
   if (entry.path.startsWith('/api/v1/auth/')) return 'Authentication'
+  const submissionResource = submissionResourceForPath(entry.path)
+  if (submissionResource) {
+    const label = submissionResource[0]?.toUpperCase() + submissionResource.slice(1)
+    return entry.path.startsWith('/api/v1/admin/') ? `Admin — ${label}` : `Public — ${label}`
+  }
   const resource = resourceForPath(entry.path)
   if (!resource) throw new Error(`No Postman folder mapping for ${entry.method.toUpperCase()} ${entry.path}.`)
   const label = resource[0]?.toUpperCase() + resource.slice(1)
@@ -142,6 +158,12 @@ const operationRank = (entry: OperationEntry) => {
       '/api/v1/auth/change-password': 5,
     }
     return ranks[entry.path] ?? 99
+  }
+  const submissionResource = submissionResourceForPath(entry.path)
+  if (submissionResource) {
+    const hasParameter = entry.path.includes('{')
+    const methodRanks: Record<HttpMethod, number> = { get: hasParameter ? 2 : 1, post: 1, patch: 3, put: 4, delete: 5 }
+    return submissionResources.indexOf(submissionResource) * 10 + methodRanks[entry.method]
   }
   const hasParameter = entry.path.includes('{')
   const methodRanks: Record<HttpMethod, number> = { get: hasParameter ? 2 : 1, post: 3, patch: 4, put: 5, delete: 6 }
@@ -161,7 +183,6 @@ const parameterValue = (parameter: OpenApiParameter) => {
     studyLevel: 'MASTERS',
     fundingType: 'FULL',
     applicationStatus: 'OPEN',
-    status: 'PUBLISHED',
   }
   if (namedValues[parameter.name]) return namedValues[parameter.name]
   const schema = parameter.schema ?? {}
@@ -170,6 +191,10 @@ const parameterValue = (parameter: OpenApiParameter) => {
 }
 
 const environmentVariableForPath = (path: string, parameterName: string) => {
+  const submissionResource = submissionResourceForPath(path)
+  if (submissionResource && parameterName === 'id') {
+    return submissionResource === 'applications' ? '{{applicationId}}' : '{{inquiryId}}'
+  }
   const resource = resourceForPath(path)
   if (!resource) return `{{${parameterName}}}`
   const singular = resource.endsWith('ies')
@@ -241,11 +266,14 @@ const buildRequest = (entry: OperationEntry) => {
   const headers: JsonRecord[] = [{ key: 'Accept', value: 'application/json', type: 'text' }]
   if (media) headers.push({ key: 'Content-Type', value: 'application/json', type: 'text' })
   if (entry.method === 'post' || entry.method === 'patch') {
+    const isPublicSubmission = entry.method === 'post' && submissionResourceForPath(entry.path) !== undefined && !entry.path.startsWith('/api/v1/admin/')
     headers.push({
       key: 'Origin',
-      value: '{{origin}}',
+      value: isPublicSubmission ? '{{publicOrigin}}' : '{{origin}}',
       type: 'text',
-      description: 'Required by the Backend CSRF origin check for state-changing requests.',
+      description: isPublicSubmission
+        ? 'Required by the public submission CORS policy when sent from a browser.'
+        : 'Required by the Backend CSRF origin check for authenticated state-changing requests.',
     })
   }
 
@@ -274,7 +302,8 @@ const buildRequest = (entry: OperationEntry) => {
 const responseStatus = (code: number) => {
   const values: Record<number, string> = {
     200: 'OK', 201: 'Created', 400: 'Bad Request', 401: 'Unauthorized',
-    403: 'Forbidden', 404: 'Not Found', 409: 'Conflict', 415: 'Unsupported Media Type',
+    403: 'Forbidden', 404: 'Not Found', 409: 'Conflict', 413: 'Content Too Large',
+    415: 'Unsupported Media Type', 429: 'Too Many Requests',
   }
   return values[code] ?? 'Documented Response'
 }
@@ -306,10 +335,18 @@ const buildItem = (entry: OperationEntry): PostmanItem => {
   }
 }
 
-const collectionVariables = (baseUrl = 'http://localhost:3000', origin = 'http://localhost:3001') =>
+const collectionVariables = (
+  baseUrl = 'http://localhost:3000',
+  origin = 'http://localhost:3001',
+  publicOrigin = 'http://localhost:3001',
+) =>
   variableDefaults.map((variable) => ({
     key: variable.key,
-    value: variable.key === 'baseUrl' ? baseUrl : variable.key === 'origin' ? origin : variable.value,
+    value: variable.key === 'baseUrl'
+      ? baseUrl
+      : variable.key === 'origin'
+        ? origin
+        : variable.key === 'publicOrigin' ? publicOrigin : variable.value,
     type: 'string',
     ...('description' in variable ? { description: variable.description } : {}),
   }))
@@ -371,6 +408,7 @@ const buildEnvironment = (kind: 'local' | 'vercel') => {
   const values = collectionVariables(
     local ? 'http://localhost:3000' : 'https://api.tareeq-academy.com',
     local ? 'http://localhost:3001' : 'https://admin.tareeq-academy.com',
+    local ? 'http://localhost:3001' : 'https://tareeq-academy.com',
   ).map((variable) => ({ key: variable.key, value: variable.value, type: 'default', enabled: true }))
   return {
     id: local ? '1ccbd13e-034b-445e-8438-d86cd5824b72' : 'ac7ba828-8019-4d44-9754-94637fc62d0e',
@@ -601,8 +639,8 @@ const check = async (document: OpenApiDocument) => {
   const expectedKeys = operationEntries(document).map((entry) => `${entry.method.toUpperCase()} ${entry.path}`).sort()
   const missing = expectedKeys.filter((key) => !actualKeys.includes(key))
   const obsolete = actualKeys.filter((key) => !expectedKeys.includes(key))
-  if (requests.length !== 36 || missing.length > 0 || obsolete.length > 0) {
-    throw new Error(`Postman operation mismatch. Expected 36, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
+  if (requests.length !== 44 || missing.length > 0 || obsolete.length > 0) {
+    throw new Error(`Postman operation mismatch. Expected 44, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
   }
 
   for (const [path, expected] of Object.entries(expectedArtifacts)) {
@@ -659,7 +697,7 @@ const main = async () => {
   if (command !== 'generate' && command !== 'check') throw new Error('Usage: tsx scripts/postman.ts <generate|check>')
   const document = await getOpenApiDocument()
   if (document.openapi !== '3.1.0') throw new Error(`Expected OpenAPI 3.1.0, received ${document.openapi}.`)
-  if (operationEntries(document).length !== 36) throw new Error(`Expected 36 OpenAPI operations, received ${operationEntries(document).length}.`)
+  if (operationEntries(document).length !== 44) throw new Error(`Expected 44 OpenAPI operations, received ${operationEntries(document).length}.`)
   if (command === 'generate') await generate(document)
   else await check(document)
 }

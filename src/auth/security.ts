@@ -46,6 +46,34 @@ export const publicReadCors = (
   return middleware(c, next)
 }
 
+export const publicSubmissionCors = (
+  runtime: AuthRuntime,
+): MiddlewareHandler<AuthEnv> => async (c, next) => {
+  const origin = c.req.header('Origin')
+  if (!origin) {
+    await next()
+    return
+  }
+
+  const allowed = runtime.getConfig().publicAllowedOrigins.includes(origin)
+  if (!allowed && c.req.method !== 'OPTIONS') {
+    return errorResponse(
+      c,
+      403,
+      'ORIGIN_NOT_ALLOWED',
+      'Request origin is not allowed.',
+    )
+  }
+
+  const middleware = cors({
+    origin: allowed ? origin : '',
+    allowMethods: ['POST', 'OPTIONS'],
+    allowHeaders: ['Content-Type'],
+    maxAge: 600,
+  })
+  return middleware(c, next)
+}
+
 export const requireTrustedOrigin = (
   runtime: AuthRuntime,
 ): MiddlewareHandler<AuthEnv> => async (c, next) => {

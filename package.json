@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:api": "vitest run test/app.test.ts test/auth.test.ts test/content.api.test.ts",
+    "test:api": "vitest run test/app.test.ts test/auth.test.ts test/content.api.test.ts test/submissions.api.test.ts",
     "postman:generate": "tsx scripts/postman.ts generate",
     "postman:check": "tsx scripts/postman.ts check",
     "verify:browser-auth": "node --env-file-if-exists=.env scripts/verify-browser-auth.mjs",
@@ -29,7 +29,8 @@
     "auth:bootstrap": "tsx --env-file-if-exists=.env scripts/bootstrap-super-admin.ts",
     "seed:inspect": "tsx --env-file-if-exists=.env scripts/initial-data.ts inspect",
     "admins:provision": "tsx --env-file-if-exists=.env scripts/initial-data.ts provision-admins",
-    "content:seed": "tsx --env-file-if-exists=.env scripts/initial-data.ts seed-content"
+    "content:seed": "tsx --env-file-if-exists=.env scripts/initial-data.ts seed-content",
+    "notifications:dispatch": "tsx --env-file-if-exists=.env scripts/dispatch-email-notifications.ts"
   },
   "dependencies": {
     "@hono/node-server": "2.1.5",
@@ -42,6 +43,7 @@
     "hono": "4.13.13",
     "jose": "6.2.12",
     "pg": "8.23.1",
+    "resend": "6.34.1",
     "zod": "4.6.7"
   },
   "devDependencies": {

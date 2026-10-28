@@ -37,6 +37,13 @@ export type AuthConfig = {
   isProduction: boolean
 }
 
+export type EmailConfig = {
+  status: 'CONFIGURED' | 'MISSING' | 'INVALID'
+  apiKey?: string
+  fromEmail?: string
+  replyToEmail?: string
+}
+
 let cachedAuthConfig: AuthConfig | undefined
 
 export const getAuthConfig = (): AuthConfig => {
@@ -54,4 +61,54 @@ export const getAuthConfig = (): AuthConfig => {
   }
 
   return cachedAuthConfig
+}
+
+const optionalNonEmptyString = z.preprocess(
+  (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+  z.string().trim().min(1).optional(),
+)
+
+const optionalEmail = z.preprocess(
+  (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+  z.email().optional(),
+)
+
+const emailEnvSchema = z.object({
+  RESEND_API_KEY: optionalNonEmptyString,
+  RESEND_FROM_EMAIL: optionalEmail,
+  RESEND_REPLY_TO_EMAIL: optionalEmail,
+})
+
+let cachedEmailConfig: EmailConfig | undefined
+
+export const getEmailConfig = (): EmailConfig => {
+  if (cachedEmailConfig) return cachedEmailConfig
+
+  const parsed = emailEnvSchema.safeParse(process.env)
+  if (!parsed.success) {
+    cachedEmailConfig = { status: 'INVALID' }
+    return cachedEmailConfig
+  }
+
+  const { RESEND_API_KEY, RESEND_FROM_EMAIL, RESEND_REPLY_TO_EMAIL } = parsed.data
+  if (!RESEND_API_KEY || !RESEND_FROM_EMAIL) {
+    cachedEmailConfig = { status: 'MISSING' }
+    return cachedEmailConfig
+  }
+
+  const configured: EmailConfig = {
+    status: 'CONFIGURED',
+    apiKey: RESEND_API_KEY,
+    fromEmail: RESEND_FROM_EMAIL,
+    ...(RESEND_REPLY_TO_EMAIL ? { replyToEmail: RESEND_REPLY_TO_EMAIL } : {}),
+  }
+  cachedEmailConfig = configured
+  return configured
+}
+
+const cronSecretSchema = z.string().min(32)
+
+export const getCronSecret = () => {
+  const parsed = cronSecretSchema.safeParse(process.env.CRON_SECRET)
+  return parsed.success ? parsed.data : undefined
 }
