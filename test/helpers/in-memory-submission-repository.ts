@@ -16,6 +16,8 @@ import type {
   EmailNotificationState,
   EmailNotificationType,
 } from '../../src/email/types.js'
+import type { AuditIntent } from '../../src/audit/types.js'
+import { InMemoryAuditRepository } from './in-memory-audit-repository.js'
 
 type InMemoryEmailNotification = EmailNotificationJob & {
   state: EmailNotificationState
@@ -37,6 +39,8 @@ export class InMemorySubmissionRepository implements SubmissionRepository, Email
   readonly adminUsers = new Map<string, { email: string; isActive: boolean }>()
   readonly emailNotifications: InMemoryEmailNotification[] = []
   private readonly rateLimits = new Map<string, number>()
+
+  constructor(readonly audit = new InMemoryAuditRepository()) {}
 
   async consumeRateLimit(
     scope: 'applications' | 'inquiries',
@@ -168,16 +172,26 @@ export class InMemorySubmissionRepository implements SubmissionRepository, Email
     return this.inquiries.find((record) => record.id === id) ?? null
   }
 
-  async updateApplication(id: string, data: SubmissionUpdate) {
+  async updateApplication(
+    id: string,
+    data: SubmissionUpdate,
+    audit: AuditIntent,
+  ) {
     const record = await this.findApplication(id)
     if (!record) throw new Error('Missing in-memory application fixture.')
+    await this.audit.append(audit, id)
     Object.assign(record, data, { updatedAt: new Date(record.updatedAt.getTime() + 1) })
     return record
   }
 
-  async updateInquiry(id: string, data: SubmissionUpdate) {
+  async updateInquiry(
+    id: string,
+    data: SubmissionUpdate,
+    audit: AuditIntent,
+  ) {
     const record = await this.findInquiry(id)
     if (!record) throw new Error('Missing in-memory inquiry fixture.')
+    await this.audit.append(audit, id)
     Object.assign(record, data, { updatedAt: new Date(record.updatedAt.getTime() + 1) })
     return record
   }

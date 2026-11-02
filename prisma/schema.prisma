@@ -50,6 +50,98 @@ enum EmailNotificationState {
   SKIPPED
 }
 
+enum AuditResourceType {
+  COUNTRY
+  UNIVERSITY
+  SCHOLARSHIP
+  SERVICE
+  ARTICLE
+  STUDENT_APPLICATION
+  GENERAL_INQUIRY
+  ADMIN_USER
+  SITE_SETTINGS
+  FAQ_ENTRY
+  UNIVERSITY_PROGRAM
+  ACADEMIC_MAJOR
+  CITY
+  UNIVERSITY_ADMISSION_REQUIREMENT
+  UNIVERSITY_GALLERY_IMAGE
+}
+
+enum FaqScope {
+  GLOBAL
+  COUNTRY
+  UNIVERSITY
+  SERVICE
+  SCHOLARSHIP
+}
+
+enum ProgramStudyLevel {
+  FOUNDATION
+  DIPLOMA
+  BACHELORS
+  MASTERS
+  PHD
+}
+
+enum TeachingLanguage {
+  ARABIC
+  ENGLISH
+  FRENCH
+  GERMAN
+  TURKISH
+  ROMANIAN
+  RUSSIAN
+  SPANISH
+  ITALIAN
+}
+
+enum UniversityType {
+  PUBLIC
+  PRIVATE
+}
+
+enum ProgramDurationUnit {
+  MONTHS
+  YEARS
+}
+
+enum TuitionBillingPeriod {
+  YEAR
+  SEMESTER
+  FULL_PROGRAM
+}
+
+enum AdmissionRequirementScope {
+  UNIVERSITY
+  STUDY_LEVEL
+  PROGRAM
+}
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  CTA_CLICK
+  ENGAGEMENT
+  APPLICATION_SUBMITTED
+  INQUIRY_SUBMITTED
+}
+
+enum AnalyticsCtaId {
+  APPLY_NOW
+  REQUEST_CONSULTATION
+  CONTACT_US
+  VIEW_UNIVERSITY
+  VIEW_SCHOLARSHIP
+  VIEW_SERVICE
+}
+
+enum AnalyticsEngagementType {
+  SCROLL_50
+  SCROLL_90
+  ACTIVE_30_SECONDS
+  ACTIVE_60_SECONDS
+}
+
 model AdminUser {
   id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name               String
@@ -61,6 +153,64 @@ model AdminUser {
   updatedAt          DateTime            @updatedAt @db.Timestamptz(3)
   refreshSessions    RefreshSession[]
   emailNotifications EmailNotification[]
+  auditLogs          AdminAuditLog[]
+}
+
+model AdminAuditLog {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorAdminId String            @db.Uuid
+  action       String
+  resourceType AuditResourceType
+  resourceId   String            @db.Uuid
+  metadata     Json              @default("{}")
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  actor        AdminUser         @relation(fields: [actorAdminId], references: [id], onDelete: Restrict)
+
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
+  @@index([actorAdminId, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([action, createdAt(sort: Desc), id(sort: Desc)])
+  @@index([resourceType, createdAt(sort: Desc), id(sort: Desc)])
+}
+
+model SiteSettings {
+  id            String   @id @db.Uuid
+  academyNameAr String?
+  academyNameEn String?
+  contactEmail  String?  @db.Citext
+  contactPhone  String?
+  addressAr     String?
+  addressEn     String?
+  facebookUrl   String?
+  instagramUrl  String?
+  linkedinUrl   String?
+  youtubeUrl    String?
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model AnalyticsEvent {
+  id             String                   @id @db.Uuid
+  visitorId      String                   @db.Uuid
+  sessionId      String                   @db.Uuid
+  type           AnalyticsEventType
+  path           String                   @db.VarChar(500)
+  targetPath     String?                  @db.VarChar(500)
+  referrerHost   String?                  @db.VarChar(253)
+  referrerPath   String?                  @db.VarChar(500)
+  utmSource      String?                  @db.VarChar(100)
+  utmMedium      String?                  @db.VarChar(100)
+  utmCampaign    String?                  @db.VarChar(100)
+  utmContent     String?                  @db.VarChar(100)
+  utmTerm        String?                  @db.VarChar(100)
+  ctaId          AnalyticsCtaId?
+  engagementType AnalyticsEngagementType?
+  occurredAt     DateTime                 @db.Timestamptz(3)
+  receivedAt     DateTime                 @default(now()) @db.Timestamptz(3)
+
+  @@index([occurredAt(sort: Desc), id(sort: Desc)])
+  @@index([sessionId, occurredAt, id])
+  @@index([type, occurredAt(sort: Desc)])
+  @@index([path, occurredAt(sort: Desc)])
+  @@index([utmSource, utmMedium, occurredAt(sort: Desc)])
 }
 
 model RefreshSession {
@@ -101,40 +251,172 @@ model Country {
   scholarships        Scholarship[]
   articles            Article[]
   studentApplications StudentApplication[]
+  faqEntries          FaqEntry[]
+  cities              City[]
 
   @@index([status, featured, displayOrder, id])
   @@index([createdAt, id])
 }
 
 model University {
-  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nameAr              String
-  nameEn              String?
-  officialName        String
-  slug                String               @unique
-  countryId           String               @db.Uuid
-  cityAr              String
-  cityEn              String?
-  overviewAr          String
-  overviewEn          String?
-  officialWebsite     String?
-  imageUrl            String?
-  imageAltAr          String?
-  imageAltEn          String?
-  featured            Boolean              @default(false)
-  status              PublicationStatus    @default(DRAFT)
-  publishedAt         DateTime?            @db.Timestamptz(3)
-  seoTitleAr          String?
-  seoDescriptionAr    String?
-  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
-  country             Country              @relation(fields: [countryId], references: [id], onDelete: Restrict)
-  scholarships        Scholarship[]
-  articles            Article[]
-  studentApplications StudentApplication[]
+  id                    String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nameAr                String
+  nameEn                String?
+  officialName          String
+  slug                  String                           @unique
+  countryId             String                           @db.Uuid
+  cityId                String?                          @db.Uuid
+  universityType        UniversityType?
+  cityAr                String
+  cityEn                String?
+  overviewAr            String
+  overviewEn            String?
+  officialWebsite       String?
+  imageUrl              String?
+  imageAltAr            String?
+  imageAltEn            String?
+  featured              Boolean                          @default(false)
+  status                PublicationStatus                @default(DRAFT)
+  publishedAt           DateTime?                        @db.Timestamptz(3)
+  seoTitleAr            String?
+  seoDescriptionAr      String?
+  createdAt             DateTime                         @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime                         @updatedAt @db.Timestamptz(3)
+  country               Country                          @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  city                  City?                            @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  scholarships          Scholarship[]
+  articles              Article[]
+  studentApplications   StudentApplication[]
+  faqEntries            FaqEntry[]
+  programs              UniversityProgram[]
+  admissionRequirements UniversityAdmissionRequirement[]
+  galleryImages         UniversityGalleryImage[]
 
   @@index([countryId, status, featured, createdAt, id])
+  @@index([cityId, status, createdAt, id])
+  @@index([universityType, status, createdAt, id])
   @@index([status, createdAt, id])
+}
+
+model City {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  countryId    String       @db.Uuid
+  slug         String       @unique
+  nameAr       String
+  nameEn       String
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
+  country      Country      @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  universities University[]
+
+  @@index([countryId, nameAr, id])
+}
+
+model AcademicMajor {
+  id        String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug      String              @unique
+  nameAr    String
+  nameEn    String
+  category  String?
+  createdAt DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime            @updatedAt @db.Timestamptz(3)
+  programs  UniversityProgram[]
+
+  @@index([nameAr, id])
+  @@index([category, nameAr, id])
+}
+
+model UniversityProgram {
+  id                    String                           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  universityId          String                           @db.Uuid
+  academicMajorId       String                           @db.Uuid
+  nameAr                String?
+  nameEn                String?
+  facultyNameAr         String?
+  facultyNameEn         String?
+  durationValue         Int?
+  durationUnit          ProgramDurationUnit?
+  studyLevel            ProgramStudyLevel
+  status                PublicationStatus                @default(DRAFT)
+  officialSourceUrl     String
+  verifiedAt            DateTime                         @db.Timestamptz(3)
+  publishedAt           DateTime?                        @db.Timestamptz(3)
+  createdAt             DateTime                         @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime                         @updatedAt @db.Timestamptz(3)
+  university            University                       @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  academicMajor         AcademicMajor                    @relation(fields: [academicMajorId], references: [id], onDelete: Restrict)
+  languages             UniversityProgramLanguage[]
+  tuitionFees           UniversityProgramTuition[]
+  admissionRequirements UniversityAdmissionRequirement[]
+
+  @@unique([universityId, academicMajorId, studyLevel, nameAr])
+  @@index([universityId, status, studyLevel, id])
+  @@index([academicMajorId, status, studyLevel, universityId])
+  @@index([status, studyLevel, universityId])
+  @@index([universityId, facultyNameAr, status, id])
+}
+
+model UniversityProgramLanguage {
+  programId String            @db.Uuid
+  language  TeachingLanguage
+  createdAt DateTime          @default(now()) @db.Timestamptz(3)
+  program   UniversityProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@id([programId, language])
+  @@index([language, programId])
+}
+
+model UniversityProgramTuition {
+  id            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  programId     String               @db.Uuid
+  amount        Decimal              @db.Decimal(12, 2)
+  currency      String               @db.VarChar(3)
+  billingPeriod TuitionBillingPeriod
+  academicYear  String               @db.VarChar(9)
+  createdAt     DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
+  program       UniversityProgram    @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, academicYear])
+  @@index([programId, academicYear(sort: Desc), id])
+}
+
+model UniversityAdmissionRequirement {
+  id                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  universityId      String                    @db.Uuid
+  scope             AdmissionRequirementScope
+  studyLevel        ProgramStudyLevel?
+  programId         String?                   @db.Uuid
+  contentAr         String
+  contentEn         String?
+  status            PublicationStatus         @default(DRAFT)
+  officialSourceUrl String?
+  verifiedAt        DateTime?                 @db.Timestamptz(3)
+  publishedAt       DateTime?                 @db.Timestamptz(3)
+  createdAt         DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                  @updatedAt @db.Timestamptz(3)
+  university        University                @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  program           UniversityProgram?        @relation(fields: [programId], references: [id], onDelete: Restrict)
+
+  @@index([universityId, status, scope, id])
+  @@index([universityId, studyLevel, status, id])
+  @@index([programId, status, id])
+}
+
+model UniversityGalleryImage {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  universityId String            @db.Uuid
+  imageUrl     String
+  altAr        String?
+  altEn        String?
+  displayOrder Int               @default(0)
+  status       PublicationStatus @default(DRAFT)
+  publishedAt  DateTime?         @db.Timestamptz(3)
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
+  university   University        @relation(fields: [universityId], references: [id], onDelete: Restrict)
+
+  @@index([universityId, status, displayOrder, id])
 }
 
 model Scholarship {
@@ -150,6 +432,9 @@ model Scholarship {
   requirementsEn      String?
   descriptionAr       String
   descriptionEn       String?
+  imageUrl            String?
+  imageAltAr          String?
+  imageAltEn          String?
   verifiedDeadline    DateTime?                    @db.Timestamptz(3)
   officialSourceUrl   String?
   applicationStatus   ScholarshipApplicationStatus @default(OPEN)
@@ -162,8 +447,10 @@ model Scholarship {
   updatedAt           DateTime                     @updatedAt @db.Timestamptz(3)
   country             Country?                     @relation(fields: [countryId], references: [id], onDelete: Restrict)
   university          University?                  @relation(fields: [universityId], references: [id], onDelete: Restrict)
-  articles            Article[]
+  articles            Article[]                    @relation("LegacyArticleScholarship")
+  relatedArticles     ArticleScholarship[]
   studentApplications StudentApplication[]
+  faqEntries          FaqEntry[]
 
   @@index([countryId, status, featured, createdAt, id])
   @@index([universityId, status, createdAt, id])
@@ -191,41 +478,84 @@ model Service {
   seoDescriptionAr String?
   createdAt        DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
+  faqEntries       FaqEntry[]
 
   @@index([status, featured, displayOrder, id])
   @@index([createdAt, id])
 }
 
+model FaqEntry {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope         FaqScope
+  questionAr    String
+  answerAr      String
+  questionEn    String?
+  answerEn      String?
+  status        PublicationStatus @default(DRAFT)
+  displayOrder  Int               @default(0)
+  publishedAt   DateTime?         @db.Timestamptz(3)
+  countryId     String?           @db.Uuid
+  universityId  String?           @db.Uuid
+  serviceId     String?           @db.Uuid
+  scholarshipId String?           @db.Uuid
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @db.Timestamptz(3)
+  country       Country?          @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  university    University?       @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  service       Service?          @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  scholarship   Scholarship?      @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
+
+  @@index([scope, status, displayOrder, id])
+  @@index([countryId, status, displayOrder, id])
+  @@index([universityId, status, displayOrder, id])
+  @@index([serviceId, status, displayOrder, id])
+  @@index([scholarshipId, status, displayOrder, id])
+}
+
 model Article {
-  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  titleAr          String
-  titleEn          String?
-  slug             String            @unique
-  summaryAr        String
-  summaryEn        String?
-  bodyAr           Json
-  bodyEn           Json?
-  coverImageUrl    String?
-  coverImageAltAr  String?
-  coverImageAltEn  String?
-  countryId        String?           @db.Uuid
-  universityId     String?           @db.Uuid
-  scholarshipId    String?           @db.Uuid
-  featured         Boolean           @default(false)
-  status           PublicationStatus @default(DRAFT)
-  publishedAt      DateTime?         @db.Timestamptz(3)
-  seoTitleAr       String?
-  seoDescriptionAr String?
-  createdAt        DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt        DateTime          @updatedAt @db.Timestamptz(3)
-  country          Country?          @relation(fields: [countryId], references: [id], onDelete: Restrict)
-  university       University?       @relation(fields: [universityId], references: [id], onDelete: Restrict)
-  scholarship      Scholarship?      @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
+  id                  String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titleAr             String
+  titleEn             String?
+  slug                String               @unique
+  summaryAr           String
+  summaryEn           String?
+  bodyAr              Json
+  bodyEn              Json?
+  coverImageUrl       String?
+  coverImageAltAr     String?
+  coverImageAltEn     String?
+  countryId           String?              @db.Uuid
+  universityId        String?              @db.Uuid
+  scholarshipId       String?              @db.Uuid
+  featured            Boolean              @default(false)
+  status              PublicationStatus    @default(DRAFT)
+  publishedAt         DateTime?            @db.Timestamptz(3)
+  seoTitleAr          String?
+  seoDescriptionAr    String?
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
+  country             Country?             @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  university          University?          @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  scholarship         Scholarship?         @relation("LegacyArticleScholarship", fields: [scholarshipId], references: [id], onDelete: Restrict)
+  relatedScholarships ArticleScholarship[]
 
   @@index([countryId, status, createdAt, id])
   @@index([universityId, status, createdAt, id])
   @@index([scholarshipId, status, createdAt, id])
   @@index([status, featured, createdAt, id])
+}
+
+model ArticleScholarship {
+  articleId     String      @db.Uuid
+  scholarshipId String      @db.Uuid
+  displayOrder  Int
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+  article       Article     @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
+
+  @@id([articleId, scholarshipId])
+  @@unique([articleId, displayOrder])
+  @@index([scholarshipId, articleId])
 }
 
 model StudentApplication {

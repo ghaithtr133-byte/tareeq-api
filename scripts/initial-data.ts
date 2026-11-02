@@ -505,6 +505,7 @@ const seedOne = async (
   manifest: SeedManifest,
   resource: ContentResource,
   rawInput: Record<string, unknown>,
+  actorAdminId: string,
 ) => {
   const input = contentCreateSchemas[resource].parse(rawInput) as ContentWriteData
   const slug = String(input.slug)
@@ -531,7 +532,7 @@ const seedOne = async (
     return existing
   }
 
-  const created = await service.create(resource, input)
+  const created = await service.create(resource, input, actorAdminId)
   await upsertManifestEntry(
     manifest,
     'content',
@@ -735,6 +736,23 @@ const provisionAccounts = async () => {
 }
 
 const seedContent = async () => {
+  const superAdminEmail = process.env.INITIAL_SUPER_ADMIN_EMAIL?.trim()
+  if (!superAdminEmail) {
+    throw new Error('BLOCKED — MISSING_PREREQUISITE: INITIAL_SUPER_ADMIN_EMAIL')
+  }
+  const actor = await getPrisma().adminUser.findFirst({
+    where: {
+      email: superAdminEmail,
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    },
+    select: { id: true },
+  })
+  if (!actor) {
+    throw new Error(
+      'BLOCKED — The configured active SUPER_ADMIN must be provisioned before content seeding.',
+    )
+  }
   const repository = new PrismaContentRepository()
   const service = new ContentService(repository)
   const manifest = await loadManifest()
@@ -747,6 +765,7 @@ const seedContent = async () => {
       manifest,
       'countries',
       rawInput,
+      actor.id,
     )
     ids.set(record.slug, record.id)
   }
@@ -758,6 +777,7 @@ const seedContent = async () => {
       manifest,
       'universities',
       { ...seed.input, countryId: ids.get(seed.countrySlug) },
+      actor.id,
     )
     ids.set(record.slug, record.id)
   }
@@ -769,6 +789,7 @@ const seedContent = async () => {
       manifest,
       'scholarships',
       { ...seed.input, countryId: ids.get(seed.countrySlug) },
+      actor.id,
     )
     ids.set(record.slug, record.id)
   }
@@ -780,17 +801,25 @@ const seedContent = async () => {
       manifest,
       'services',
       rawInput,
+      actor.id,
     )
     ids.set(record.slug, record.id)
   }
 
   for (const seed of articleSeeds) {
-    await seedOne(service, repository, manifest, 'articles', {
-      ...seed.input,
-      countryId: ids.get(seed.countrySlug),
-      universityId: ids.get(seed.universitySlug),
-      scholarshipId: ids.get(seed.scholarshipSlug),
-    })
+    await seedOne(
+      service,
+      repository,
+      manifest,
+      'articles',
+      {
+        ...seed.input,
+        countryId: ids.get(seed.countrySlug),
+        universityId: ids.get(seed.universitySlug),
+        scholarshipId: ids.get(seed.scholarshipSlug),
+      },
+      actor.id,
+    )
   }
 
   const counts = Object.fromEntries(

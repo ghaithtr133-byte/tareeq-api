@@ -5,6 +5,10 @@ import type {
   ContentResource,
   ContentWriteData,
 } from '../../src/content/types.js'
+import type { AuditIntent } from '../../src/audit/types.js'
+import { InMemoryAuditRepository } from './in-memory-audit-repository.js'
+import type { InMemoryUniversityDirectoryRepository } from './in-memory-university-directory-repository.js'
+import type { UniversityDirectoryFilters } from '../../src/university-directory/types.js'
 
 const textIncludes = (value: unknown, search: string) =>
   typeof value === 'string' && value.toLocaleLowerCase().includes(search.toLocaleLowerCase())
@@ -17,6 +21,11 @@ export class InMemoryContentRepository implements ContentRepository {
     ['services', []],
     ['articles', []],
   ])
+
+  constructor(
+    readonly audit = new InMemoryAuditRepository(),
+    private readonly universityDirectory?: InMemoryUniversityDirectoryRepository,
+  ) {}
 
   async list(
     resource: ContentResource,
@@ -49,8 +58,38 @@ export class InMemoryContentRepository implements ContentRepository {
       )
       records = records.filter((record) => record.universityId === university?.id)
     }
-    if (query.studyLevel) {
+    if (resource === 'scholarships') {
+      const directoryFilters: UniversityDirectoryFilters = {
+        ...(query.universitySearch ? { search: query.universitySearch } : {}),
+        ...(query.universityCountry ? { country: query.universityCountry } : {}),
+        ...(query.universityFeatured === undefined ? {} : { featured: query.universityFeatured }),
+        ...(query.universityMajor ? { major: query.universityMajor } : {}),
+        ...(query.universityStudyLevel ? { studyLevel: query.universityStudyLevel } : {}),
+        ...(query.universityLanguage ? { language: query.universityLanguage } : {}),
+        ...(query.universityCity ? { city: query.universityCity } : {}),
+        ...(query.universityType ? { universityType: query.universityType } : {}),
+      }
+      if (Object.keys(directoryFilters).length > 0) {
+        records = records.filter((record) =>
+          typeof record.universityId === 'string' &&
+          (this.universityDirectory?.matchesUniversity(record.universityId, directoryFilters) ?? false),
+        )
+      }
+    }
+    if (resource === 'universities' && (query.major || query.studyLevel || query.language)) {
+      records = records.filter((record) => this.universityDirectory?.matchesUniversity(record.id, {
+        ...(query.major ? { major: query.major } : {}),
+        ...(query.studyLevel ? { studyLevel: query.studyLevel as never } : {}),
+        ...(query.language ? { language: query.language as never } : {}),
+      }) ?? false)
+    } else if (query.studyLevel) {
       records = records.filter((record) => record.studyLevel === query.studyLevel)
+    }
+    if (resource === 'universities' && query.city) {
+      records = records.filter((record) => this.universityDirectory?.findCity(String(record.cityId))?.slug === query.city)
+    }
+    if (resource === 'universities' && query.universityType) {
+      records = records.filter((record) => record.universityType === query.universityType)
     }
     if (query.fundingType) {
       records = records.filter((record) => record.fundingType === query.fundingType)
@@ -80,20 +119,43 @@ export class InMemoryContentRepository implements ContentRepository {
     })
     const total = records.length
     const offset = (query.page - 1) * query.limit
-    return { items: records.slice(offset, offset + query.limit), total }
+    const items = records.slice(offset, offset + query.limit).map((record) => {
+      if (resource !== 'articles') return record
+      const listing = { ...record }
+      delete listing.scholarshipIds
+      delete listing.relatedScholarships
+      return listing
+    })
+    return { items, total }
   }
 
   async findById(resource: ContentResource, id: string) {
-    return this.records.get(resource)?.find((record) => record.id === id) ?? null
+    const record = this.records.get(resource)?.find((item) => item.id === id) ?? null
+    return resource === 'articles' && record ? this.articleDetails(record, false) : record
   }
 
   async findBySlug(resource: ContentResource, slug: string, publicOnly: boolean) {
-    return this.records.get(resource)?.find(
+    const record = this.records.get(resource)?.find(
       (record) => record.slug === slug && (!publicOnly || record.status === 'PUBLISHED'),
     ) ?? null
+    return resource === 'articles' && record ? this.articleDetails(record, publicOnly) : record
   }
 
-  async create(resource: ContentResource, data: ContentWriteData) {
+  async findCityById(id: string) {
+    const city = this.universityDirectory?.findCity(id)
+    return city ? { id: city.id, countryId: city.countryId, slug: city.slug } : null
+  }
+
+  async countScholarshipsByIds(ids: string[]) {
+    const selected = new Set(ids)
+    return (this.records.get('scholarships') ?? []).filter(({ id }) => selected.has(id)).length
+  }
+
+  async create(
+    resource: ContentResource,
+    data: ContentWriteData,
+    audit: AuditIntent,
+  ) {
     const now = new Date()
     const record = {
       id: crypto.randomUUID(),
@@ -104,17 +166,48 @@ export class InMemoryContentRepository implements ContentRepository {
       updatedAt: now,
       ...data,
     } as ContentEntity
+    await this.audit.append(audit, record.id)
     this.records.get(resource)?.push(record)
-    return record
+    return resource === 'articles' ? this.articleDetails(record, false) : record
   }
 
-  async update(resource: ContentResource, id: string, data: ContentWriteData) {
+  async update(
+    resource: ContentResource,
+    id: string,
+    data: ContentWriteData,
+    audit: AuditIntent,
+  ) {
     const records = this.records.get(resource) ?? []
     const index = records.findIndex((record) => record.id === id)
     const current = records[index]
     if (!current) throw new Error('Missing in-memory fixture.')
     const updated = { ...current, ...data, updatedAt: new Date() } as ContentEntity
+    await this.audit.append(audit, id)
     records[index] = updated
-    return updated
+    return resource === 'articles' ? this.articleDetails(updated, false) : updated
+  }
+
+  private articleDetails(record: ContentEntity, publicOnly: boolean): ContentEntity {
+    const scholarshipIds = Array.isArray(record.scholarshipIds)
+      ? record.scholarshipIds.filter((id): id is string => typeof id === 'string')
+      : typeof record.scholarshipId === 'string' ? [record.scholarshipId] : []
+    const scholarships = this.records.get('scholarships') ?? []
+    const relatedScholarships = scholarshipIds.flatMap((id) => {
+      const scholarship = scholarships.find((item) => item.id === id && (!publicOnly || item.status === 'PUBLISHED'))
+      if (!scholarship) return []
+      const country = typeof scholarship.countryId === 'string'
+        ? (this.records.get('countries') ?? []).find((item) => item.id === scholarship.countryId)
+        : null
+      return [{
+        id: scholarship.id,
+        slug: scholarship.slug,
+        titleAr: scholarship.titleAr,
+        imageUrl: scholarship.imageUrl ?? null,
+        applicationStatus: scholarship.applicationStatus,
+        verifiedDeadline: scholarship.verifiedDeadline ?? null,
+        country: country ? { id: country.id, slug: country.slug, nameAr: country.nameAr } : null,
+      }]
+    })
+    return { ...record, scholarshipIds, relatedScholarships }
   }
 }

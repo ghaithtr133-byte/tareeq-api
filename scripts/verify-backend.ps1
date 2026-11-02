@@ -347,6 +347,18 @@ Add-Check -Id 'security.email_dispatch_unauthorized' -Category 'Authorization' -
   -Evidence 'Unauthenticated GET /internal/cron/email-notifications; no authorization value or response body is retained in reports.' `
   -Classification $(if ($cronDispatch.statusCode -eq 0 -or $cronDispatch.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($cronDispatchPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
+# An anonymous upload-shaped request must stop at authentication before multipart
+# parsing or any Cloudinary provider call. The JSON body cannot create an asset.
+$mediaUploadUnauthorized = Invoke-ReadOnlyRequest -Method POST -Path '/api/v1/admin/uploads/images' -Headers @{ Origin = $AdminOrigin } -Body '{}' -Purpose 'unauthorized media upload boundary verification'
+$mediaUploadUnauthorizedBody = Convert-JsonBody $mediaUploadUnauthorized
+$mediaUploadUnauthorizedPass = $mediaUploadUnauthorized.statusCode -eq 401 -and
+  (Test-ErrorEnvelope $mediaUploadUnauthorizedBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'security.media_upload_unauthorized' -Category 'Authorization' -Status $(if ($mediaUploadUnauthorizedPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 401 AUTHENTICATION_REQUIRED before body parsing or Cloudinary access.' `
+  -Actual "HTTP $($mediaUploadUnauthorized.statusCode)." `
+  -Evidence 'POST /api/v1/admin/uploads/images used no cookie and no file; it cannot invoke Cloudinary or create an asset.' `
+  -Classification $(if ($mediaUploadUnauthorized.statusCode -eq 0 -or $mediaUploadUnauthorized.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($mediaUploadUnauthorizedPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
 # OpenAPI document and exact operation contract.
 $openApiResponse = Invoke-ReadOnlyRequest -Method GET -Path '/openapi.json' -Purpose 'OpenAPI verification'
 $openApi = Convert-JsonBody $openApiResponse
@@ -364,6 +376,43 @@ foreach ($entry in @(
   'GET /api/v1/auth/me',
   'POST /api/v1/auth/change-password'
 )) { $expectedOperations.Add($entry) }
+$expectedOperations.Add('POST /api/v1/admin/uploads/images')
+$expectedOperations.Add('GET /api/v1/admin/audit-logs')
+$expectedOperations.Add('POST /api/v1/analytics/events')
+$expectedOperations.Add('GET /api/v1/admin/analytics/summary')
+$expectedOperations.Add('GET /api/v1/admin/analytics/journeys')
+$expectedOperations.Add('GET /api/v1/site-settings')
+$expectedOperations.Add('GET /api/v1/faqs')
+$expectedOperations.Add('GET /api/v1/countries/{slug}/faqs')
+$expectedOperations.Add('GET /api/v1/universities/{slug}/faqs')
+$expectedOperations.Add('GET /api/v1/services/{slug}/faqs')
+$expectedOperations.Add('GET /api/v1/scholarships/{slug}/faqs')
+$expectedOperations.Add('GET /api/v1/admin/faqs')
+$expectedOperations.Add('POST /api/v1/admin/faqs')
+$expectedOperations.Add('PATCH /api/v1/admin/faqs/{id}')
+$expectedOperations.Add('PATCH /api/v1/admin/faqs/order')
+$expectedOperations.Add('GET /api/v1/universities/filter-options')
+$expectedOperations.Add('GET /api/v1/universities/{slug}/programs')
+$expectedOperations.Add('GET /api/v1/universities/{slug}/admission-requirements')
+$expectedOperations.Add('GET /api/v1/universities/{slug}/gallery')
+$expectedOperations.Add('GET /api/v1/admin/universities/{universityId}/programs')
+$expectedOperations.Add('POST /api/v1/admin/universities/{universityId}/programs')
+$expectedOperations.Add('PATCH /api/v1/admin/university-programs/{id}')
+$expectedOperations.Add('GET /api/v1/admin/universities/{universityId}/admission-requirements')
+$expectedOperations.Add('POST /api/v1/admin/universities/{universityId}/admission-requirements')
+$expectedOperations.Add('PATCH /api/v1/admin/university-admission-requirements/{id}')
+$expectedOperations.Add('GET /api/v1/admin/universities/{universityId}/gallery')
+$expectedOperations.Add('POST /api/v1/admin/universities/{universityId}/gallery')
+$expectedOperations.Add('PATCH /api/v1/admin/university-gallery/{id}')
+$expectedOperations.Add('PATCH /api/v1/admin/universities/{universityId}/gallery/order')
+$expectedOperations.Add('DELETE /api/v1/admin/university-gallery/{id}')
+$expectedOperations.Add('GET /api/v1/admin/academic-majors')
+$expectedOperations.Add('POST /api/v1/admin/academic-majors')
+$expectedOperations.Add('GET /api/v1/admin/cities')
+$expectedOperations.Add('POST /api/v1/admin/cities')
+$expectedOperations.Add('GET /api/v1/admin/users')
+$expectedOperations.Add('PATCH /api/v1/admin/users/{id}')
+$expectedOperations.Add('PATCH /api/v1/admin/site-settings')
 foreach ($resource in $resources) {
   foreach ($entry in @(
     "GET /api/v1/$resource",
@@ -413,16 +462,16 @@ if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
   }
 }
 $operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
-$operationPass = $actualOperations.Count -eq 44 -and $operationDifference.Count -eq 0
+$operationPass = $actualOperations.Count -eq 81 -and $operationDifference.Count -eq 0
 Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Exactly the approved 44 operations with no missing or unexpected operations.' `
+  -Expected 'Exactly the approved 81 operations with no missing or unexpected operations.' `
   -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
-  -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, application, and inquiry surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
+  -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, submission, media-upload, audit-log, Admin-management, site-settings, analytics, FAQ, and University-directory surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
   -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 44
+$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 81
 $documentationEvidence = if ($documentationIssues.Count -eq 0) {
-  'All 44 live operations passed documentation metadata checks.'
+  'All 81 live operations passed documentation metadata checks.'
 } else {
   $issueLimit = [Math]::Min(10, $documentationIssues.Count)
   @($documentationIssues.GetRange(0, $issueLimit)) -join '; '
@@ -445,6 +494,43 @@ Add-Check -Id 'openapi.submission_email_semantics' -Category 'Documentation' -St
   -Actual "Application documented=$($applicationDescription -match 'database acceptance' -and $applicationDescription -match 'not guaranteed'); inquiry documented=$($inquiryDescription -match 'database acceptance' -and $inquiryDescription -match 'not guaranteed')." `
   -Evidence 'OpenAPI descriptions only; no submission or email is sent by the read-only verifier.' `
   -Classification $(if ($emailSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$scholarshipListOperation = if ($null -ne $openApi) { $openApi.paths.'/api/v1/scholarships'.get } else { $null }
+$scholarshipParameterNames = if ($null -ne $scholarshipListOperation -and (Test-Property $scholarshipListOperation 'parameters')) {
+  @($scholarshipListOperation.parameters | Where-Object { $_.in -eq 'query' } | ForEach-Object { [string]$_.name })
+} else { @() }
+$expectedUniversityScholarshipParameters = @(
+  'universitySearch', 'universityCountry', 'universityMajor', 'universityStudyLevel',
+  'universityLanguage', 'universityCity', 'universityType', 'universityFeatured'
+)
+$missingUniversityScholarshipParameters = @($expectedUniversityScholarshipParameters | Where-Object { $_ -notin $scholarshipParameterNames })
+$scholarshipListDescription = if ($null -ne $scholarshipListOperation) { [string]$scholarshipListOperation.description } else { '' }
+$universityScholarshipContractPass =
+  $missingUniversityScholarshipParameters.Count -eq 0 -and
+  $scholarshipListDescription -match 'same PUBLISHED UniversityProgram' -and
+  $scholarshipListDescription -match 'complete University result set' -and
+  $scholarshipListDescription -match 'effective OPEN/CLOSED'
+Add-Check -Id 'openapi.university_filtered_scholarships' -Category 'Documentation' -Status $(if ($universityScholarshipContractPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'The existing Scholarship list documents all eight University Directory query parameters, same-program matching, full-result-set evaluation, and effective application status.' `
+  -Actual "Missing parameters=$($missingUniversityScholarshipParameters -join ','); same-program documented=$($scholarshipListDescription -match 'same PUBLISHED UniversityProgram'); complete-set documented=$($scholarshipListDescription -match 'complete University result set'); effective status documented=$($scholarshipListDescription -match 'effective OPEN/CLOSED')." `
+  -Evidence 'OpenAPI metadata only; the verifier performs no Scholarship or University mutation.' `
+  -Classification $(if ($universityScholarshipContractPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$publicArticleDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/articles/{slug}'.get.description } else { '' }
+$adminArticleCreateDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/admin/articles'.post.description } else { '' }
+$adminArticleUpdateDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/admin/articles/{id}'.patch.description } else { '' }
+$articleScholarshipSemanticsPass =
+  $publicArticleDescription -match 'relatedScholarships' -and
+  $publicArticleDescription -match 'PUBLISHED Scholarships' -and
+  $adminArticleCreateDescription -match 'scholarshipIds' -and
+  $adminArticleCreateDescription -match 'first array item' -and
+  $adminArticleUpdateDescription -match 'preserve links' -and
+  $adminArticleUpdateDescription -match '\[\] clears'
+Add-Check -Id 'openapi.article_related_scholarship_semantics' -Category 'Documentation' -Status $(if ($articleScholarshipSemanticsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Article operations document public Scholarship visibility/order and the Admin legacy/multiple-field precedence, preservation, and clearing rules.' `
+  -Actual "Public cards documented=$($publicArticleDescription -match 'relatedScholarships' -and $publicArticleDescription -match 'PUBLISHED Scholarships'); create precedence documented=$($adminArticleCreateDescription -match 'scholarshipIds' -and $adminArticleCreateDescription -match 'first array item'); update preservation/clear documented=$($adminArticleUpdateDescription -match 'preserve links' -and $adminArticleUpdateDescription -match '\[\] clears')." `
+  -Evidence 'OpenAPI descriptions only; the verifier performs no Article or Scholarship mutation.' `
+  -Classification $(if ($articleScholarshipSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
 # Scalar HTML availability only; manual rendering is intentionally owner-managed.
 $scalar = Invoke-ReadOnlyRequest -Method GET -Path '/docs' -Purpose 'Scalar HTML availability'
@@ -471,9 +557,9 @@ $collectionDownloadPass = $collectionDownload.statusCode -eq 200 -and
   $collectionDownload.contentDisposition -match 'attachment;\s*filename="tareeq-api\.postman_collection\.json"' -and
   (Test-Property $downloadedCollection 'info') -and
   $downloadedCollection.info.schema -eq 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' -and
-  $downloadedRequestCount -eq 44
+  $downloadedRequestCount -eq 81
 Add-Check -Id 'postman.collection_download' -Category 'Documentation' -Status $(if ($collectionDownloadPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 44 requests.' `
+  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 81 requests.' `
   -Actual "HTTP $($collectionDownload.statusCode); requests=$downloadedRequestCount; content type=$($collectionDownload.contentType); attachment=$(-not [string]::IsNullOrWhiteSpace($collectionDownload.contentDisposition))." `
   -Evidence 'GET /postman/collection.json; downloaded content is parsed in memory and is not retained in reports.' `
   -Classification $(if ($collectionDownload.statusCode -eq 0 -or $collectionDownload.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($collectionDownloadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
@@ -809,6 +895,104 @@ foreach ($resource in @('applications', 'inquiries')) {
     -Classification $(if ($admin.statusCode -eq 0 -or $admin.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($adminPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 }
 
+$anonymousAudit = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/audit-logs?limit=1' -Purpose 'anonymous audit-log authorization boundary'
+$anonymousAuditBody = Convert-JsonBody $anonymousAudit
+$anonymousAuditPass = $anonymousAudit.statusCode -eq 401 -and (Test-ErrorEnvelope $anonymousAuditBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'admin.audit_logs.anonymous' -Category 'Authorization' -Status $(if ($anonymousAuditPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Anonymous audit-log request receives HTTP 401 AUTHENTICATION_REQUIRED.' `
+  -Actual "HTTP $($anonymousAudit.statusCode)." `
+  -Evidence 'GET /api/v1/admin/audit-logs?limit=1 without cookies; no audit event body is retained.' `
+  -Classification $(if ($anonymousAudit.statusCode -eq 0 -or $anonymousAudit.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($anonymousAuditPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$anonymousAdminUsers = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/users?limit=1' -Purpose 'anonymous Admin-account authorization boundary'
+$anonymousAdminUsersBody = Convert-JsonBody $anonymousAdminUsers
+$anonymousAdminUsersPass = $anonymousAdminUsers.statusCode -eq 401 -and (Test-ErrorEnvelope $anonymousAdminUsersBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'admin.users.anonymous' -Category 'Authorization' -Status $(if ($anonymousAdminUsersPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Anonymous Admin-account request receives HTTP 401 AUTHENTICATION_REQUIRED.' `
+  -Actual "HTTP $($anonymousAdminUsers.statusCode)." `
+  -Evidence 'GET /api/v1/admin/users?limit=1 without cookies; no account data is retained.' `
+  -Classification $(if ($anonymousAdminUsers.statusCode -eq 0 -or $anonymousAdminUsers.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($anonymousAdminUsersPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$anonymousAnalytics = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/analytics/summary' -Purpose 'anonymous analytics authorization boundary'
+$anonymousAnalyticsBody = Convert-JsonBody $anonymousAnalytics
+$anonymousAnalyticsPass = $anonymousAnalytics.statusCode -eq 401 -and (Test-ErrorEnvelope $anonymousAnalyticsBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'admin.analytics.anonymous' -Category 'Authorization' -Status $(if ($anonymousAnalyticsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Anonymous analytics report request receives HTTP 401 AUTHENTICATION_REQUIRED.' `
+  -Actual "HTTP $($anonymousAnalytics.statusCode)." `
+  -Evidence 'GET /api/v1/admin/analytics/summary without cookies; no analytics event is written and no report body is retained.' `
+  -Classification $(if ($anonymousAnalytics.statusCode -eq 0 -or $anonymousAnalytics.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($anonymousAnalyticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$anonymousFaqs = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/faqs?scope=GLOBAL&limit=1' -Purpose 'anonymous FAQ-management authorization boundary'
+$anonymousFaqsBody = Convert-JsonBody $anonymousFaqs
+$anonymousFaqsPass = $anonymousFaqs.statusCode -eq 401 -and (Test-ErrorEnvelope $anonymousFaqsBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'admin.faqs.anonymous' -Category 'Authorization' -Status $(if ($anonymousFaqsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Anonymous FAQ-management request receives HTTP 401 AUTHENTICATION_REQUIRED.' `
+  -Actual "HTTP $($anonymousFaqs.statusCode)." `
+  -Evidence 'GET /api/v1/admin/faqs?scope=GLOBAL&limit=1 without cookies; no FAQ body is retained.' `
+  -Classification $(if ($anonymousFaqs.statusCode -eq 0 -or $anonymousFaqs.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($anonymousFaqsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$publicFaqs = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/faqs?scope=GLOBAL&limit=5' -Headers @{ Origin = $PublicOrigin } -Purpose 'public Homepage FAQ read'
+$publicFaqsBody = Convert-JsonBody $publicFaqs
+$publicFaqsPass = $publicFaqs.statusCode -eq 200 -and
+  (Test-PaginationEnvelope $publicFaqsBody 1 5) -and
+  $publicFaqs.accessControlAllowOrigin -eq $PublicOrigin -and
+  [string]::IsNullOrWhiteSpace($publicFaqs.accessControlAllowCredentials)
+Add-Check -Id 'faqs.public_global' -Category 'Public API' -Status $(if ($publicFaqsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 200 published GLOBAL FAQ pagination with exact public-origin CORS and no credential allowance.' `
+  -Actual "HTTP $($publicFaqs.statusCode); exact origin=$($publicFaqs.accessControlAllowOrigin -eq $PublicOrigin)." `
+  -Evidence 'GET /api/v1/faqs?scope=GLOBAL&limit=5; FAQ values are inspected in memory and not retained in reports.' `
+  -Classification $(if ($publicFaqs.statusCode -eq 0 -or $publicFaqs.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($publicFaqsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$anonymousPrograms = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/universities/00000000-0000-4000-8000-000000000001/programs?limit=1' -Purpose 'anonymous University-program authorization boundary'
+$anonymousProgramsBody = Convert-JsonBody $anonymousPrograms
+$anonymousProgramsPass = $anonymousPrograms.statusCode -eq 401 -and (Test-ErrorEnvelope $anonymousProgramsBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'admin.university_programs.anonymous' -Category 'Authorization' -Status $(if ($anonymousProgramsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Anonymous University-program request receives HTTP 401 AUTHENTICATION_REQUIRED before resource lookup.' `
+  -Actual "HTTP $($anonymousPrograms.statusCode)." `
+  -Evidence 'GET /api/v1/admin/universities/{valid-uuid}/programs?limit=1 without cookies; no program body is retained.' `
+  -Classification $(if ($anonymousPrograms.statusCode -eq 0 -or $anonymousPrograms.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($anonymousProgramsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$anonymousUniversityDetails = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/universities/00000000-0000-4000-8000-000000000001/gallery?limit=1' -Purpose 'anonymous University-details authorization boundary'
+$anonymousUniversityDetailsBody = Convert-JsonBody $anonymousUniversityDetails
+$anonymousUniversityDetailsPass = $anonymousUniversityDetails.statusCode -eq 401 -and (Test-ErrorEnvelope $anonymousUniversityDetailsBody 'AUTHENTICATION_REQUIRED')
+Add-Check -Id 'admin.university_details.anonymous' -Category 'Authorization' -Status $(if ($anonymousUniversityDetailsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'Anonymous University-details request receives HTTP 401 AUTHENTICATION_REQUIRED before resource lookup.' `
+  -Actual "HTTP $($anonymousUniversityDetails.statusCode)." `
+  -Evidence 'GET /api/v1/admin/universities/{valid-uuid}/gallery?limit=1 without cookies; no gallery values are retained.' `
+  -Classification $(if ($anonymousUniversityDetails.statusCode -eq 0 -or $anonymousUniversityDetails.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($anonymousUniversityDetailsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$directoryOptions = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/universities/filter-options' -Headers @{ Origin = $PublicOrigin } -Purpose 'public University filter options'
+$directoryOptionsBody = Convert-JsonBody $directoryOptions
+$directoryOptionsPass = $directoryOptions.statusCode -eq 200 -and
+  (Test-Property $directoryOptionsBody 'success') -and $directoryOptionsBody.success -eq $true -and
+  (Test-Property $directoryOptionsBody 'data') -and
+  (Test-Property $directoryOptionsBody.data 'majors') -and
+  (Test-Property $directoryOptionsBody.data 'studyLevels') -and
+  (Test-Property $directoryOptionsBody.data 'languages') -and
+  (Test-Property $directoryOptionsBody.data 'cities') -and
+  (Test-Property $directoryOptionsBody.data 'universityTypes') -and
+  $directoryOptions.accessControlAllowOrigin -eq $PublicOrigin
+Add-Check -Id 'universities.filter_options' -Category 'Public API' -Status $(if ($directoryOptionsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 200 dynamic University filter-option envelope with all P1/P2 facets and public CORS.' `
+  -Actual "HTTP $($directoryOptions.statusCode); exact origin=$($directoryOptions.accessControlAllowOrigin -eq $PublicOrigin)." `
+  -Evidence 'GET /api/v1/universities/filter-options; option values are inspected in memory and not retained in reports.' `
+  -Classification $(if ($directoryOptions.statusCode -eq 0 -or $directoryOptions.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($directoryOptionsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$publicSettings = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/site-settings' -Headers @{ Origin = $PublicOrigin } -Purpose 'public site-settings read'
+$publicSettingsBody = Convert-JsonBody $publicSettings
+$publicSettingsSerialized = if ($null -ne $publicSettingsBody) { $publicSettingsBody | ConvertTo-Json -Depth 20 -Compress } else { '' }
+$publicSettingsPass = $publicSettings.statusCode -eq 200 -and
+  (Test-Property $publicSettingsBody 'success') -and $publicSettingsBody.success -eq $true -and
+  (Test-Property $publicSettingsBody 'data') -and
+  $publicSettings.accessControlAllowOrigin -eq $PublicOrigin -and
+  [string]::IsNullOrWhiteSpace($publicSettings.accessControlAllowCredentials) -and
+  $publicSettingsSerialized -notmatch '(?i)password|token|secret|apiKey|databaseUrl'
+Add-Check -Id 'settings.public_read' -Category 'Public API' -Status $(if ($publicSettingsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'HTTP 200 safe public settings envelope with public-origin CORS and no credential or infrastructure fields.' `
+  -Actual "HTTP $($publicSettings.statusCode); exact origin=$($publicSettings.accessControlAllowOrigin -eq $PublicOrigin); credentials absent=$([string]::IsNullOrWhiteSpace($publicSettings.accessControlAllowCredentials))." `
+  -Evidence 'GET /api/v1/site-settings; response values are inspected in memory and not retained in reports.' `
+  -Classification $(if ($publicSettings.statusCode -eq 0 -or $publicSettings.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($publicSettingsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
 $publicCorsFailures = [System.Collections.Generic.List[string]]::new()
 foreach ($resource in $resources) {
   $publicRead = Invoke-ReadOnlyRequest -Method GET -Path "/api/v1/${resource}?limit=1" -Headers @{ Origin = $PublicOrigin } -Purpose 'student-origin public CORS read'
@@ -1053,6 +1237,87 @@ if (-not $Authenticated.IsPresent) {
       -Actual "Failures=$($adminReadFailures.Count)." `
       -Evidence $(if ($adminReadsPass) { 'All seven authenticated GET collection requests returned valid pagination envelopes.' } else { @($adminReadFailures) -join '; ' }) `
       -Classification $(if ($adminReadsPass) { 'NONE' } elseif (@($adminReadFailures | Where-Object { $_ -match 'HTTP (0|5\d\d)' }).Count -gt 0) { 'DEPLOYMENT_FAILURE' } else { 'CONTRACT_FAILURE' })
+
+    $faqRead = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/faqs?scope=GLOBAL&limit=1' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role FAQ-management authorization"
+    $faqReadBody = Convert-JsonBody $faqRead
+    $faqReadPass = $faqRead.statusCode -eq 200 -and
+      (Test-PaginationEnvelope $faqReadBody 1 1) -and
+      $faqRead.accessControlAllowOrigin -eq $AdminOrigin -and
+      $faqRead.accessControlAllowCredentials -eq 'true'
+    Add-Check -Id "admin.$roleSlug.faqs" -Category 'Authorization' -Status $(if ($faqReadPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected "$role receives HTTP 200 with a scoped FAQ pagination envelope and credentialed Admin CORS." `
+      -Actual "HTTP $($faqRead.statusCode)." `
+      -Evidence 'GET /api/v1/admin/faqs?scope=GLOBAL&limit=1; FAQ values are not retained in reports.' `
+      -Classification $(if ($faqRead.statusCode -eq 0 -or $faqRead.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($faqReadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $majorRead = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/academic-majors?limit=1' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role Academic-Major lookup authorization"
+    $majorReadBody = Convert-JsonBody $majorRead
+    $majorReadPass = $majorRead.statusCode -eq 200 -and (Test-PaginationEnvelope $majorReadBody 1 1) -and $majorRead.accessControlAllowOrigin -eq $AdminOrigin -and $majorRead.accessControlAllowCredentials -eq 'true'
+    Add-Check -Id "admin.$roleSlug.academic_majors" -Category 'Authorization' -Status $(if ($majorReadPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected "$role receives HTTP 200 with a bounded Academic-Major lookup and credentialed Admin CORS." `
+      -Actual "HTTP $($majorRead.statusCode)." `
+      -Evidence 'GET /api/v1/admin/academic-majors?limit=1; catalog values are not retained in reports.' `
+      -Classification $(if ($majorRead.statusCode -eq 0 -or $majorRead.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($majorReadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $auditRead = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/audit-logs?limit=1' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role audit-log authorization"
+    $auditReadBody = Convert-JsonBody $auditRead
+    $auditReadPass = if ($role -eq 'SUPER_ADMIN') {
+      $auditRead.statusCode -eq 200 -and (Test-PaginationEnvelope $auditReadBody 1 1)
+    } else {
+      $auditRead.statusCode -eq 403 -and (Test-ErrorEnvelope $auditReadBody 'FORBIDDEN')
+    }
+    Add-Check -Id "admin.$roleSlug.audit_logs" -Category 'Authorization' -Status $(if ($auditReadPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected $(if ($role -eq 'SUPER_ADMIN') { 'SUPER_ADMIN receives HTTP 200 with a pagination envelope.' } else { 'ADMIN receives HTTP 403 FORBIDDEN.' }) `
+      -Actual "HTTP $($auditRead.statusCode)." `
+      -Evidence 'GET /api/v1/admin/audit-logs?limit=1; response event bodies are not retained in reports.' `
+      -Classification $(if ($auditRead.statusCode -eq 0 -or $auditRead.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($auditReadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $adminUsersRead = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/users?limit=1' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role Admin-account authorization"
+    $adminUsersReadBody = Convert-JsonBody $adminUsersRead
+    $adminUsersSerialized = if ($null -ne $adminUsersReadBody) { $adminUsersReadBody | ConvertTo-Json -Depth 20 -Compress } else { '' }
+    $adminUsersReadPass = if ($role -eq 'SUPER_ADMIN') {
+      $adminUsersRead.statusCode -eq 200 -and
+        (Test-PaginationEnvelope $adminUsersReadBody 1 1) -and
+        $adminUsersSerialized -notmatch '(?i)password|token|hash|session'
+    } else {
+      $adminUsersRead.statusCode -eq 403 -and (Test-ErrorEnvelope $adminUsersReadBody 'FORBIDDEN')
+    }
+    Add-Check -Id "admin.$roleSlug.users" -Category 'Authorization' -Status $(if ($adminUsersReadPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected $(if ($role -eq 'SUPER_ADMIN') { 'SUPER_ADMIN receives HTTP 200 with safe paginated account fields.' } else { 'ADMIN receives HTTP 403 FORBIDDEN.' }) `
+      -Actual "HTTP $($adminUsersRead.statusCode)." `
+      -Evidence 'GET /api/v1/admin/users?limit=1; account values are not retained in reports.' `
+      -Classification $(if ($adminUsersRead.statusCode -eq 0 -or $adminUsersRead.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($adminUsersReadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $analyticsSummary = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/analytics/summary?topLimit=1' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role analytics-summary authorization"
+    $analyticsSummaryBody = Convert-JsonBody $analyticsSummary
+    $analyticsSummaryPass = if ($role -eq 'SUPER_ADMIN') {
+      $analyticsSummary.statusCode -eq 200 -and
+        (Test-Property $analyticsSummaryBody 'success') -and $analyticsSummaryBody.success -eq $true -and
+        (Test-Property $analyticsSummaryBody 'data') -and
+        (Test-Property $analyticsSummaryBody.data 'totals') -and
+        (Test-Property $analyticsSummaryBody.data 'clientReportedConversions') -and
+        (Test-Property $analyticsSummaryBody.data 'serverVerifiedConversions')
+    } else {
+      $analyticsSummary.statusCode -eq 403 -and (Test-ErrorEnvelope $analyticsSummaryBody 'FORBIDDEN')
+    }
+    Add-Check -Id "admin.$roleSlug.analytics_summary" -Category 'Authorization' -Status $(if ($analyticsSummaryPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected $(if ($role -eq 'SUPER_ADMIN') { 'SUPER_ADMIN receives HTTP 200 with anonymous aggregate and separately labeled conversion totals.' } else { 'ADMIN receives HTTP 403 FORBIDDEN.' }) `
+      -Actual "HTTP $($analyticsSummary.statusCode)." `
+      -Evidence 'GET /api/v1/admin/analytics/summary?topLimit=1; aggregate values are not retained in reports.' `
+      -Classification $(if ($analyticsSummary.statusCode -eq 0 -or $analyticsSummary.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($analyticsSummaryPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+    $analyticsJourneys = Invoke-ReadOnlyRequest -Method GET -Path '/api/v1/admin/analytics/journeys?limit=1' -Headers @{ Origin = $AdminOrigin } -WebSession $session -Purpose "$role analytics-journey authorization"
+    $analyticsJourneysBody = Convert-JsonBody $analyticsJourneys
+    $analyticsJourneysPass = if ($role -eq 'SUPER_ADMIN') {
+      $analyticsJourneys.statusCode -eq 200 -and (Test-PaginationEnvelope $analyticsJourneysBody 1 1)
+    } else {
+      $analyticsJourneys.statusCode -eq 403 -and (Test-ErrorEnvelope $analyticsJourneysBody 'FORBIDDEN')
+    }
+    Add-Check -Id "admin.$roleSlug.analytics_journeys" -Category 'Authorization' -Status $(if ($analyticsJourneysPass) { 'PASS' } else { 'FAIL' }) `
+      -Expected $(if ($role -eq 'SUPER_ADMIN') { 'SUPER_ADMIN receives HTTP 200 with a paginated anonymous journey envelope.' } else { 'ADMIN receives HTTP 403 FORBIDDEN.' }) `
+      -Actual "HTTP $($analyticsJourneys.statusCode)." `
+      -Evidence 'GET /api/v1/admin/analytics/journeys?limit=1; journey values are not retained in reports.' `
+      -Classification $(if ($analyticsJourneys.statusCode -eq 0 -or $analyticsJourneys.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($analyticsJourneysPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
     if ($null -ne $seedManifest) {
       $unpublishedEntries = @($seedManifest.content | Where-Object { $_.status -ne 'PUBLISHED' })

@@ -1,6 +1,7 @@
 import { z } from '@hono/zod-openapi'
 
 import { errorResponseSchema, successEnvelopeSchema } from '../shared/http.js'
+import { programStudyLevels, teachingLanguages, universityTypes } from '../university-directory/types.js'
 import type { ContentResource } from './types.js'
 
 export const publicationStatusSchema = z
@@ -9,6 +10,7 @@ export const publicationStatusSchema = z
 export const applicationStatusSchema = z
   .enum(['OPEN', 'CLOSED'])
   .openapi('ScholarshipApplicationStatus')
+export const universityTypeSchema = z.enum(universityTypes).openapi('UniversityType')
 
 const slugSchema = z
   .string()
@@ -71,6 +73,8 @@ export const universityCreateSchema = z
     nameEn: z.string().trim().min(1).max(200).optional(),
     officialName: z.string().trim().min(1).max(300),
     countryId: z.uuid(),
+    cityId: z.uuid().nullable().optional(),
+    universityType: universityTypeSchema.nullable().optional(),
     cityAr: z.string().trim().min(1).max(200),
     cityEn: z.string().trim().min(1).max(200).optional(),
     overviewAr: requiredArabicText,
@@ -96,6 +100,9 @@ export const scholarshipCreateSchema = z
     requirementsEn: optionalText,
     descriptionAr: requiredArabicText,
     descriptionEn: optionalText,
+    imageUrl: optionalUrl,
+    imageAltAr: z.string().trim().min(1).max(300).optional(),
+    imageAltEn: z.string().trim().min(1).max(300).optional(),
     verifiedDeadline: z.iso.datetime({ offset: true }).nullable().optional(),
     officialSourceUrl: webUrlSchema.nullable().optional(),
     applicationStatus: applicationStatusSchema.optional().default('OPEN'),
@@ -121,8 +128,7 @@ export const serviceCreateSchema = z
   .strict()
   .openapi('ServiceCreateRequest')
 
-export const articleCreateSchema = z
-  .object({
+const articleFields = {
     titleAr: z.string().trim().min(1).max(300),
     titleEn: z.string().trim().min(1).max(300).optional(),
     summaryAr: requiredArabicText,
@@ -135,9 +141,23 @@ export const articleCreateSchema = z
     countryId: z.uuid().nullable().optional(),
     universityId: z.uuid().nullable().optional(),
     scholarshipId: z.uuid().nullable().optional(),
+    scholarshipIds: z.array(z.uuid()).max(50).superRefine((items, context) => {
+      if (new Set(items).size !== items.length) context.addIssue({ code: 'custom', message: 'Duplicate Scholarship IDs are not allowed.' })
+    }).optional(),
     ...commonCreateFields,
-  })
+  }
+const articleAssociationRules = (value: { scholarshipId?: string | null | undefined; scholarshipIds?: string[] | undefined }, context: z.RefinementCtx) => {
+  const hasLegacy = Object.prototype.hasOwnProperty.call(value, 'scholarshipId')
+  const hasMultiple = Object.prototype.hasOwnProperty.call(value, 'scholarshipIds')
+  if (!hasLegacy || !hasMultiple) return
+  const ids = value.scholarshipIds ?? []
+  const consistent = value.scholarshipId === null ? ids.length === 0 : ids[0] === value.scholarshipId
+  if (!consistent) context.addIssue({ code: 'custom', path: ['scholarshipIds'], message: 'When both fields are supplied, scholarshipId must equal the first scholarshipIds item; null requires an empty array.' })
+}
+export const articleCreateSchema = z
+  .object(articleFields)
   .strict()
+  .superRefine(articleAssociationRules)
   .openapi('ArticleCreateRequest')
 
 const nonEmptyPatch = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) =>
@@ -158,7 +178,10 @@ export const contentPatchSchemas = {
   universities: nonEmptyPatch(universityCreateSchema).openapi('UniversityPatchRequest'),
   scholarships: nonEmptyPatch(scholarshipCreateSchema).openapi('ScholarshipPatchRequest'),
   services: nonEmptyPatch(serviceCreateSchema).openapi('ServicePatchRequest'),
-  articles: nonEmptyPatch(articleCreateSchema).openapi('ArticlePatchRequest'),
+  articles: z.object(articleFields).partial().strict()
+    .refine((value) => Object.keys(value).length > 0, { message: 'At least one field must be provided.' })
+    .superRefine(articleAssociationRules)
+    .openapi('ArticlePatchRequest'),
 } as const
 
 const dateSchema = z.iso.datetime({ offset: true })
@@ -190,10 +213,11 @@ export const countrySchema = z.object({
 export const universitySchema = z.object({
   ...entityBase,
   nameAr: z.string(), nameEn: z.string().nullable(), officialName: z.string(),
-  countryId: z.uuid(), cityAr: z.string(), cityEn: z.string().nullable(),
+  countryId: z.uuid(), cityId: z.uuid().nullable(), universityType: universityTypeSchema.nullable(), cityAr: z.string(), cityEn: z.string().nullable(),
   overviewAr: z.string(), overviewEn: z.string().nullable(), officialWebsite: z.string().nullable(),
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string().nullable() }).optional(),
+  city: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string() }).nullable().optional(),
   ...adminFields,
 }).openapi('University')
 
@@ -202,6 +226,7 @@ export const scholarshipSchema = z.object({
   titleAr: z.string(), titleEn: z.string().nullable(), countryId: z.uuid().nullable(), universityId: z.uuid().nullable(),
   studyLevel: z.string(), fundingType: z.string(), requirementsAr: z.string(), requirementsEn: z.string().nullable(),
   descriptionAr: z.string(), descriptionEn: z.string().nullable(), verifiedDeadline: nullableDateSchema,
+  imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   officialSourceUrl: z.string().nullable(), applicationStatus: applicationStatusSchema,
   effectiveApplicationStatus: applicationStatusSchema.optional(),
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
@@ -228,6 +253,23 @@ export const articleSchema = z.object({
   scholarship: z.object({ id: z.uuid(), slug: z.string(), titleAr: z.string() }).nullable().optional(),
   ...adminFields,
 }).openapi('Article')
+
+export const relatedScholarshipSchema = z.object({
+  id: z.uuid(), slug: z.string(), titleAr: z.string(), imageUrl: z.string().nullable(),
+  country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable(),
+  effectiveApplicationStatus: applicationStatusSchema,
+}).openapi('ArticleRelatedScholarship')
+
+export const articleDetailSchema = articleSchema.extend({
+  scholarshipIds: z.array(z.uuid()),
+  relatedScholarships: z.array(relatedScholarshipSchema),
+}).openapi('ArticleDetail')
+
+const publicArticleDetailSchema = articleDetailSchema.omit({
+  status: true, createdAt: true, updatedAt: true,
+  country: true, university: true, scholarship: true,
+  scholarshipIds: true,
+})
 
 export const contentEntitySchemas = {
   countries: countrySchema,
@@ -275,17 +317,30 @@ const queryFor = (resource: ContentResource) => {
     universities: {
       search: searchQuery,
       country: slugSchema.optional().openapi({ description: 'Related Country slug.' }),
+      major: slugSchema.optional().openapi({ description: 'Academic Major slug. Combined P1 filters must match one published program.' }),
+      studyLevel: z.enum(programStudyLevels).optional().openapi({ example: 'BACHELORS' }),
+      language: z.enum(teachingLanguages).optional().openapi({ example: 'ENGLISH' }),
+      city: slugSchema.optional().openapi({ description: 'Normalized City slug.' }),
+      universityType: universityTypeSchema.optional(),
       featured: featuredQuery,
       sort: z.enum(['newest', 'name']).optional().default('newest').openapi({ description: 'Sort newest first or by Arabic name.' }),
     },
     scholarships: {
       search: searchQuery,
       country: slugSchema.optional().openapi({ description: 'Related Country slug.' }),
-      university: slugSchema.optional().openapi({ description: 'Related University slug.' }),
-      studyLevel: z.string().trim().min(1).max(120).optional().openapi({ example: 'MASTERS' }),
+      university: slugSchema.optional().openapi({ description: 'Exact related University slug. This legacy filter keeps its existing meaning.' }),
+      studyLevel: z.string().trim().min(1).max(120).optional().openapi({ description: 'Scholarship study-level field; this is distinct from universityStudyLevel.', example: 'MASTERS' }),
       fundingType: z.string().trim().min(1).max(120).optional().openapi({ example: 'FULL' }),
       applicationStatus: applicationStatusSchema.optional().openapi({ description: 'Effective OPEN/CLOSED state; passed verified deadlines count as CLOSED.' }),
       featured: featuredQuery,
+      universitySearch: searchQuery.openapi({ description: 'Match the associated published University by Arabic/English name, official name, or Arabic city name.', example: 'Bucharest' }),
+      universityCountry: slugSchema.optional().openapi({ description: 'Country slug of the associated published University; distinct from the Scholarship country filter.', example: 'romania' }),
+      universityMajor: slugSchema.optional().openapi({ description: 'Academic Major slug on the same published University Program used by the other university program filters.', example: 'medicine' }),
+      universityStudyLevel: z.enum(programStudyLevels).optional().openapi({ description: 'Controlled study level on the same published University Program; distinct from the Scholarship studyLevel field.', example: 'BACHELORS' }),
+      universityLanguage: z.enum(teachingLanguages).optional().openapi({ description: 'Teaching language on the same published University Program.', example: 'ENGLISH' }),
+      universityCity: slugSchema.optional().openapi({ description: 'Normalized City slug of the associated published University.', example: 'bucharest' }),
+      universityType: universityTypeSchema.optional().openapi({ description: 'Type of the associated published University.' }),
+      universityFeatured: featuredQuery.openapi({ description: 'Filter by the associated published University featured state.', example: 'true' }),
       sort: z.enum(['newest', 'deadline']).optional().default('newest').openapi({ description: 'Sort newest first or by earliest non-null deadline.' }),
     },
     services: {
@@ -393,7 +448,9 @@ export const contentErrorResponses = {
 
 export const entityResponseSchema = (resource: ContentResource, admin = false) =>
   successEnvelopeSchema(
-    admin ? contentEntitySchemas[resource] : publicContentEntitySchemas[resource],
+    resource === 'articles'
+      ? admin ? articleDetailSchema : publicArticleDetailSchema
+      : admin ? contentEntitySchemas[resource] : publicContentEntitySchemas[resource],
   )
 export const listResponseSchema = (resource: ContentResource, admin = false) =>
   successEnvelopeSchema(z.object({

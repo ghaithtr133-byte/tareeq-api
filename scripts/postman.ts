@@ -85,15 +85,29 @@ const folderNames = [
   'Public — Articles',
   'Public — Applications',
   'Public — Inquiries',
+  'Public — Site Settings',
+  'Public — Analytics',
+  'Public — FAQs',
+  'Public — University Directory',
+  'Public — University Details',
   'Admin — Content Management',
   'Admin — Applications',
   'Admin — Inquiries',
+  'Admin — Media',
+  'Admin — Audit Logs',
+  'Admin — Account Management',
+  'Admin — Site Settings',
+  'Admin — Analytics',
+  'Admin — FAQs',
+  'Admin — University Programs',
+  'Admin — Directory Catalogs',
+  'Admin — University Details',
 ] as const
 
 const variableDefaults = [
   { key: 'baseUrl', value: 'http://localhost:3000', description: 'Backend origin without a trailing slash.' },
   { key: 'origin', value: 'http://localhost:3001', description: 'Trusted Admin Origin header used by authenticated POST/PATCH requests.' },
-  { key: 'publicOrigin', value: 'http://localhost:3001', description: 'Allowed Public Website Origin header used by student submission requests.' },
+  { key: 'publicOrigin', value: 'http://localhost:3001', description: 'Allowed Public Website Origin header used by student submission and analytics-ingestion requests.' },
   { key: 'adminEmail', value: 'replace-with-authorized-admin@example.invalid', description: 'Set locally; never commit a real account email.' },
   { key: 'adminPassword', value: 'replace-with-authorized-admin-password', description: 'Set locally; never commit a real password.' },
   { key: 'newAdminPassword', value: 'replace-with-new-admin-password', description: 'Manual password-change placeholder.' },
@@ -109,6 +123,14 @@ const variableDefaults = [
   { key: 'articleId', value: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d' },
   { key: 'applicationId', value: 'b7fc1a1b-7878-4f97-9431-58baaf8c493e' },
   { key: 'inquiryId', value: '6de33e44-6cb8-4514-a35d-e1a9c2fbb8f3' },
+  { key: 'auditActorId', value: '11111111-1111-4111-8111-111111111111' },
+  { key: 'adminUserId', value: 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20' },
+  { key: 'faqId', value: 'f0000000-0000-4000-8000-000000000001' },
+  { key: 'academicMajorId', value: '10000000-0000-4000-8000-000000000001' },
+  { key: 'cityId', value: '30000000-0000-4000-8000-000000000001' },
+  { key: 'universityProgramId', value: '20000000-0000-4000-8000-000000000001' },
+  { key: 'universityAdmissionRequirementId', value: '40000000-0000-4000-8000-000000000001' },
+  { key: 'universityGalleryImageId', value: '50000000-0000-4000-8000-000000000001' },
 ] as const
 
 const isRecord = (value: unknown): value is JsonRecord =>
@@ -137,6 +159,20 @@ const submissionResourceForPath = (path: string) =>
 const folderFor = (entry: OperationEntry) => {
   if (entry.path === '/api/v1/health') return 'System'
   if (entry.path.startsWith('/api/v1/auth/')) return 'Authentication'
+  if (entry.path === '/api/v1/admin/uploads/images') return 'Admin — Media'
+  if (entry.path === '/api/v1/admin/audit-logs') return 'Admin — Audit Logs'
+  if (entry.path === '/api/v1/universities/filter-options' || entry.path === '/api/v1/universities/{slug}/programs') return 'Public — University Directory'
+  if (entry.path === '/api/v1/universities/{slug}/admission-requirements' || entry.path === '/api/v1/universities/{slug}/gallery') return 'Public — University Details'
+  if (entry.path === '/api/v1/admin/universities/{universityId}/programs' || entry.path === '/api/v1/admin/university-programs/{id}') return 'Admin — University Programs'
+  if (entry.path === '/api/v1/admin/academic-majors' || entry.path === '/api/v1/admin/cities') return 'Admin — Directory Catalogs'
+  if (entry.path.includes('/admission-requirements') || entry.path.includes('/university-admission-requirements/') || entry.path.includes('/gallery') || entry.path.includes('/university-gallery/')) return 'Admin — University Details'
+  if (entry.path === '/api/v1/faqs' || (/^\/api\/v1\/(countries|universities|services|scholarships)\/\{slug\}\/faqs$/.test(entry.path))) return 'Public — FAQs'
+  if (entry.path === '/api/v1/admin/faqs' || entry.path.startsWith('/api/v1/admin/faqs/')) return 'Admin — FAQs'
+  if (entry.path === '/api/v1/analytics/events') return 'Public — Analytics'
+  if (entry.path.startsWith('/api/v1/admin/analytics/')) return 'Admin — Analytics'
+  if (entry.path === '/api/v1/site-settings') return 'Public — Site Settings'
+  if (entry.path === '/api/v1/admin/site-settings') return 'Admin — Site Settings'
+  if (entry.path === '/api/v1/admin/users' || entry.path.startsWith('/api/v1/admin/users/')) return 'Admin — Account Management'
   const submissionResource = submissionResourceForPath(entry.path)
   if (submissionResource) {
     const label = submissionResource[0]?.toUpperCase() + submissionResource.slice(1)
@@ -149,6 +185,33 @@ const folderFor = (entry: OperationEntry) => {
 }
 
 const operationRank = (entry: OperationEntry) => {
+  if (entry.path === '/api/v1/admin/uploads/images') return 1
+  if (entry.path === '/api/v1/admin/audit-logs') return 1
+  if (entry.path === '/api/v1/universities/filter-options') return 1
+  if (entry.path === '/api/v1/universities/{slug}/programs') return 2
+  if (entry.path === '/api/v1/universities/{slug}/admission-requirements') return 1
+  if (entry.path === '/api/v1/universities/{slug}/gallery') return 2
+  if (entry.path === '/api/v1/admin/universities/{universityId}/programs') return entry.method === 'get' ? 1 : 2
+  if (entry.path === '/api/v1/admin/university-programs/{id}') return 3
+  if (entry.path === '/api/v1/admin/academic-majors') return entry.method === 'get' ? 1 : 2
+  if (entry.path === '/api/v1/admin/cities') return entry.method === 'get' ? 3 : 4
+  if (entry.path === '/api/v1/admin/universities/{universityId}/admission-requirements') return entry.method === 'get' ? 1 : 2
+  if (entry.path === '/api/v1/admin/university-admission-requirements/{id}') return 3
+  if (entry.path === '/api/v1/admin/universities/{universityId}/gallery') return entry.method === 'get' ? 4 : 5
+  if (entry.path === '/api/v1/admin/university-gallery/{id}') return entry.method === 'patch' ? 6 : 8
+  if (entry.path === '/api/v1/admin/universities/{universityId}/gallery/order') return 7
+  if (entry.path === '/api/v1/faqs') return 1
+  if (entry.path.endsWith('/{slug}/faqs')) return 2
+  if (entry.path === '/api/v1/admin/faqs') return entry.method === 'get' ? 1 : 2
+  if (entry.path === '/api/v1/admin/faqs/{id}') return 3
+  if (entry.path === '/api/v1/admin/faqs/order') return 4
+  if (entry.path === '/api/v1/analytics/events') return 1
+  if (entry.path === '/api/v1/admin/analytics/summary') return 1
+  if (entry.path === '/api/v1/admin/analytics/journeys') return 2
+  if (entry.path === '/api/v1/site-settings') return 1
+  if (entry.path === '/api/v1/admin/site-settings') return 1
+  if (entry.path === '/api/v1/admin/users') return 1
+  if (entry.path.startsWith('/api/v1/admin/users/')) return 2
   if (entry.path.startsWith('/api/v1/auth/')) {
     const ranks: Record<string, number> = {
       '/api/v1/auth/login': 1,
@@ -172,7 +235,9 @@ const operationRank = (entry: OperationEntry) => {
   return resourceRank + methodRanks[entry.method]
 }
 
-const parameterValue = (parameter: OpenApiParameter) => {
+const parameterValue = (parameter: OpenApiParameter, path: string) => {
+  if (path.startsWith('/api/v1/admin/analytics/') && parameter.name === 'from') return '2026-10-01'
+  if (path.startsWith('/api/v1/admin/analytics/') && parameter.name === 'to') return '2026-10-31'
   const namedValues: Record<string, string> = {
     page: '1',
     limit: '12',
@@ -183,6 +248,16 @@ const parameterValue = (parameter: OpenApiParameter) => {
     studyLevel: 'MASTERS',
     fundingType: 'FULL',
     applicationStatus: 'OPEN',
+    actorId: '{{auditActorId}}',
+    action: 'content.country.status_changed',
+    resourceType: 'COUNTRY',
+    scope: 'GLOBAL',
+    major: 'medicine',
+    language: 'ENGLISH',
+    city: 'bucharest',
+    universityType: 'PUBLIC',
+    from: '2026-10-01T00:00:00.000Z',
+    to: '2026-10-31T23:59:59.999Z',
   }
   if (namedValues[parameter.name]) return namedValues[parameter.name]
   const schema = parameter.schema ?? {}
@@ -191,6 +266,17 @@ const parameterValue = (parameter: OpenApiParameter) => {
 }
 
 const environmentVariableForPath = (path: string, parameterName: string) => {
+  if (path === '/api/v1/admin/faqs/{id}' && parameterName === 'id') {
+    return '{{faqId}}'
+  }
+  if (path === '/api/v1/admin/university-programs/{id}' && parameterName === 'id') {
+    return '{{universityProgramId}}'
+  }
+  if (path === '/api/v1/admin/university-admission-requirements/{id}' && parameterName === 'id') return '{{universityAdmissionRequirementId}}'
+  if (path === '/api/v1/admin/university-gallery/{id}' && parameterName === 'id') return '{{universityGalleryImageId}}'
+  if (path.startsWith('/api/v1/admin/users/') && parameterName === 'id') {
+    return '{{adminUserId}}'
+  }
   const submissionResource = submissionResourceForPath(path)
   if (submissionResource && parameterName === 'id') {
     return submissionResource === 'applications' ? '{{applicationId}}' : '{{inquiryId}}'
@@ -216,6 +302,8 @@ const replaceBodyPlaceholders = (path: string, value: unknown): unknown => {
       countryId: '{{countryId}}',
       universityId: '{{universityId}}',
       scholarshipId: '{{scholarshipId}}',
+      academicMajorId: '{{academicMajorId}}',
+      cityId: '{{cityId}}',
     }
     if (relationshipVariables[key] && item !== null) return [key, relationshipVariables[key]]
     return [key, replaceBodyPlaceholders(path, item)]
@@ -223,6 +311,13 @@ const replaceBodyPlaceholders = (path: string, value: unknown): unknown => {
 }
 
 const authDescription = (entry: OperationEntry) => {
+  if (
+    entry.path === '/api/v1/admin/audit-logs' ||
+    entry.path === '/api/v1/admin/users' ||
+    entry.path.startsWith('/api/v1/admin/users/') ||
+    entry.path === '/api/v1/admin/site-settings' ||
+    entry.path.startsWith('/api/v1/admin/analytics/')
+  ) return 'Authentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.'
   if (entry.path.startsWith('/api/v1/admin/')) return 'Authentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.'
   if (entry.path === '/api/v1/auth/login') return 'Authentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.'
   if (entry.path === '/api/v1/auth/refresh') return 'Authentication: rotating HttpOnly refresh cookie managed by Postman.'
@@ -246,7 +341,7 @@ const buildUrl = (entry: OperationEntry) => {
   if (queryParameters.length > 0) {
     url.query = queryParameters.map((parameter) => ({
       key: parameter.name,
-      value: parameterValue(parameter),
+      value: parameterValue(parameter, entry.path),
       description: parameter.description ?? '',
       disabled: !parameter.required,
     }))
@@ -262,17 +357,21 @@ const buildUrl = (entry: OperationEntry) => {
 }
 
 const buildRequest = (entry: OperationEntry) => {
-  const media = entry.operation.requestBody?.content?.['application/json']
+  const jsonMedia = entry.operation.requestBody?.content?.['application/json']
+  const multipartMedia = entry.operation.requestBody?.content?.['multipart/form-data']
   const headers: JsonRecord[] = [{ key: 'Accept', value: 'application/json', type: 'text' }]
-  if (media) headers.push({ key: 'Content-Type', value: 'application/json', type: 'text' })
-  if (entry.method === 'post' || entry.method === 'patch') {
-    const isPublicSubmission = entry.method === 'post' && submissionResourceForPath(entry.path) !== undefined && !entry.path.startsWith('/api/v1/admin/')
+  if (jsonMedia) headers.push({ key: 'Content-Type', value: 'application/json', type: 'text' })
+  if (entry.method === 'post' || entry.method === 'patch' || entry.method === 'delete') {
+    const isPublicWrite = entry.method === 'post' && (
+      submissionResourceForPath(entry.path) !== undefined ||
+      entry.path === '/api/v1/analytics/events'
+    ) && !entry.path.startsWith('/api/v1/admin/')
     headers.push({
       key: 'Origin',
-      value: isPublicSubmission ? '{{publicOrigin}}' : '{{origin}}',
+      value: isPublicWrite ? '{{publicOrigin}}' : '{{origin}}',
       type: 'text',
-      description: isPublicSubmission
-        ? 'Required by the public submission CORS policy when sent from a browser.'
+      description: isPublicWrite
+        ? 'Required by the public write CORS policy when sent from a browser.'
         : 'Required by the Backend CSRF origin check for authenticated state-changing requests.',
     })
   }
@@ -289,11 +388,30 @@ const buildRequest = (entry: OperationEntry) => {
     url: buildUrl(entry),
     description: `${entry.operation.description ?? ''}\n\n${authDescription(entry)}\n\n${warning}\n\nExpected responses:\n${responses}`,
   }
-  if (media?.example !== undefined) {
+  if (jsonMedia?.example !== undefined) {
     request.body = {
       mode: 'raw',
-      raw: JSON.stringify(replaceBodyPlaceholders(entry.path, media.example), null, 2),
+      raw: JSON.stringify(replaceBodyPlaceholders(entry.path, jsonMedia.example), null, 2),
       options: { raw: { language: 'json' } },
+    }
+  } else if (multipartMedia) {
+    const example = isRecord(multipartMedia.example) ? multipartMedia.example : {}
+    request.body = {
+      mode: 'formdata',
+      formdata: [
+        {
+          key: 'resource',
+          value: typeof example.resource === 'string' ? example.resource : 'countries',
+          type: 'text',
+          description: 'One of countries, universities, scholarships, services, or articles.',
+        },
+        {
+          key: 'file',
+          type: 'file',
+          src: [],
+          description: 'Select a JPEG, PNG, or WebP image up to 4,000,000 bytes. The complete multipart body is limited to 4,100,000 bytes. Postman sets the multipart boundary.',
+        },
+      ],
     }
   }
   return request
@@ -304,6 +422,7 @@ const responseStatus = (code: number) => {
     200: 'OK', 201: 'Created', 400: 'Bad Request', 401: 'Unauthorized',
     403: 'Forbidden', 404: 'Not Found', 409: 'Conflict', 413: 'Content Too Large',
     415: 'Unsupported Media Type', 429: 'Too Many Requests',
+    502: 'Bad Gateway', 503: 'Service Unavailable',
   }
   return values[code] ?? 'Documented Response'
 }
@@ -639,8 +758,8 @@ const check = async (document: OpenApiDocument) => {
   const expectedKeys = operationEntries(document).map((entry) => `${entry.method.toUpperCase()} ${entry.path}`).sort()
   const missing = expectedKeys.filter((key) => !actualKeys.includes(key))
   const obsolete = actualKeys.filter((key) => !expectedKeys.includes(key))
-  if (requests.length !== 44 || missing.length > 0 || obsolete.length > 0) {
-    throw new Error(`Postman operation mismatch. Expected 44, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
+  if (requests.length !== 81 || missing.length > 0 || obsolete.length > 0) {
+    throw new Error(`Postman operation mismatch. Expected 81, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
   }
 
   for (const [path, expected] of Object.entries(expectedArtifacts)) {
@@ -697,7 +816,7 @@ const main = async () => {
   if (command !== 'generate' && command !== 'check') throw new Error('Usage: tsx scripts/postman.ts <generate|check>')
   const document = await getOpenApiDocument()
   if (document.openapi !== '3.1.0') throw new Error(`Expected OpenAPI 3.1.0, received ${document.openapi}.`)
-  if (operationEntries(document).length !== 44) throw new Error(`Expected 44 OpenAPI operations, received ${operationEntries(document).length}.`)
+  if (operationEntries(document).length !== 81) throw new Error(`Expected 81 OpenAPI operations, received ${operationEntries(document).length}.`)
   if (command === 'generate') await generate(document)
   else await check(document)
 }

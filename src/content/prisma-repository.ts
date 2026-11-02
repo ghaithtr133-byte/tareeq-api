@@ -1,6 +1,8 @@
 import { getPrisma } from '../database/client.js'
 import type { Prisma } from '../generated/prisma/client.js'
 import { ApiError } from '../shared/http.js'
+import type { AuditIntent } from '../audit/types.js'
+import type { UniversityDirectoryFilters } from '../university-directory/types.js'
 import type {
   ContentEntity,
   ContentListQuery,
@@ -11,12 +13,107 @@ import type {
 
 const relationSelections = {
   country: { select: { id: true, slug: true, nameAr: true, nameEn: true } },
+  city: { select: { id: true, slug: true, nameAr: true, nameEn: true } },
   university: { select: { id: true, slug: true, nameAr: true } },
 } as const
 
+const articleInclude = (publicOnly: boolean) => ({
+  country: relationSelections.country,
+  university: relationSelections.university,
+  scholarship: { select: { id: true, slug: true, titleAr: true } },
+  relatedScholarships: {
+    ...(publicOnly ? { where: { scholarship: { status: 'PUBLISHED' as const } } } : {}),
+    orderBy: [{ displayOrder: 'asc' as const }, { scholarshipId: 'asc' as const }],
+    select: {
+      scholarshipId: true,
+      scholarship: { select: {
+        id: true, slug: true, titleAr: true, imageUrl: true,
+        applicationStatus: true, verifiedDeadline: true,
+        country: { select: { id: true, slug: true, nameAr: true } },
+      } },
+    },
+  },
+}) satisfies Prisma.ArticleInclude
+
+type ArticleJoinView = {
+  scholarshipId: string
+  scholarship: {
+    id: string
+    slug: string
+    titleAr: string
+    imageUrl: string | null
+    applicationStatus: string
+    verifiedDeadline: Date | null
+    country: { id: string; slug: string; nameAr: string } | null
+  }
+}
+
 const asEntity = (value: unknown) => value as ContentEntity
 const asEntities = (value: unknown[]) => value.map(asEntity)
+const asArticle = (value: unknown) => {
+  const record = value as Record<string, unknown> & { relatedScholarships: ArticleJoinView[] }
+  return asEntity({
+    ...record,
+    scholarshipIds: record.relatedScholarships.map(({ scholarshipId }) => scholarshipId),
+    relatedScholarships: record.relatedScholarships.map(({ scholarship }) => scholarship),
+  })
+}
+const asResourceEntity = (resource: ContentResource, value: unknown) => resource === 'articles' ? asArticle(value) : asEntity(value)
 const skipFor = (query: ContentListQuery) => (query.page - 1) * query.limit
+
+const universityDirectoryWhere = (
+  filters: UniversityDirectoryFilters,
+): Prisma.UniversityWhereInput => {
+  const programFilter: Prisma.UniversityProgramWhereInput | undefined = filters.major || filters.studyLevel || filters.language
+    ? { status: 'PUBLISHED' }
+    : undefined
+  if (programFilter && filters.major) programFilter.academicMajor = { slug: filters.major }
+  if (programFilter && filters.studyLevel) programFilter.studyLevel = filters.studyLevel
+  if (programFilter && filters.language) programFilter.languages = { some: { language: filters.language } }
+  return {
+    ...(filters.featured === undefined ? {} : { featured: filters.featured }),
+    ...(filters.country ? { country: { slug: filters.country } } : {}),
+    ...(filters.city ? { city: { slug: filters.city } } : {}),
+    ...(filters.universityType ? { universityType: filters.universityType } : {}),
+    ...(programFilter ? { programs: { some: programFilter } } : {}),
+    ...(filters.search
+      ? { OR: [
+          { nameAr: { contains: filters.search, mode: 'insensitive' } },
+          { nameEn: { contains: filters.search, mode: 'insensitive' } },
+          { officialName: { contains: filters.search, mode: 'insensitive' } },
+          { cityAr: { contains: filters.search, mode: 'insensitive' } },
+        ] }
+      : {}),
+  }
+}
+
+const universityListFilters = (query: ContentListQuery): UniversityDirectoryFilters => ({
+  ...(query.search ? { search: query.search } : {}),
+  ...(query.country ? { country: query.country } : {}),
+  ...(query.featured === undefined ? {} : { featured: query.featured }),
+  ...(query.major ? { major: query.major } : {}),
+  ...(query.studyLevel ? { studyLevel: query.studyLevel as NonNullable<UniversityDirectoryFilters['studyLevel']> } : {}),
+  ...(query.language ? { language: query.language as NonNullable<UniversityDirectoryFilters['language']> } : {}),
+  ...(query.city ? { city: query.city } : {}),
+  ...(query.universityType ? { universityType: query.universityType } : {}),
+})
+
+const scholarshipUniversityFilters = (query: ContentListQuery): UniversityDirectoryFilters => ({
+  ...(query.universitySearch ? { search: query.universitySearch } : {}),
+  ...(query.universityCountry ? { country: query.universityCountry } : {}),
+  ...(query.universityFeatured === undefined ? {} : { featured: query.universityFeatured }),
+  ...(query.universityMajor ? { major: query.universityMajor } : {}),
+  ...(query.universityStudyLevel ? { studyLevel: query.universityStudyLevel } : {}),
+  ...(query.universityLanguage ? { language: query.universityLanguage } : {}),
+  ...(query.universityCity ? { city: query.universityCity } : {}),
+  ...(query.universityType ? { universityType: query.universityType } : {}),
+})
+
+const auditData = (audit: AuditIntent, resourceId: string) => ({
+  ...audit,
+  resourceId,
+  metadata: audit.metadata as Prisma.InputJsonValue,
+})
 
 const handleWriteError = (error: unknown): never => {
   const code =
@@ -77,16 +174,7 @@ export class PrismaContentRepository implements ContentRepository {
       case 'universities': {
         const where: Prisma.UniversityWhereInput = {
           ...visibility,
-          ...(query.featured === undefined ? {} : { featured: query.featured }),
-          ...(query.country ? { country: { slug: query.country } } : {}),
-          ...(query.search
-            ? { OR: [
-                { nameAr: { contains: query.search, mode: 'insensitive' } },
-                { nameEn: { contains: query.search, mode: 'insensitive' } },
-                { officialName: { contains: query.search, mode: 'insensitive' } },
-                { cityAr: { contains: query.search, mode: 'insensitive' } },
-              ] }
-            : {}),
+          ...universityDirectoryWhere(universityListFilters(query)),
         }
         const orderBy: Prisma.UniversityOrderByWithRelationInput[] =
           query.sort === 'name'
@@ -95,13 +183,15 @@ export class PrismaContentRepository implements ContentRepository {
         const [items, total] = await Promise.all([
           prisma.university.findMany({
             where, orderBy, ...pagination,
-            include: { country: relationSelections.country },
+            include: { country: relationSelections.country, city: relationSelections.city },
           }),
           prisma.university.count({ where }),
         ])
         return { items: asEntities(items), total }
       }
       case 'scholarships': {
+        const directoryFilters = scholarshipUniversityFilters(query)
+        const hasDirectoryFilters = Object.keys(directoryFilters).length > 0
         const effectiveApplicationStatus: Prisma.ScholarshipWhereInput | undefined = query.applicationStatus === 'CLOSED'
           ? { OR: [
               { applicationStatus: 'CLOSED' as const },
@@ -127,7 +217,13 @@ export class PrismaContentRepository implements ContentRepository {
           ...visibility,
           ...(query.featured === undefined ? {} : { featured: query.featured }),
           ...(query.country ? { country: { slug: query.country } } : {}),
-          ...(query.university ? { university: { slug: query.university } } : {}),
+          ...(hasDirectoryFilters
+            ? { university: { is: {
+                status: 'PUBLISHED',
+                ...(query.university ? { slug: query.university } : {}),
+                ...universityDirectoryWhere(directoryFilters),
+              } } }
+            : query.university ? { university: { slug: query.university } } : {}),
           ...(query.studyLevel ? { studyLevel: query.studyLevel } : {}),
           ...(query.fundingType ? { fundingType: query.fundingType } : {}),
           ...(
@@ -205,13 +301,13 @@ export class PrismaContentRepository implements ContentRepository {
     const record = await (async () => {
       switch (resource) {
         case 'countries': return prisma.country.findUnique({ where: { id } })
-        case 'universities': return prisma.university.findUnique({ where: { id }, include: { country: relationSelections.country } })
+        case 'universities': return prisma.university.findUnique({ where: { id }, include: { country: relationSelections.country, city: relationSelections.city } })
         case 'scholarships': return prisma.scholarship.findUnique({ where: { id }, include: { country: relationSelections.country, university: relationSelections.university } })
         case 'services': return prisma.service.findUnique({ where: { id } })
-        case 'articles': return prisma.article.findUnique({ where: { id }, include: { country: relationSelections.country, university: relationSelections.university, scholarship: { select: { id: true, slug: true, titleAr: true } } } })
+        case 'articles': return prisma.article.findUnique({ where: { id }, include: articleInclude(false) })
       }
     })()
-    return record ? asEntity(record) : null
+    return record ? asResourceEntity(resource, record) : null
   }
 
   async findBySlug(resource: ContentResource, slug: string, publicOnly: boolean) {
@@ -220,40 +316,94 @@ export class PrismaContentRepository implements ContentRepository {
     const record = await (async () => {
       switch (resource) {
         case 'countries': return prisma.country.findFirst({ where: { slug, ...status } })
-        case 'universities': return prisma.university.findFirst({ where: { slug, ...status }, include: { country: relationSelections.country } })
+        case 'universities': return prisma.university.findFirst({ where: { slug, ...status }, include: { country: relationSelections.country, city: relationSelections.city } })
         case 'scholarships': return prisma.scholarship.findFirst({ where: { slug, ...status }, include: { country: relationSelections.country, university: relationSelections.university } })
         case 'services': return prisma.service.findFirst({ where: { slug, ...status } })
-        case 'articles': return prisma.article.findFirst({ where: { slug, ...status }, include: { country: relationSelections.country, university: relationSelections.university, scholarship: { select: { id: true, slug: true, titleAr: true } } } })
+        case 'articles': return prisma.article.findFirst({ where: { slug, ...status }, include: articleInclude(publicOnly) })
       }
     })()
-    return record ? asEntity(record) : null
+    return record ? asResourceEntity(resource, record) : null
   }
 
-  async create(resource: ContentResource, data: ContentWriteData) {
+  async findCityById(id: string) {
+    return getPrisma().city.findUnique({ where: { id }, select: { id: true, countryId: true, slug: true } })
+  }
+
+  async countScholarshipsByIds(ids: string[]) {
+    return getPrisma().scholarship.count({ where: { id: { in: ids } } })
+  }
+
+  async create(
+    resource: ContentResource,
+    data: ContentWriteData,
+    audit: AuditIntent,
+  ) {
     const prisma = getPrisma()
     try {
-      switch (resource) {
-        case 'countries': return asEntity(await prisma.country.create({ data: data as unknown as Prisma.CountryUncheckedCreateInput }))
-        case 'universities': return asEntity(await prisma.university.create({ data: data as unknown as Prisma.UniversityUncheckedCreateInput, include: { country: relationSelections.country } }))
-        case 'scholarships': return asEntity(await prisma.scholarship.create({ data: data as unknown as Prisma.ScholarshipUncheckedCreateInput, include: { country: relationSelections.country, university: relationSelections.university } }))
-        case 'services': return asEntity(await prisma.service.create({ data: data as unknown as Prisma.ServiceUncheckedCreateInput }))
-        case 'articles': return asEntity(await prisma.article.create({ data: data as unknown as Prisma.ArticleUncheckedCreateInput }))
-      }
+      return await prisma.$transaction(async (transaction) => {
+        const record = await (async () => {
+          switch (resource) {
+            case 'countries': return transaction.country.create({ data: data as unknown as Prisma.CountryUncheckedCreateInput })
+            case 'universities': return transaction.university.create({ data: data as unknown as Prisma.UniversityUncheckedCreateInput, include: { country: relationSelections.country, city: relationSelections.city } })
+            case 'scholarships': return transaction.scholarship.create({ data: data as unknown as Prisma.ScholarshipUncheckedCreateInput, include: { country: relationSelections.country, university: relationSelections.university } })
+            case 'services': return transaction.service.create({ data: data as unknown as Prisma.ServiceUncheckedCreateInput })
+            case 'articles': {
+              const { scholarshipIds, ...fields } = data
+              const ids = Array.isArray(scholarshipIds) ? scholarshipIds as string[] : []
+              return transaction.article.create({
+                data: {
+                  ...fields as unknown as Prisma.ArticleUncheckedCreateInput,
+                  relatedScholarships: { create: ids.map((scholarshipId, displayOrder) => ({ scholarshipId, displayOrder })) },
+                },
+                include: articleInclude(false),
+              })
+            }
+          }
+        })()
+        await transaction.adminAuditLog.create({ data: auditData(audit, record.id) })
+        return asResourceEntity(resource, record)
+      })
     } catch (error) {
       return handleWriteError(error)
     }
   }
 
-  async update(resource: ContentResource, id: string, data: ContentWriteData) {
+  async update(
+    resource: ContentResource,
+    id: string,
+    data: ContentWriteData,
+    audit: AuditIntent,
+  ) {
     const prisma = getPrisma()
     try {
-      switch (resource) {
-        case 'countries': return asEntity(await prisma.country.update({ where: { id }, data: data as unknown as Prisma.CountryUncheckedUpdateInput }))
-        case 'universities': return asEntity(await prisma.university.update({ where: { id }, data: data as unknown as Prisma.UniversityUncheckedUpdateInput, include: { country: relationSelections.country } }))
-        case 'scholarships': return asEntity(await prisma.scholarship.update({ where: { id }, data: data as unknown as Prisma.ScholarshipUncheckedUpdateInput, include: { country: relationSelections.country, university: relationSelections.university } }))
-        case 'services': return asEntity(await prisma.service.update({ where: { id }, data: data as unknown as Prisma.ServiceUncheckedUpdateInput }))
-        case 'articles': return asEntity(await prisma.article.update({ where: { id }, data: data as unknown as Prisma.ArticleUncheckedUpdateInput }))
-      }
+      return await prisma.$transaction(async (transaction) => {
+        const record = await (async () => {
+          switch (resource) {
+            case 'countries': return transaction.country.update({ where: { id }, data: data as unknown as Prisma.CountryUncheckedUpdateInput })
+            case 'universities': return transaction.university.update({ where: { id }, data: data as unknown as Prisma.UniversityUncheckedUpdateInput, include: { country: relationSelections.country, city: relationSelections.city } })
+            case 'scholarships': return transaction.scholarship.update({ where: { id }, data: data as unknown as Prisma.ScholarshipUncheckedUpdateInput, include: { country: relationSelections.country, university: relationSelections.university } })
+            case 'services': return transaction.service.update({ where: { id }, data: data as unknown as Prisma.ServiceUncheckedUpdateInput })
+            case 'articles': {
+              const { scholarshipIds, ...fields } = data
+              const replacesAssociations = Array.isArray(scholarshipIds)
+              const ids = replacesAssociations ? scholarshipIds as string[] : []
+              return transaction.article.update({
+                where: { id },
+                data: {
+                  ...fields as unknown as Prisma.ArticleUncheckedUpdateInput,
+                  ...(replacesAssociations ? { relatedScholarships: {
+                    deleteMany: {},
+                    create: ids.map((scholarshipId, displayOrder) => ({ scholarshipId, displayOrder })),
+                  } } : {}),
+                },
+                include: articleInclude(false),
+              })
+            }
+          }
+        })()
+        await transaction.adminAuditLog.create({ data: auditData(audit, id) })
+        return asResourceEntity(resource, record)
+      })
     } catch (error) {
       return handleWriteError(error)
     }

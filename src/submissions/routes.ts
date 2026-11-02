@@ -339,7 +339,11 @@ export const createSubmissionRoutes = (
       await readJson(c.req.raw),
     ) as SubmissionUpdate
     return c.json(successResponse(
-      await submissionRuntime.getService().updateApplication(id, input),
+      await submissionRuntime.getService().updateApplication(
+        id,
+        input,
+        c.get('authClaims').userId,
+      ),
     ), 200)
   })
 
@@ -367,7 +371,11 @@ export const createSubmissionRoutes = (
       await readJson(c.req.raw),
     ) as SubmissionUpdate
     return c.json(successResponse(
-      await submissionRuntime.getService().updateInquiry(id, input),
+      await submissionRuntime.getService().updateInquiry(
+        id,
+        input,
+        c.get('authClaims').userId,
+      ),
     ), 200)
   })
 

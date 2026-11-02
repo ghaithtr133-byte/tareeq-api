@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createApp } from '../src/app.js'
 import { ACCESS_COOKIE_NAME } from '../src/auth/constants.js'
@@ -17,6 +17,7 @@ const PUBLIC_ORIGIN = 'https://tareeq-academy.com'
 const JWT_SECRET = 'content-api-test-secret-that-is-longer-than-thirty-two-characters'
 const FIXED_NOW = new Date('2026-10-19T12:00:00.000Z')
 const ADMIN_ID = 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20'
+const SUPER_ADMIN_ID = '11111111-1111-4111-8111-111111111111'
 
 const config: AuthConfig = {
   databaseUrl: 'postgresql://unused:unused@localhost:5432/unused',
@@ -50,22 +51,41 @@ describe('content management APIs', () => {
   let app: ReturnType<typeof createApp>
   let adminToken: string
   let superAdminToken: string
+  let contentRepository: InMemoryContentRepository
 
   beforeAll(async () => {
     adminToken = await signAccessToken({ id: ADMIN_ID, role: 'ADMIN' }, JWT_SECRET)
     superAdminToken = await signAccessToken(
-      { id: '11111111-1111-4111-8111-111111111111', role: 'SUPER_ADMIN' },
+      { id: SUPER_ADMIN_ID, role: 'SUPER_ADMIN' },
       JWT_SECRET,
     )
   })
 
   beforeEach(() => {
+    const authRepository = new InMemoryAuthRepository()
+    authRepository.addUser({
+      id: ADMIN_ID,
+      name: 'Content Admin',
+      email: 'content-admin@example.invalid',
+      passwordHash: '$argon2id$test-only',
+      role: 'ADMIN',
+      isActive: true,
+    })
+    authRepository.addUser({
+      id: SUPER_ADMIN_ID,
+      name: 'Super Admin',
+      email: 'super-admin@example.invalid',
+      passwordHash: '$argon2id$test-only',
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    })
     const authRuntime: AuthRuntime = {
       getConfig: () => config,
-      getService: () => new AuthService(new InMemoryAuthRepository(), JWT_SECRET),
+      getService: () => new AuthService(authRepository, JWT_SECRET),
     }
+    contentRepository = new InMemoryContentRepository()
     const contentService = new ContentService(
-      new InMemoryContentRepository(),
+      contentRepository,
       () => new Date(FIXED_NOW),
     )
     const contentRuntime: ContentRuntime = { getService: () => contentService }
@@ -263,7 +283,8 @@ describe('content management APIs', () => {
     const base = {
       titleAr: 'منحة', slug: 'scholarship', studyLevel: 'MASTERS', fundingType: 'FULL',
       requirementsAr: 'المتطلبات', descriptionAr: 'الوصف', countryId: firstCountry.body.data.id,
-      universityId: university.data.id,
+      universityId: university.data.id, imageUrl: 'https://res.cloudinary.com/example/image/upload/scholarship.webp',
+      imageAltAr: 'صورة المنحة',
     }
 
     const noSource = await adminRequest('/api/v1/admin/scholarships', 'POST', { ...base, status: 'PUBLISHED' })
@@ -275,6 +296,18 @@ describe('content management APIs', () => {
     })
     expect(inconsistent.status).toBe(400)
     await expect(inconsistent.json()).resolves.toMatchObject({ error: { code: 'RELATIONSHIP_INVALID' } })
+
+    const created = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      ...base,
+      slug: 'scholarship-with-image',
+    })
+    expect(created.status).toBe(201)
+    await expect(created.json()).resolves.toMatchObject({
+      data: {
+        imageUrl: base.imageUrl,
+        imageAltAr: base.imageAltAr,
+      },
+    })
   })
 
   it('derives a passed scholarship deadline as CLOSED without hiding or archiving it', async () => {
@@ -297,6 +330,29 @@ describe('content management APIs', () => {
     expect(adminBody.data.status).toBe('PUBLISHED')
   })
 
+  it('paginates related University scholarships and preserves effective CLOSED status', async () => {
+    const country = await createCountry({ ...countryInput('romania'), status: 'PUBLISHED' })
+    const universityResponse = await adminRequest('/api/v1/admin/universities', 'POST', {
+      nameAr: 'جامعة بوخارست', officialName: 'Bucharest University', slug: 'bucharest-university',
+      countryId: country.body.data.id, cityAr: 'بوخارست', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+    })
+    const universityId = (await universityResponse.json() as { data: { id: string } }).data.id
+    for (let index = 1; index <= 4; index += 1) {
+      const response = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+        titleAr: `منحة ${index}`, slug: `related-scholarship-${index}`, studyLevel: 'BACHELORS', fundingType: 'FULL',
+        requirementsAr: 'المتطلبات', descriptionAr: 'الوصف', countryId: country.body.data.id, universityId,
+        applicationStatus: 'OPEN', ...(index === 1 ? { verifiedDeadline: '2026-10-01T00:00:00.000Z' } : {}),
+        officialSourceUrl: `https://example.edu/scholarships/${index}`, status: 'PUBLISHED',
+      })
+      expect(response.status).toBe(201)
+    }
+    const first = await (await app.request('/api/v1/scholarships?university=bucharest-university&page=1&limit=3')).json() as { data: { items: Array<{ effectiveApplicationStatus: string }>; pagination: { total: number } } }
+    const second = await (await app.request('/api/v1/scholarships?university=bucharest-university&page=2&limit=3')).json() as { data: { items: Array<{ effectiveApplicationStatus: string }>; pagination: { total: number } } }
+    expect(first.data.pagination.total).toBe(4)
+    expect(second.data.items).toHaveLength(1)
+    expect([...first.data.items, ...second.data.items].some(({ effectiveApplicationStatus }) => effectiveApplicationStatus === 'CLOSED')).toBe(true)
+  })
+
   it('validates and stores safe structured article blocks with optional relationships', async () => {
     const country = await createCountry({ ...countryInput(), status: 'PUBLISHED' })
     const invalid = await adminRequest('/api/v1/admin/articles', 'POST', {
@@ -313,6 +369,93 @@ describe('content management APIs', () => {
     expect((await app.request('/api/v1/articles/article')).status).toBe(200)
     const related = await app.request('/api/v1/articles?country=germany')
     await expect(related.json()).resolves.toMatchObject({ data: { pagination: { total: 1 } } })
+  })
+
+  it('supports zero, legacy-single, and ordered multiple Article Scholarship associations', async () => {
+    const country = await createCountry({ ...countryInput(), status: 'PUBLISHED' })
+    const scholarship = async (slug: string, status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED', deadline?: string) => {
+      const response = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+        titleAr: `منحة ${slug}`, slug, studyLevel: 'BACHELORS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+        countryId: country.body.data.id, applicationStatus: 'OPEN', verifiedDeadline: deadline ?? null,
+        officialSourceUrl: status === 'PUBLISHED' ? `https://example.edu/${slug}` : null, status,
+      })
+      expect(response.status).toBe(201)
+      return (await response.json() as { data: { id: string } }).data.id
+    }
+    const openId = await scholarship('open-related', 'PUBLISHED', '2027-01-01T00:00:00.000Z')
+    const closedId = await scholarship('closed-related', 'PUBLISHED', '2026-10-01T00:00:00.000Z')
+    const draftId = await scholarship('draft-related', 'DRAFT')
+    const archivedId = await scholarship('archived-related', 'ARCHIVED')
+    const base = { titleAr: 'مقال', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED' }
+
+    const zero = await adminRequest('/api/v1/admin/articles', 'POST', { ...base, slug: 'zero-related' })
+    expect(zero.status).toBe(201)
+    await expect((await app.request('/api/v1/articles/zero-related')).json()).resolves.toMatchObject({ data: { scholarshipId: null, relatedScholarships: [] } })
+
+    const legacy = await adminRequest('/api/v1/admin/articles', 'POST', { ...base, slug: 'legacy-related', scholarshipId: openId })
+    expect(legacy.status).toBe(201)
+    await expect(legacy.json()).resolves.toMatchObject({ data: { scholarshipId: openId, scholarshipIds: [openId] } })
+    await expect((await app.request('/api/v1/articles/legacy-related')).json()).resolves.toMatchObject({ data: { scholarshipId: openId, relatedScholarships: [{ id: openId }] } })
+
+    const multiple = await adminRequest('/api/v1/admin/articles', 'POST', {
+      ...base, slug: 'multiple-related', scholarshipId: closedId,
+      scholarshipIds: [closedId, draftId, openId, archivedId],
+    })
+    expect(multiple.status).toBe(201)
+    const multipleBody = await multiple.json() as { data: { id: string; scholarshipIds: string[] } }
+    expect(multipleBody.data.scholarshipIds).toEqual([closedId, draftId, openId, archivedId])
+
+    const publicDetail = await (await app.request('/api/v1/articles/multiple-related')).json() as { data: { relatedScholarships: Array<{ id: string; effectiveApplicationStatus: string; country: { id: string } | null }> } }
+    expect(publicDetail.data.relatedScholarships.map(({ id }) => id)).toEqual([closedId, openId])
+    expect(publicDetail.data.relatedScholarships).toEqual([
+      expect.objectContaining({ id: closedId, effectiveApplicationStatus: 'CLOSED', country: { id: country.body.data.id, slug: 'germany', nameAr: 'ألمانيا' } }),
+      expect.objectContaining({ id: openId, effectiveApplicationStatus: 'OPEN' }),
+    ])
+
+    const listing = await (await app.request('/api/v1/articles')).json() as { data: { items: Array<Record<string, unknown>> } }
+    expect(listing.data.items.find(({ slug }) => slug === 'multiple-related')).not.toHaveProperty('relatedScholarships')
+    expect(listing.data.items.find(({ slug }) => slug === 'multiple-related')).not.toHaveProperty('scholarshipIds')
+
+    expect((await adminRequest('/api/v1/admin/articles', 'POST', { ...base, slug: 'duplicates', scholarshipIds: [openId, openId] })).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/articles', 'POST', { ...base, slug: 'malformed', scholarshipIds: ['not-a-uuid'] })).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/articles', 'POST', { ...base, slug: 'missing', scholarshipIds: ['22222222-2222-4222-8222-222222222222'] })).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/articles', 'POST', { ...base, slug: 'contradictory', scholarshipId: openId, scholarshipIds: [closedId, openId] })).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/articles', 'POST', { ...base, slug: 'contradictory-null', scholarshipId: null, scholarshipIds: [openId] })).status).toBe(400)
+
+    expect((await adminRequest(`/api/v1/admin/articles/${multipleBody.data.id}`, 'PATCH', { summaryAr: 'ملخص محدث' })).status).toBe(200)
+    await expect((await adminRequest(`/api/v1/admin/articles/${multipleBody.data.id}`)).json()).resolves.toMatchObject({ data: { scholarshipIds: [closedId, draftId, openId, archivedId] } })
+
+    const replaced = await adminRequest(`/api/v1/admin/articles/${multipleBody.data.id}`, 'PATCH', { scholarshipIds: [openId, closedId] })
+    await expect(replaced.json()).resolves.toMatchObject({ data: { scholarshipId: openId, scholarshipIds: [openId, closedId] } })
+    const legacyReplaced = await adminRequest(`/api/v1/admin/articles/${multipleBody.data.id}`, 'PATCH', { scholarshipId: closedId })
+    await expect(legacyReplaced.json()).resolves.toMatchObject({ data: { scholarshipId: closedId, scholarshipIds: [closedId] } })
+    const cleared = await adminRequest(`/api/v1/admin/articles/${multipleBody.data.id}`, 'PATCH', { scholarshipIds: [] })
+    await expect(cleared.json()).resolves.toMatchObject({ data: { scholarshipId: null, scholarshipIds: [], relatedScholarships: [] } })
+  })
+
+  it('rolls back Article association replacement when its audit write fails', async () => {
+    const createScholarship = async (slug: string) => {
+      const response = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+        titleAr: slug, slug, studyLevel: 'BACHELORS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+      })
+      return (await response.json() as { data: { id: string } }).data.id
+    }
+    const firstId = await createScholarship('audit-first')
+    const secondId = await createScholarship('audit-second')
+    const created = await adminRequest('/api/v1/admin/articles', 'POST', {
+      titleAr: 'مقال', slug: 'audit-article', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], scholarshipIds: [firstId],
+    })
+    const articleId = (await created.json() as { data: { id: string } }).data.id
+    const successfulAudit = contentRepository.audit.events.at(-1)
+    expect(successfulAudit).toMatchObject({ action: 'content.article.created', metadata: { scholarshipAssociationCount: 1 } })
+    expect(JSON.stringify(successfulAudit)).not.toContain(firstId)
+
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    contentRepository.audit.failNextWrite = true
+    const failed = await adminRequest(`/api/v1/admin/articles/${articleId}`, 'PATCH', { scholarshipIds: [secondId] })
+    expect(failed.status).toBe(500)
+    await expect((await adminRequest(`/api/v1/admin/articles/${articleId}`)).json()).resolves.toMatchObject({ data: { scholarshipId: firstId, scholarshipIds: [firstId] } })
+    log.mockRestore()
   })
 
   it('paginates, filters featured records, and applies deterministic manual ordering', async () => {

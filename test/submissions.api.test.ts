@@ -16,6 +16,8 @@ const ADMIN_ORIGIN = 'https://admin.tareeq-academy.com'
 const PUBLIC_ORIGIN = 'https://tareeq-academy.com'
 const JWT_SECRET = 'submission-api-test-secret-that-is-longer-than-thirty-two-characters'
 const FIXED_NOW = new Date('2026-10-25T10:00:00.000Z')
+const ADMIN_ID = 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20'
+const SUPER_ADMIN_ID = '11111111-1111-4111-8111-111111111111'
 const COUNTRY_ID = '9879d0a4-9b7e-48d1-850a-da51be9de671'
 const UNIVERSITY_ID = '88008b68-b698-4725-93e9-801537e7797c'
 const SCHOLARSHIP_ID = '9f414dec-fcbc-49dd-994f-086d2ef40e1f'
@@ -61,11 +63,11 @@ describe('student applications and inquiries APIs', () => {
 
   beforeAll(async () => {
     adminToken = await signAccessToken(
-      { id: 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20', role: 'ADMIN' },
+      { id: ADMIN_ID, role: 'ADMIN' },
       JWT_SECRET,
     )
     superAdminToken = await signAccessToken(
-      { id: '11111111-1111-4111-8111-111111111111', role: 'SUPER_ADMIN' },
+      { id: SUPER_ADMIN_ID, role: 'SUPER_ADMIN' },
       JWT_SECRET,
     )
   })
@@ -85,9 +87,26 @@ describe('student applications and inquiries APIs', () => {
     })
     const service = new SubmissionService(repository, JWT_SECRET, () => new Date(FIXED_NOW))
     const submissionRuntime: SubmissionRuntime = { getService: () => service }
+    const authRepository = new InMemoryAuthRepository()
+    authRepository.addUser({
+      id: ADMIN_ID,
+      name: 'Operations Admin',
+      email: 'operations-admin@example.invalid',
+      passwordHash: '$argon2id$test-only',
+      role: 'ADMIN',
+      isActive: true,
+    })
+    authRepository.addUser({
+      id: SUPER_ADMIN_ID,
+      name: 'Super Admin',
+      email: 'super-admin@example.invalid',
+      passwordHash: '$argon2id$test-only',
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    })
     const authRuntime: AuthRuntime = {
       getConfig: () => config,
-      getService: () => new AuthService(new InMemoryAuthRepository(), JWT_SECRET),
+      getService: () => new AuthService(authRepository, JWT_SECRET),
     }
     app = createApp({ authRuntime, submissionRuntime })
   })
@@ -434,7 +453,7 @@ describe('student applications and inquiries APIs', () => {
       (total, path) => total + Object.keys(path).filter((method) => methods.has(method)).length,
       0,
     )
-    expect(operationCount).toBe(44)
+    expect(operationCount).toBe(81)
     expect(response.headers.get('x-request-id')).toBe('task-5-openapi-check')
   })
 })

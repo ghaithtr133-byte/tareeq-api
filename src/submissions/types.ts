@@ -1,3 +1,5 @@
+import type { AuditIntent } from '../audit/types.js'
+
 export const submissionResources = ['applications', 'inquiries'] as const
 
 export type SubmissionResource = (typeof submissionResources)[number]
@@ -126,6 +128,11 @@ export interface SubmissionRepository {
   updateApplication(
     id: string,
     data: SubmissionUpdate,
+    audit: AuditIntent,
   ): Promise<StudentApplicationRecord>
-  updateInquiry(id: string, data: SubmissionUpdate): Promise<GeneralInquiryRecord>
+  updateInquiry(
+    id: string,
+    data: SubmissionUpdate,
+    audit: AuditIntent,
+  ): Promise<GeneralInquiryRecord>
 }

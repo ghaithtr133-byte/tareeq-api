@@ -25,7 +25,7 @@
       "key": "publicOrigin",
       "value": "http://localhost:3001",
       "type": "string",
-      "description": "Allowed Public Website Origin header used by student submission requests."
+      "description": "Allowed Public Website Origin header used by student submission and analytics-ingestion requests."
     },
     {
       "key": "adminEmail",
@@ -103,6 +103,46 @@
     {
       "key": "inquiryId",
       "value": "6de33e44-6cb8-4514-a35d-e1a9c2fbb8f3",
+      "type": "string"
+    },
+    {
+      "key": "auditActorId",
+      "value": "11111111-1111-4111-8111-111111111111",
+      "type": "string"
+    },
+    {
+      "key": "adminUserId",
+      "value": "a4a2ec6a-c2e0-48ca-99e4-d11353120b20",
+      "type": "string"
+    },
+    {
+      "key": "faqId",
+      "value": "f0000000-0000-4000-8000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "academicMajorId",
+      "value": "10000000-0000-4000-8000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "cityId",
+      "value": "30000000-0000-4000-8000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "universityProgramId",
+      "value": "20000000-0000-4000-8000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "universityAdmissionRequirementId",
+      "value": "40000000-0000-4000-8000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "universityGalleryImageId",
+      "value": "50000000-0000-4000-8000-000000000001",
       "type": "string"
     }
   ],
@@ -441,6 +481,36 @@
                   "disabled": true
                 },
                 {
+                  "key": "major",
+                  "value": "medicine",
+                  "description": "Academic Major slug. Combined P1 filters must match one published program.",
+                  "disabled": true
+                },
+                {
+                  "key": "studyLevel",
+                  "value": "MASTERS",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "language",
+                  "value": "ENGLISH",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "city",
+                  "value": "bucharest",
+                  "description": "Normalized City slug.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityType",
+                  "value": "PUBLIC",
+                  "description": "",
+                  "disabled": true
+                },
+                {
                   "key": "featured",
                   "value": "true",
                   "description": "Filter by featured state.",
@@ -454,7 +524,7 @@
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -504,6 +574,36 @@
                       "disabled": true
                     },
                     {
+                      "key": "major",
+                      "value": "medicine",
+                      "description": "Academic Major slug. Combined P1 filters must match one published program.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "studyLevel",
+                      "value": "MASTERS",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "language",
+                      "value": "ENGLISH",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "city",
+                      "value": "bucharest",
+                      "description": "Normalized City slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityType",
+                      "value": "PUBLIC",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
                       "key": "featured",
                       "value": "true",
                       "description": "Filter by featured state.",
@@ -517,7 +617,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -578,6 +678,36 @@
                       "disabled": true
                     },
                     {
+                      "key": "major",
+                      "value": "medicine",
+                      "description": "Academic Major slug. Combined P1 filters must match one published program.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "studyLevel",
+                      "value": "MASTERS",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "language",
+                      "value": "ENGLISH",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
+                      "key": "city",
+                      "value": "bucharest",
+                      "description": "Normalized City slug.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityType",
+                      "value": "PUBLIC",
+                      "description": "",
+                      "disabled": true
+                    },
+                    {
                       "key": "featured",
                       "value": "true",
                       "description": "Filter by featured state.",
@@ -591,7 +721,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -669,13 +799,13 @@
                 {
                   "key": "university",
                   "value": "{{universitySlug}}",
-                  "description": "Related University slug.",
+                  "description": "Exact related University slug. This legacy filter keeps its existing meaning.",
                   "disabled": true
                 },
                 {
                   "key": "studyLevel",
                   "value": "MASTERS",
-                  "description": "",
+                  "description": "Scholarship study-level field; this is distinct from universityStudyLevel.",
                   "disabled": true
                 },
                 {
@@ -697,6 +827,54 @@
                   "disabled": true
                 },
                 {
+                  "key": "universitySearch",
+                  "value": "Bucharest",
+                  "description": "Match the associated published University by Arabic/English name, official name, or Arabic city name.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityCountry",
+                  "value": "romania",
+                  "description": "Country slug of the associated published University; distinct from the Scholarship country filter.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityMajor",
+                  "value": "medicine",
+                  "description": "Academic Major slug on the same published University Program used by the other university program filters.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityStudyLevel",
+                  "value": "BACHELORS",
+                  "description": "Controlled study level on the same published University Program; distinct from the Scholarship studyLevel field.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityLanguage",
+                  "value": "ENGLISH",
+                  "description": "Teaching language on the same published University Program.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityCity",
+                  "value": "bucharest",
+                  "description": "Normalized City slug of the associated published University.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityType",
+                  "value": "PUBLIC",
+                  "description": "Type of the associated published University.",
+                  "disabled": true
+                },
+                {
+                  "key": "universityFeatured",
+                  "value": "true",
+                  "description": "Filter by the associated published University featured state.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
                   "description": "Sort newest first or by earliest non-null deadline.",
@@ -704,7 +882,7 @@
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -756,13 +934,13 @@
                     {
                       "key": "university",
                       "value": "{{universitySlug}}",
-                      "description": "Related University slug.",
+                      "description": "Exact related University slug. This legacy filter keeps its existing meaning.",
                       "disabled": true
                     },
                     {
                       "key": "studyLevel",
                       "value": "MASTERS",
-                      "description": "",
+                      "description": "Scholarship study-level field; this is distinct from universityStudyLevel.",
                       "disabled": true
                     },
                     {
@@ -784,6 +962,54 @@
                       "disabled": true
                     },
                     {
+                      "key": "universitySearch",
+                      "value": "Bucharest",
+                      "description": "Match the associated published University by Arabic/English name, official name, or Arabic city name.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityCountry",
+                      "value": "romania",
+                      "description": "Country slug of the associated published University; distinct from the Scholarship country filter.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityMajor",
+                      "value": "medicine",
+                      "description": "Academic Major slug on the same published University Program used by the other university program filters.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityStudyLevel",
+                      "value": "BACHELORS",
+                      "description": "Controlled study level on the same published University Program; distinct from the Scholarship studyLevel field.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityLanguage",
+                      "value": "ENGLISH",
+                      "description": "Teaching language on the same published University Program.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityCity",
+                      "value": "bucharest",
+                      "description": "Normalized City slug of the associated published University.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityType",
+                      "value": "PUBLIC",
+                      "description": "Type of the associated published University.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityFeatured",
+                      "value": "true",
+                      "description": "Filter by the associated published University featured state.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
                       "description": "Sort newest first or by earliest non-null deadline.",
@@ -791,7 +1017,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -854,13 +1080,13 @@
                     {
                       "key": "university",
                       "value": "{{universitySlug}}",
-                      "description": "Related University slug.",
+                      "description": "Exact related University slug. This legacy filter keeps its existing meaning.",
                       "disabled": true
                     },
                     {
                       "key": "studyLevel",
                       "value": "MASTERS",
-                      "description": "",
+                      "description": "Scholarship study-level field; this is distinct from universityStudyLevel.",
                       "disabled": true
                     },
                     {
@@ -882,6 +1108,54 @@
                       "disabled": true
                     },
                     {
+                      "key": "universitySearch",
+                      "value": "Bucharest",
+                      "description": "Match the associated published University by Arabic/English name, official name, or Arabic city name.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityCountry",
+                      "value": "romania",
+                      "description": "Country slug of the associated published University; distinct from the Scholarship country filter.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityMajor",
+                      "value": "medicine",
+                      "description": "Academic Major slug on the same published University Program used by the other university program filters.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityStudyLevel",
+                      "value": "BACHELORS",
+                      "description": "Controlled study level on the same published University Program; distinct from the Scholarship studyLevel field.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityLanguage",
+                      "value": "ENGLISH",
+                      "description": "Teaching language on the same published University Program.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityCity",
+                      "value": "bucharest",
+                      "description": "Normalized City slug of the associated published University.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityType",
+                      "value": "PUBLIC",
+                      "description": "Type of the associated published University.",
+                      "disabled": true
+                    },
+                    {
+                      "key": "universityFeatured",
+                      "value": "true",
+                      "description": "Filter by the associated published University featured state.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
                       "description": "Sort newest first or by earliest non-null deadline.",
@@ -889,7 +1163,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,

@@ -98,6 +98,15 @@ export class AuthService {
     return verifyAccessToken(token, this.jwtSecret)
   }
 
+  async authenticateAccessToken(token: string): Promise<AccessClaims> {
+    const claims = await this.verifyAccessToken(token)
+    const user = await this.repository.findAdminById(claims.userId)
+    if (!user?.isActive) {
+      throw new ApiError(401, 'AUTHENTICATION_REQUIRED', 'Authentication is required.')
+    }
+    return { userId: user.id, role: user.role }
+  }
+
   async getCurrentUser(userId: string): Promise<PublicAdmin> {
     const user = await this.repository.findAdminById(userId)
     if (!user || !user.isActive) {

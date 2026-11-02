@@ -44,6 +44,14 @@ export type EmailConfig = {
   replyToEmail?: string
 }
 
+export type CloudinaryConfig = {
+  status: 'CONFIGURED' | 'MISSING' | 'INVALID'
+  folder: string
+  cloudName?: string
+  apiKey?: string
+  apiSecret?: string
+}
+
 let cachedAuthConfig: AuthConfig | undefined
 
 export const getAuthConfig = (): AuthConfig => {
@@ -104,6 +112,76 @@ export const getEmailConfig = (): EmailConfig => {
   }
   cachedEmailConfig = configured
   return configured
+}
+
+const cloudinaryFolder = z
+  .string()
+  .trim()
+  .min(1)
+  .max(120)
+  .regex(
+    /^(?!\/)(?!.*\/\/)(?!.*(?:^|\/)v\d+(?:\/|$))[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/,
+    'Cloudinary folder must contain safe path segments.',
+  )
+
+const cloudinaryEnvSchema = z.object({
+  CLOUDINARY_CLOUD_NAME: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().min(1).max(100).regex(/^[A-Za-z0-9_-]+$/).optional(),
+  ),
+  CLOUDINARY_API_KEY: optionalNonEmptyString,
+  CLOUDINARY_API_SECRET: optionalNonEmptyString,
+  CLOUDINARY_FOLDER: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    cloudinaryFolder.default('tareeq-academy'),
+  ),
+})
+
+let cachedCloudinaryConfig: CloudinaryConfig | undefined
+
+export const getCloudinaryConfig = (): CloudinaryConfig => {
+  if (cachedCloudinaryConfig) return cachedCloudinaryConfig
+
+  const parsed = cloudinaryEnvSchema.safeParse(process.env)
+  if (!parsed.success) {
+    cachedCloudinaryConfig = { status: 'INVALID', folder: 'tareeq-academy' }
+    return cachedCloudinaryConfig
+  }
+
+  const {
+    CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET,
+    CLOUDINARY_FOLDER,
+  } = parsed.data
+  const credentials = [
+    CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET,
+  ]
+  if (credentials.every((value) => value === undefined)) {
+    cachedCloudinaryConfig = {
+      status: 'MISSING',
+      folder: CLOUDINARY_FOLDER,
+    }
+    return cachedCloudinaryConfig
+  }
+  if (credentials.some((value) => value === undefined)) {
+    cachedCloudinaryConfig = {
+      status: 'INVALID',
+      folder: CLOUDINARY_FOLDER,
+    }
+    return cachedCloudinaryConfig
+  }
+
+  cachedCloudinaryConfig = {
+    status: 'CONFIGURED',
+    folder: CLOUDINARY_FOLDER,
+    cloudName: CLOUDINARY_CLOUD_NAME!,
+    apiKey: CLOUDINARY_API_KEY!,
+    apiSecret: CLOUDINARY_API_SECRET!,
+  }
+  return cachedCloudinaryConfig
 }
 
 const cronSecretSchema = z.string().min(32)

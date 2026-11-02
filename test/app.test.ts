@@ -51,7 +51,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(collection.info.schema).toBe(
       'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     )
-    expect(collectRequests(collection.item)).toHaveLength(44)
+    expect(collectRequests(collection.item)).toHaveLength(81)
 
     const zipResponse = await app.request('/postman/download.zip')
     const zip = Buffer.from(await zipResponse.arrayBuffer())
@@ -168,7 +168,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(document.components.schemas.HealthResponse).toBeDefined()
   })
 
-  it('documents the complete 44-operation API with descriptions, examples, and Admin security', async () => {
+  it('documents the complete 81-operation API with descriptions, examples, and Admin security', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
       info?: { description?: string }
@@ -195,7 +195,7 @@ describe('Tareeq Academy API foundation', () => {
         .map(([method, operation]) => ({ path, method, operation })),
     )
 
-    expect(operations).toHaveLength(44)
+    expect(operations).toHaveLength(81)
     const contentResources = '(countries|universities|scholarships|services|articles)'
     const operationGroups = {
       system: operations.filter(({ path }) => path === '/api/v1/health'),
@@ -206,13 +206,71 @@ describe('Tareeq Academy API foundation', () => {
       adminContent: operations.filter(({ path }) =>
         new RegExp(`^/api/v1/admin/${contentResources}(/\\{id\\})?$`).test(path),
       ),
+      adminMedia: operations.filter(({ path }) =>
+        path === '/api/v1/admin/uploads/images',
+      ),
+      adminAudit: operations.filter(({ path }) =>
+        path === '/api/v1/admin/audit-logs',
+      ),
+      adminManagement: operations.filter(({ path }) =>
+        path === '/api/v1/admin/users' || path === '/api/v1/admin/users/{id}',
+      ),
+      publicSiteSettings: operations.filter(({ path }) =>
+        path === '/api/v1/site-settings',
+      ),
+      adminSiteSettings: operations.filter(({ path }) =>
+        path === '/api/v1/admin/site-settings',
+      ),
+      publicAnalytics: operations.filter(({ path }) =>
+        path === '/api/v1/analytics/events',
+      ),
+      adminAnalytics: operations.filter(({ path }) =>
+        path.startsWith('/api/v1/admin/analytics/'),
+      ),
+      publicFaqs: operations.filter(({ path }) =>
+        path === '/api/v1/faqs' || /^\/api\/v1\/(countries|universities|services|scholarships)\/\{slug\}\/faqs$/.test(path),
+      ),
+      adminFaqs: operations.filter(({ path }) =>
+        path === '/api/v1/admin/faqs' || path.startsWith('/api/v1/admin/faqs/'),
+      ),
+      publicUniversityDirectory: operations.filter(({ path }) =>
+        path === '/api/v1/universities/filter-options' || path === '/api/v1/universities/{slug}/programs',
+      ),
+      adminUniversityPrograms: operations.filter(({ path }) =>
+        path === '/api/v1/admin/universities/{universityId}/programs' || path === '/api/v1/admin/university-programs/{id}',
+      ),
+      adminDirectoryCatalogs: operations.filter(({ path }) =>
+        path === '/api/v1/admin/academic-majors' || path === '/api/v1/admin/cities',
+      ),
+      publicUniversityDetails: operations.filter(({ path }) =>
+        path === '/api/v1/universities/{slug}/admission-requirements' || path === '/api/v1/universities/{slug}/gallery',
+      ),
+      adminUniversityDetails: operations.filter(({ path }) =>
+        path.startsWith('/api/v1/admin/') && (path.includes('/admission-requirements') || path.includes('/university-admission-requirements/') || path.includes('/gallery') || path.includes('/university-gallery/')),
+      ),
     }
     expect(Object.fromEntries(
       Object.entries(operationGroups).map(([group, entries]) => [group, entries.length]),
-    )).toEqual({ system: 1, authentication: 5, publicContent: 10, adminContent: 20 })
-    expect(operations.some(({ path }) =>
-      /(uploads|analytics|admin-users|admin\/users)/i.test(path),
-    )).toBe(false)
+    )).toEqual({
+      system: 1,
+      authentication: 5,
+      publicContent: 10,
+      adminContent: 20,
+      adminMedia: 1,
+      adminAudit: 1,
+      adminManagement: 2,
+      publicSiteSettings: 1,
+      adminSiteSettings: 1,
+      publicAnalytics: 1,
+      adminAnalytics: 2,
+      publicFaqs: 5,
+      adminFaqs: 4,
+      publicUniversityDirectory: 2,
+      adminUniversityPrograms: 3,
+      adminDirectoryCatalogs: 4,
+      publicUniversityDetails: 2,
+      adminUniversityDetails: 8,
+    })
     expect(document.tags?.map(({ name }) => name)).toEqual([
       'System',
       'Authentication',
@@ -223,6 +281,11 @@ describe('Tareeq Academy API foundation', () => {
       'Public — Articles',
       'Public — Applications',
       'Public — Inquiries',
+      'Public — Site Settings',
+      'Public — Analytics',
+      'Public — FAQs',
+      'Public — University Directory',
+      'Public — University Details',
       'Admin — Countries',
       'Admin — Universities',
       'Admin — Scholarships',
@@ -230,6 +293,15 @@ describe('Tareeq Academy API foundation', () => {
       'Admin — Articles',
       'Admin — Applications',
       'Admin — Inquiries',
+      'Admin — Media',
+      'Admin — Audit Logs',
+      'Admin — Account Management',
+      'Admin — Site Settings',
+      'Admin — Analytics',
+      'Admin — FAQs',
+      'Admin — University Programs',
+      'Admin — Directory Catalogs',
+      'Admin — University Details',
     ])
     expect(document['x-tagGroups']).toEqual([
       { name: 'System', tags: ['System'] },
@@ -244,6 +316,11 @@ describe('Tareeq Academy API foundation', () => {
           'Public — Articles',
           'Public — Applications',
           'Public — Inquiries',
+          'Public — Site Settings',
+          'Public — Analytics',
+          'Public — FAQs',
+          'Public — University Directory',
+          'Public — University Details',
         ],
       },
       {
@@ -256,6 +333,15 @@ describe('Tareeq Academy API foundation', () => {
           'Admin — Articles',
           'Admin — Applications',
           'Admin — Inquiries',
+          'Admin — Media',
+          'Admin — Audit Logs',
+          'Admin — Account Management',
+          'Admin — Site Settings',
+          'Admin — Analytics',
+          'Admin — FAQs',
+          'Admin — University Programs',
+          'Admin — Directory Catalogs',
+          'Admin — University Details',
         ],
       },
     ])
@@ -277,6 +363,17 @@ describe('Tareeq Academy API foundation', () => {
       articles: 'Admin — Articles',
       applications: 'Admin — Applications',
       inquiries: 'Admin — Inquiries',
+      uploads: 'Admin — Media',
+      'audit-logs': 'Admin — Audit Logs',
+      users: 'Admin — Account Management',
+      'site-settings': 'Admin — Site Settings',
+      analytics: 'Admin — Analytics',
+      faqs: 'Admin — FAQs',
+      'university-programs': 'Admin — University Programs',
+      'academic-majors': 'Admin — Directory Catalogs',
+      cities: 'Admin — Directory Catalogs',
+      'university-admission-requirements': 'Admin — University Details',
+      'university-gallery': 'Admin — University Details',
     }
     for (const { path, method, operation } of operations) {
       expect(operation.summary, `${method.toUpperCase()} ${path} summary`).toBeTruthy()
@@ -300,8 +397,22 @@ describe('Tareeq Academy API foundation', () => {
 
       if (path.startsWith('/api/v1/admin/')) {
         expect(operation.security).toEqual([{ accessCookie: [] }])
-        expect(operation.description).toContain('ADMIN or SUPER_ADMIN')
-        expect(operation.tags).toEqual([adminTagByResource[path.split('/')[4] ?? '']])
+        expect(operation.description).toContain(
+          [
+            '/api/v1/admin/audit-logs',
+            '/api/v1/admin/users',
+            '/api/v1/admin/users/{id}',
+            '/api/v1/admin/site-settings',
+          ].includes(path) || path.startsWith('/api/v1/admin/analytics/')
+            ? 'SUPER_ADMIN only'
+            : 'ADMIN or SUPER_ADMIN',
+        )
+        const expectedAdminTag = path.includes('/admission-requirements') || path.includes('/university-admission-requirements/') || path.includes('/gallery') || path.includes('/university-gallery/')
+          ? 'Admin — University Details'
+          : path === '/api/v1/admin/universities/{universityId}/programs'
+          ? 'Admin — University Programs'
+          : adminTagByResource[path.split('/')[4] ?? '']
+        expect(operation.tags).toEqual([expectedAdminTag])
       }
     }
   })

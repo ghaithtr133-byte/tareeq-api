@@ -27,13 +27,24 @@ describe.runIf(shouldRun)('submission PostgreSQL integration', () => {
     windowStartedAt: Date
   }> = []
   const marker = randomUUID()
+  const actorAdminId = randomUUID()
 
   beforeAll(async () => {
     await getPrisma().$queryRaw`SELECT 1`
+    await getPrisma().adminUser.create({
+      data: {
+        id: actorAdminId,
+        name: 'Submission Integration Admin',
+        email: `submission-integration-${marker}@example.invalid`,
+        passwordHash: '$argon2id$integration-test-only',
+        role: 'ADMIN',
+      },
+    })
   }, 30_000)
 
   afterAll(async () => {
     const prisma = getPrisma()
+    await prisma.adminAuditLog.deleteMany({ where: { actorAdminId } })
     if (createdApplicationIds.length > 0) {
       await prisma.studentApplication.deleteMany({
         where: { id: { in: createdApplicationIds } },
@@ -56,6 +67,7 @@ describe.runIf(shouldRun)('submission PostgreSQL integration', () => {
       }),
     ])
     expect([applications, inquiries, rateLimits]).toEqual([0, 0, 0])
+    await prisma.adminUser.delete({ where: { id: actorAdminId } })
     await disconnectPrisma()
   }, 30_000)
 
@@ -146,14 +158,14 @@ describe.runIf(shouldRun)('submission PostgreSQL integration', () => {
     await expect(service.updateApplication(scholarshipApplication.id, {
       status: 'IN_REVIEW',
       internalNote: `integration-${marker}`,
-    })).resolves.toMatchObject({
+    }, actorAdminId)).resolves.toMatchObject({
       status: 'IN_REVIEW',
       internalNote: `integration-${marker}`,
     })
     await expect(service.updateInquiry(inquiry.id, {
       status: 'RESOLVED',
       internalNote: `integration-${marker}`,
-    })).resolves.toMatchObject({
+    }, actorAdminId)).resolves.toMatchObject({
       status: 'RESOLVED',
       internalNote: `integration-${marker}`,
     })

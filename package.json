@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:api": "vitest run test/app.test.ts test/auth.test.ts test/content.api.test.ts test/submissions.api.test.ts",
+    "test:api": "vitest run test/app.test.ts test/auth.test.ts test/content.api.test.ts test/submissions.api.test.ts test/media.api.test.ts test/audit.api.test.ts test/admin-management-settings.api.test.ts test/analytics.api.test.ts test/faqs.api.test.ts test/university-directory.api.test.ts test/university-details.api.test.ts",
     "postman:generate": "tsx scripts/postman.ts generate",
     "postman:check": "tsx scripts/postman.ts check",
     "verify:browser-auth": "node --env-file-if-exists=.env scripts/verify-browser-auth.mjs",
@@ -39,6 +39,7 @@
     "@prisma/client": "7.10.0",
     "@scalar/hono-api-reference": "0.12.12",
     "argon2": "0.45.1",
+    "cloudinary": "2.11.0",
     "dotenv": "18.0.8",
     "hono": "4.13.13",
     "jose": "6.2.12",
@@ -59,6 +60,7 @@
   },
   "overrides": {
     "deepmerge-ts": "8.0.2",
+    "fast-uri": "3.1.9",
     "mysql2": "3.24.6"
   }
 }

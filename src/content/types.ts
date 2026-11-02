@@ -1,3 +1,5 @@
+import type { AuditIntent } from '../audit/types.js'
+
 export const contentResources = [
   'countries',
   'universities',
@@ -37,8 +39,21 @@ export type ContentListQuery = {
   studyLevel?: string
   fundingType?: string
   applicationStatus?: ScholarshipApplicationStatus
+  major?: string
+  language?: string
+  city?: string
+  universityType?: 'PUBLIC' | 'PRIVATE'
+  universitySearch?: string
+  universityCountry?: string
+  universityMajor?: string
+  universityStudyLevel?: 'FOUNDATION' | 'DIPLOMA' | 'BACHELORS' | 'MASTERS' | 'PHD'
+  universityLanguage?: 'ARABIC' | 'ENGLISH' | 'FRENCH' | 'GERMAN' | 'TURKISH' | 'ROMANIAN' | 'RUSSIAN' | 'SPANISH' | 'ITALIAN'
+  universityCity?: string
+  universityFeatured?: boolean
   sort?: string
 }
+
+export type CityReference = { id: string; countryId: string; slug: string }
 
 export type ContentListResult = {
   items: ContentEntity[]
@@ -58,13 +73,17 @@ export interface ContentRepository {
     slug: string,
     publicOnly: boolean,
   ): Promise<ContentEntity | null>
+  findCityById(id: string): Promise<CityReference | null>
+  countScholarshipsByIds(ids: string[]): Promise<number>
   create(
     resource: ContentResource,
     data: ContentWriteData,
+    audit: AuditIntent,
   ): Promise<ContentEntity>
   update(
     resource: ContentResource,
     id: string,
     data: ContentWriteData,
+    audit: AuditIntent,
   ): Promise<ContentEntity>
 }

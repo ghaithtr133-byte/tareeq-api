@@ -21,6 +21,7 @@ const ORIGIN = 'https://admin.tareeq-academy.com'
 const PUBLIC_ORIGIN = 'https://tareeq-academy.com'
 const JWT_SECRET = 'test-only-secret-that-is-at-least-thirty-two-characters-long'
 const USER_ID = 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20'
+const SUPER_USER_ID = '11111111-1111-4111-8111-111111111111'
 const CURRENT_PASSWORD = 'CurrentPassword123'
 const NEW_PASSWORD = 'ChangedPassword456'
 
@@ -415,7 +416,15 @@ describe('administrative authentication', () => {
     }
   })
 
-  it('enforces ADMIN/SUPER_ADMIN and SUPER_ADMIN-only middleware without database lookups', async () => {
+  it('enforces current active ADMIN/SUPER_ADMIN roles from the repository', async () => {
+    repository.addUser({
+      id: SUPER_USER_ID,
+      name: 'Super Admin',
+      email: 'super-admin@example.invalid',
+      passwordHash,
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    })
     const roleApp = new Hono<AuthEnv>()
     roleApp.use('/admin', requireAuthentication(runtime), requireRole('ADMIN', 'SUPER_ADMIN'))
     roleApp.use('/super', requireAuthentication(runtime), requireRole('SUPER_ADMIN'))
@@ -427,7 +436,7 @@ describe('administrative authentication', () => {
       JWT_SECRET,
     )
     const superToken = await signAccessToken(
-      { id: USER_ID, role: 'SUPER_ADMIN' },
+      { id: SUPER_USER_ID, role: 'SUPER_ADMIN' },
       JWT_SECRET,
     )
     const withToken = (token: string) => ({

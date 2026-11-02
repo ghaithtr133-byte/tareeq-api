@@ -20,7 +20,7 @@ export const requireAuthentication = (
   }
 
   try {
-    c.set('authClaims', await runtime.getService().verifyAccessToken(accessToken))
+    c.set('authClaims', await runtime.getService().authenticateAccessToken(accessToken))
   } catch {
     return errorResponse(
       c,

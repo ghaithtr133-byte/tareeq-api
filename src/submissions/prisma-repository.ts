@@ -1,4 +1,6 @@
 import { getPrisma } from '../database/client.js'
+import type { Prisma } from '../generated/prisma/client.js'
+import type { AuditIntent } from '../audit/types.js'
 import type {
   AvailableScholarshipReference,
   GeneralInquiryInput,
@@ -27,6 +29,12 @@ const EMAIL_RETRY_WINDOW_MS = 23 * 60 * 60 * 1_000
 const notificationTiming = (now: Date) => ({
   nextAttemptAt: now,
   retryUntil: new Date(now.getTime() + EMAIL_RETRY_WINDOW_MS),
+})
+
+const auditData = (audit: AuditIntent, resourceId: string) => ({
+  ...audit,
+  resourceId,
+  metadata: audit.metadata as Prisma.InputJsonValue,
 })
 
 export class PrismaSubmissionRepository implements SubmissionRepository {
@@ -214,11 +222,33 @@ export class PrismaSubmissionRepository implements SubmissionRepository {
     return record ? asInquiry(record) : null
   }
 
-  async updateApplication(id: string, data: SubmissionUpdate) {
-    return asApplication(await getPrisma().studentApplication.update({ where: { id }, data }))
+  async updateApplication(
+    id: string,
+    data: SubmissionUpdate,
+    audit: AuditIntent,
+  ) {
+    return getPrisma().$transaction(async (transaction) => {
+      const record = await transaction.studentApplication.update({
+        where: { id },
+        data,
+      })
+      await transaction.adminAuditLog.create({ data: auditData(audit, id) })
+      return asApplication(record)
+    })
   }
 
-  async updateInquiry(id: string, data: SubmissionUpdate) {
-    return asInquiry(await getPrisma().generalInquiry.update({ where: { id }, data }))
+  async updateInquiry(
+    id: string,
+    data: SubmissionUpdate,
+    audit: AuditIntent,
+  ) {
+    return getPrisma().$transaction(async (transaction) => {
+      const record = await transaction.generalInquiry.update({
+        where: { id },
+        data,
+      })
+      await transaction.adminAuditLog.create({ data: auditData(audit, id) })
+      return asInquiry(record)
+    })
   }
 }

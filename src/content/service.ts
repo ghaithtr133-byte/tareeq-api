@@ -1,4 +1,8 @@
 import { ApiError } from '../shared/http.js'
+import {
+  contentAuditAction,
+  contentAuditResourceTypes,
+} from '../audit/actions.js'
 import type {
   ContentEntity,
   ContentListQuery,
@@ -21,14 +25,48 @@ const relationError = (field: string, message: string) =>
     fields: { [field]: [message] },
   })
 
+const auditComparable = (value: unknown) =>
+  value instanceof Date ? value.toISOString() : value
+
+const changedFieldNames = (
+  current: ContentEntity,
+  input: ContentWriteData,
+) => Object.keys(input).filter((field) =>
+  JSON.stringify(auditComparable(current[field])) !==
+  JSON.stringify(auditComparable(input[field])),
+).sort()
+
+const relatedScholarshipView = (value: unknown, now: Date) => {
+  const record = value as Record<string, unknown>
+  const deadline = record.verifiedDeadline
+  return {
+    id: record.id,
+    slug: record.slug,
+    titleAr: record.titleAr,
+    imageUrl: record.imageUrl ?? null,
+    country: record.country ?? null,
+    effectiveApplicationStatus: deadline instanceof Date && deadline < now
+      ? 'CLOSED'
+      : record.applicationStatus,
+  }
+}
+
+const withRelatedScholarshipViews = (record: ContentEntity, now: Date): ContentEntity => ({
+  ...record,
+  ...(Array.isArray(record.relatedScholarships)
+    ? { relatedScholarships: record.relatedScholarships.map((item) => relatedScholarshipView(item, now)) }
+    : {}),
+})
+
 const publicView = (record: ContentEntity, now: Date) => {
-  const publicRecord: Record<string, unknown> = { ...record }
+  const publicRecord: Record<string, unknown> = withRelatedScholarshipViews(record, now)
   delete publicRecord.status
   delete publicRecord.createdAt
   delete publicRecord.updatedAt
   delete publicRecord.country
   delete publicRecord.university
   delete publicRecord.scholarship
+  delete publicRecord.scholarshipIds
   if ('applicationStatus' in publicRecord) {
     const deadline = publicRecord.verifiedDeadline
     publicRecord.effectiveApplicationStatus =
@@ -40,10 +78,11 @@ const publicView = (record: ContentEntity, now: Date) => {
 }
 
 const adminView = (record: ContentEntity, now: Date) => {
-  if (!('applicationStatus' in record)) return record
-  const deadline = record.verifiedDeadline
+  const adminRecord = withRelatedScholarshipViews(record, now)
+  if (!('applicationStatus' in adminRecord)) return adminRecord
+  const deadline = adminRecord.verifiedDeadline
   return {
-    ...record,
+    ...adminRecord,
     effectiveApplicationStatus:
       deadline instanceof Date && deadline < now
         ? 'CLOSED'
@@ -93,7 +132,12 @@ export class ContentService {
     return adminView(record, this.now())
   }
 
-  async create(resource: ContentResource, input: ContentWriteData) {
+  async create(
+    resource: ContentResource,
+    input: ContentWriteData,
+    actorAdminId: string,
+  ) {
+    input = this.normalizeArticleAssociations(resource, input, true)
     const status = input.status ?? 'DRAFT'
     const data: ContentWriteData = {
       ...input,
@@ -103,14 +147,31 @@ export class ContentService {
     this.normalizeDates(data)
     await this.validateWrite(resource, data)
     await this.ensureUniqueSlug(resource, String(data.slug))
-    return adminView(await this.repository.create(resource, data), this.now())
+    return adminView(await this.repository.create(resource, data, {
+      actorAdminId,
+      action: contentAuditAction(resource, 'created'),
+      resourceType: contentAuditResourceTypes[resource],
+      metadata: {
+        status,
+        ...(resource === 'articles' && Array.isArray(data.scholarshipIds)
+          ? { scholarshipAssociationCount: data.scholarshipIds.length }
+          : {}),
+      },
+    }), this.now())
   }
 
-  async update(resource: ContentResource, id: string, input: ContentWriteData) {
+  async update(
+    resource: ContentResource,
+    id: string,
+    input: ContentWriteData,
+    actorAdminId: string,
+  ) {
     const current = await this.repository.findById(resource, id)
     if (!current) {
       throw new ApiError(404, 'CONTENT_NOT_FOUND', `${labels[resource]} not found.`)
     }
+
+    input = this.normalizeArticleAssociations(resource, input, false)
 
     if (
       current.publishedAt &&
@@ -141,13 +202,50 @@ export class ContentService {
     ) {
       data.publishedAt = this.now()
     }
-    return adminView(await this.repository.update(resource, id, data), this.now())
+    const statusChanged =
+      typeof input.status === 'string' && input.status !== current.status
+    return adminView(await this.repository.update(resource, id, data, {
+      actorAdminId,
+      action: contentAuditAction(
+        resource,
+        statusChanged ? 'status_changed' : 'updated',
+      ),
+      resourceType: contentAuditResourceTypes[resource],
+      metadata: {
+        changedFields: changedFieldNames(current, input),
+        ...(resource === 'articles' && Array.isArray(data.scholarshipIds)
+          ? { scholarshipAssociationCount: data.scholarshipIds.length }
+          : {}),
+        ...(statusChanged
+          ? { fromStatus: current.status, toStatus: input.status as string }
+          : {}),
+      },
+    }), this.now())
   }
 
   private normalizeDates(data: ContentWriteData) {
     if (typeof data.verifiedDeadline === 'string') {
       data.verifiedDeadline = new Date(data.verifiedDeadline)
     }
+  }
+
+  private normalizeArticleAssociations(
+    resource: ContentResource,
+    input: ContentWriteData,
+    creating: boolean,
+  ): ContentWriteData {
+    if (resource !== 'articles') return input
+    const hasMultiple = Object.prototype.hasOwnProperty.call(input, 'scholarshipIds')
+    const hasLegacy = Object.prototype.hasOwnProperty.call(input, 'scholarshipId')
+    if (hasMultiple) {
+      const scholarshipIds = input.scholarshipIds as string[]
+      return { ...input, scholarshipIds, scholarshipId: scholarshipIds[0] ?? null }
+    }
+    if (hasLegacy) {
+      const scholarshipIds = typeof input.scholarshipId === 'string' ? [input.scholarshipId] : []
+      return { ...input, scholarshipIds, scholarshipId: scholarshipIds[0] ?? null }
+    }
+    return creating ? { ...input, scholarshipIds: [], scholarshipId: null } : input
   }
 
   private async ensureUniqueSlug(
@@ -179,6 +277,7 @@ export class ContentService {
     }
 
     const countryId = typeof data.countryId === 'string' ? data.countryId : null
+    const cityId = typeof data.cityId === 'string' ? data.cityId : null
     const universityId = typeof data.universityId === 'string' ? data.universityId : null
     const scholarshipId = typeof data.scholarshipId === 'string' ? data.scholarshipId : null
 
@@ -187,6 +286,14 @@ export class ContentService {
       : null
     if (countryId && !country) {
       throw relationError('countryId', 'Select an existing country.')
+    }
+
+    const city = cityId ? await this.repository.findCityById(cityId) : null
+    if (cityId && !city) {
+      throw relationError('cityId', 'Select an existing normalized city.')
+    }
+    if (city && countryId && city.countryId !== countryId) {
+      throw relationError('cityId', 'The selected city must belong to the selected country.')
     }
 
     const university = universityId
@@ -207,10 +314,13 @@ export class ContentService {
       )
     }
 
-    if (scholarshipId) {
-      const scholarship = await this.repository.findById('scholarships', scholarshipId)
-      if (!scholarship) {
-        throw relationError('scholarshipId', 'Select an existing scholarship.')
+    const scholarshipIds = resource === 'articles' && Array.isArray(data.scholarshipIds)
+      ? data.scholarshipIds.filter((value): value is string => typeof value === 'string')
+      : scholarshipId ? [scholarshipId] : []
+    if (scholarshipIds.length > 0) {
+      const scholarshipCount = await this.repository.countScholarshipsByIds(scholarshipIds)
+      if (scholarshipCount !== scholarshipIds.length) {
+        throw relationError('scholarshipIds', 'Every selected Scholarship must exist.')
       }
     }
 

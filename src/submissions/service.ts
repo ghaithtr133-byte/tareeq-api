@@ -97,14 +97,50 @@ export class SubmissionService {
     return record
   }
 
-  async updateApplication(id: string, input: SubmissionUpdate) {
-    await this.getApplication(id)
-    return this.repository.updateApplication(id, input)
+  async updateApplication(
+    id: string,
+    input: SubmissionUpdate,
+    actorAdminId: string,
+  ) {
+    const current = await this.getApplication(id)
+    const statusChanged = input.status !== undefined && input.status !== current.status
+    return this.repository.updateApplication(id, input, {
+      actorAdminId,
+      action: statusChanged
+        ? 'student_application.status_changed'
+        : 'student_application.workflow_updated',
+      resourceType: 'STUDENT_APPLICATION',
+      metadata: {
+        changedFields: Object.keys(input).sort(),
+        internalNoteChanged: input.internalNote !== undefined,
+        ...(statusChanged
+          ? { fromStatus: current.status, toStatus: input.status as string }
+          : {}),
+      },
+    })
   }
 
-  async updateInquiry(id: string, input: SubmissionUpdate) {
-    await this.getInquiry(id)
-    return this.repository.updateInquiry(id, input)
+  async updateInquiry(
+    id: string,
+    input: SubmissionUpdate,
+    actorAdminId: string,
+  ) {
+    const current = await this.getInquiry(id)
+    const statusChanged = input.status !== undefined && input.status !== current.status
+    return this.repository.updateInquiry(id, input, {
+      actorAdminId,
+      action: statusChanged
+        ? 'general_inquiry.status_changed'
+        : 'general_inquiry.workflow_updated',
+      resourceType: 'GENERAL_INQUIRY',
+      metadata: {
+        changedFields: Object.keys(input).sort(),
+        internalNoteChanged: input.internalNote !== undefined,
+        ...(statusChanged
+          ? { fromStatus: current.status, toStatus: input.status as string }
+          : {}),
+      },
+    })
   }
 
   private paginated<T>(result: { items: T[]; total: number }, query: SubmissionListQuery) {

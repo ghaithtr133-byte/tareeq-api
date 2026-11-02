@@ -49,6 +49,7 @@ const createExamples: Record<ContentResource, Record<string, unknown>> = {
   universities: {
     nameAr: 'جامعة برلين', officialName: 'Berlin University', slug: 'berlin-university',
     countryId: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d', cityAr: 'برلين',
+    cityId: null, universityType: null,
     overviewAr: 'نظرة عامة أكاديمية', status: 'DRAFT',
   },
   scholarships: {
@@ -62,7 +63,8 @@ const createExamples: Record<ContentResource, Record<string, unknown>> = {
   },
   articles: {
     titleAr: 'دليل الدراسة', slug: 'study-guide', summaryAr: 'ملخص المقال',
-    bodyAr: [{ type: 'paragraph', text: 'محتوى المقال كنص منظم وآمن.' }], status: 'DRAFT',
+    bodyAr: [{ type: 'paragraph', text: 'محتوى المقال كنص منظم وآمن.' }],
+    scholarshipIds: ['9f414dec-fcbc-49dd-994f-086d2ef40e1f'], status: 'DRAFT',
   },
 }
 
@@ -89,7 +91,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
   universities: {
     id: exampleUniversityId, nameAr: 'جامعة تجريبية', nameEn: 'Example University',
     officialName: 'Example University', slug: 'example-university', countryId: exampleCountryId,
-    cityAr: 'مدينة تجريبية', cityEn: 'Example City', overviewAr: 'نظرة عامة أكاديمية',
+    cityId: null, universityType: null, cityAr: 'مدينة تجريبية', cityEn: 'Example City', overviewAr: 'نظرة عامة أكاديمية',
     overviewEn: null, officialWebsite: 'https://example.edu', imageUrl: null,
     imageAltAr: null, imageAltEn: null, featured: false,
     seoTitleAr: null, seoDescriptionAr: null,
@@ -101,6 +103,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     slug: 'example-scholarship', countryId: exampleCountryId, universityId: exampleUniversityId,
     studyLevel: 'MASTERS', fundingType: 'FULL', requirementsAr: 'متطلبات التقديم',
     requirementsEn: null, descriptionAr: 'تفاصيل المنحة', descriptionEn: null,
+    imageUrl: null, imageAltAr: null, imageAltEn: null,
     verifiedDeadline: '2027-01-31T23:59:59.000Z', officialSourceUrl: 'https://example.edu/scholarship',
     applicationStatus: 'OPEN', effectiveApplicationStatus: 'OPEN', featured: true,
     seoTitleAr: null, seoDescriptionAr: null,
@@ -121,6 +124,12 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     bodyAr: [{ type: 'paragraph', text: 'محتوى المقال كنص منظم وآمن.' }], bodyEn: null,
     coverImageUrl: null, coverImageAltAr: null, coverImageAltEn: null,
     countryId: exampleCountryId, universityId: null, scholarshipId: null,
+    scholarshipIds: [exampleScholarshipId],
+    relatedScholarships: [{
+      id: exampleScholarshipId, slug: 'example-scholarship', titleAr: 'منحة تجريبية',
+      imageUrl: null, country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا' },
+      effectiveApplicationStatus: 'OPEN',
+    }],
     featured: true, seoTitleAr: null, seoDescriptionAr: null,
     country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا' },
     ...exampleDates,
@@ -135,6 +144,7 @@ const publicEntityExample = (resource: ContentResource) => {
   delete example.country
   delete example.university
   delete example.scholarship
+  delete example.scholarshipIds
   return example
 }
 
@@ -189,7 +199,11 @@ const registerDocumentation = (
     path: `/${resource}`,
     tags: [names.publicTag],
     summary: `List published ${resource}`,
-    description: 'Public collection. Returns PUBLISHED records only with validated pagination and documented filters.',
+    description: resource === 'universities'
+      ? 'Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.'
+      : resource === 'scholarships'
+        ? 'Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.'
+      : 'Public collection. Returns PUBLISHED records only with validated pagination and documented filters.',
     request: { query: publicQuerySchemas[resource] },
     responses: {
       200: { description: `Published ${resource}.`, content: successContent(listResponseSchema(resource), listExample) },
@@ -201,7 +215,9 @@ const registerDocumentation = (
     path: `/${resource}/{slug}`,
     tags: [names.publicTag],
     summary: `Get a published ${names.singular}`,
-    description: 'Looks up one PUBLISHED record by its stable public slug.',
+    description: resource === 'articles'
+      ? 'Looks up one PUBLISHED Article by its stable public slug. relatedScholarships contains only PUBLISHED Scholarships in the Admin-selected order, including authoritative effective application status; legacy scholarshipId remains compatible.'
+      : 'Looks up one PUBLISHED record by its stable public slug.',
     request: { params: slugParamSchema },
     responses: {
       200: { description: `Published ${names.singular}.`, content: successContent(entityResponseSchema(resource), { success: true, data: publicEntityExample(resource) }) },
@@ -227,7 +243,9 @@ const registerDocumentation = (
     path: `/admin/${resource}/{id}`,
     tags: [names.adminTag],
     summary: `Get ${names.article} ${names.singular} for administration`,
-    description: 'ADMIN or SUPER_ADMIN only. Uses the UUID identifier and includes editable publication fields.',
+    description: resource === 'articles'
+      ? 'ADMIN or SUPER_ADMIN only. Uses the UUID identifier and includes editable publication fields plus the ordered scholarshipIds association set. Legacy scholarshipId mirrors the first selected ID.'
+      : 'ADMIN or SUPER_ADMIN only. Uses the UUID identifier and includes editable publication fields.',
     security: [{ accessCookie: [] }],
     request: { params: uuidParamSchema },
     responses: {
@@ -240,7 +258,9 @@ const registerDocumentation = (
     path: `/admin/${resource}`,
     tags: [names.adminTag],
     summary: `Create ${names.article} ${names.singular}`,
-    description: 'ADMIN or SUPER_ADMIN only. New records default to DRAFT unless a valid PUBLISHED state is explicitly requested.',
+    description: resource === 'articles'
+      ? 'ADMIN or SUPER_ADMIN only. New Articles accept an ordered, duplicate-free scholarshipIds array. If both fields are supplied, legacy scholarshipId must equal the first array item. New records default to DRAFT.'
+      : 'ADMIN or SUPER_ADMIN only. New records default to DRAFT unless a valid PUBLISHED state is explicitly requested.',
     security: [{ accessCookie: [] }],
     request: { body: { required: true, content: { 'application/json': { schema: contentCreateSchemas[resource], example: createExamples[resource] } } } },
     responses: {
@@ -257,7 +277,9 @@ const registerDocumentation = (
     path: `/admin/${resource}/{id}`,
     tags: [names.adminTag],
     summary: `Update ${names.article} ${names.singular}`,
-    description: 'ADMIN or SUPER_ADMIN only. Supports publication transitions; the first publication timestamp and any previously published slug are preserved.',
+    description: resource === 'articles'
+      ? 'ADMIN or SUPER_ADMIN only. Omitted scholarship association fields preserve links; scholarshipIds replaces them in order, [] clears them, and legacy scholarshipId alone maps to zero or one link. Supports publication transitions while preserving first publication time and published slugs.'
+      : 'ADMIN or SUPER_ADMIN only. Supports publication transitions; the first publication timestamp and any previously published slug are preserved.',
     security: [{ accessCookie: [] }],
     request: {
       params: uuidParamSchema,
@@ -336,7 +358,11 @@ export const createContentRoutes = (
         await readJson(c.req.raw),
       ) as ContentWriteData
       return c.json(
-        successResponse(await contentRuntime.getService().create(resource, input)),
+        successResponse(await contentRuntime.getService().create(
+          resource,
+          input,
+          c.get('authClaims').userId,
+        )),
         201,
       )
     })
@@ -348,7 +374,12 @@ export const createContentRoutes = (
         await readJson(c.req.raw),
       ) as ContentWriteData
       return c.json(
-        successResponse(await contentRuntime.getService().update(resource, id, input)),
+        successResponse(await contentRuntime.getService().update(
+          resource,
+          id,
+          input,
+          c.get('authClaims').userId,
+        )),
         200,
       )
     })
