@@ -30,6 +30,11 @@
     "seed:inspect": "tsx --env-file-if-exists=.env scripts/initial-data.ts inspect",
     "admins:provision": "tsx --env-file-if-exists=.env scripts/initial-data.ts provision-admins",
     "content:seed": "tsx --env-file-if-exists=.env scripts/initial-data.ts seed-content",
+    "seed:demo:preflight": "tsx --env-file-if-exists=.env scripts/demo-seed.ts preflight",
+    "seed:demo:dry-run": "tsx --env-file-if-exists=.env scripts/demo-seed.ts seed --dry-run",
+    "seed:demo": "tsx --env-file-if-exists=.env scripts/demo-seed.ts seed",
+    "seed:demo:cleanup:dry-run": "tsx --env-file-if-exists=.env scripts/demo-seed.ts cleanup --dry-run",
+    "seed:demo:cleanup": "tsx --env-file-if-exists=.env scripts/demo-seed.ts cleanup",
     "notifications:dispatch": "tsx --env-file-if-exists=.env scripts/dispatch-email-notifications.ts"
   },
   "dependencies": {

@@ -220,6 +220,8 @@ npm run seed:inspect
 
 Provisioning and seeding are idempotent: exact matches are preserved and conflicts stop without overwriting records. The ignored `reports/initial-seed-manifest.json` records verification identifiers.
 
+Temporary comprehensive test fixtures use a separate, reversible, disabled-by-default workflow. Start with `npm run seed:demo:preflight` and `npm run seed:demo:dry-run`; neither command writes data. Seed and cleanup require explicit target identity, environment opt-ins, confirmation tokens, and exact ignored batch manifests. See [Reversible demo database seed](docs/demo-seed.md) before any future execution. Demo seeding is never run by install, build, tests, development startup, or deployment.
+
 Current public seeds contain three Countries, six Universities, and three CLOSED Scholarships. Services and Articles remain DRAFT, so their public collections can legitimately be empty.
 
 ## Verification
