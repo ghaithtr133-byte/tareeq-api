@@ -14,6 +14,8 @@ Production:
 
 Frontend developers should start with [docs/frontend-integration.md](docs/frontend-integration.md). It contains the API base URL, Axios setup, cookie authentication, role matrix, practical requests, and localhost limitations. Detailed fields and examples belong in Scalar rather than this README.
 
+Provider verification is intentionally separate from normal tests and deployment. Use `npm run integrations:preflight` for a read-only configuration, scheduler, Admin-recipient, and actionable-outbox gate, then follow [Cloudinary and Resend live integration verification](docs/live-integration-verification.md). The preflight never calls Cloudinary or Resend and never changes database records.
+
 Never provide Frontend applications with database URLs, JWT secrets, administrator credentials, or other Backend-only configuration.
 
 ## Local Backend setup
