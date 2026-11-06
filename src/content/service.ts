@@ -160,9 +160,17 @@ export class ContentService {
 
   async scholarshipFilterOptions() {
     const options = await this.repository.scholarshipFilterOptions()
-    const labels: Record<string, string> = { FOUNDATION: 'السنة التحضيرية', DIPLOMA: 'دبلوم', BACHELORS: 'بكالوريوس', MASTERS: 'ماجستير', PHD: 'دكتوراه', FULL: 'تمويل كامل', PARTIAL: 'تمويل جزئي' }
-    const map = (items: Array<{ value: string; count: number }>) => items.map((item) => ({ ...item, labelAr: labels[item.value] ?? null }))
-    return { studyLevels: map(options.studyLevels), fundingTypes: map(options.fundingTypes) }
+    const studyLevelLabels: Record<string, string> = {
+      FOUNDATION: 'السنة التحضيرية', DIPLOMA: 'دبلوم', BACHELORS: 'بكالوريوس', MASTERS: 'ماجستير', MASTER: 'ماجستير', PHD: 'دكتوراه',
+      ASSOCIATE_BACHELOR_MASTER_PHD: 'دبلوم مشارك، بكالوريوس، ماجستير ودكتوراه',
+      BACHELOR_MASTER_PHD: 'بكالوريوس، ماجستير ودكتوراه',
+    }
+    const fundingTypeLabels: Record<string, string> = {
+      FULL: 'تمويل كامل', PARTIAL: 'تمويل جزئي', GOVERNMENT_FUNDED: 'ممولة حكومياً',
+      GOVERNMENT_FUNDED_FULL: 'تمويل حكومي كامل', TUITION_AND_STIPEND: 'رسوم دراسية ومخصصات',
+    }
+    const map = (items: Array<{ value: string; count: number }>, labels: Record<string, string>) => items.map((item) => ({ ...item, labelAr: labels[item.value] ?? null }))
+    return { studyLevels: map(options.studyLevels, studyLevelLabels), fundingTypes: map(options.fundingTypes, fundingTypeLabels) }
   }
 
   async create(

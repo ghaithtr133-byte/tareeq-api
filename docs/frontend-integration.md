@@ -844,7 +844,7 @@ Render the returned order directly. The collection can be empty; `country` and `
 
 Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study-guide`, `/admin/services/{serviceId}/service-detail-items`, and `/admin/scholarships/{scholarshipId}/scholarship-detail-items`; individual entries use their corresponding `/admin/{collection}/{id}` PATCH and DELETE routes. Reorder requests must supply the complete, duplicate-free ID set for one parent and kind. Monetary Scholarship benefits require currency, coverage period, official source URL, and verification time.
 
-`GET /scholarships/filter-options` returns pagination-independent PUBLISHED `studyLevels` and `fundingTypes` with canonical `value`, `count`, and `labelAr`; unknown stored values have `labelAr: null`.
+`GET /scholarships/filter-options` returns pagination-independent PUBLISHED `studyLevels` and `fundingTypes` with canonical `value`, `count`, and `labelAr`. Recognized production values include `ASSOCIATE_BACHELOR_MASTER_PHD`, `BACHELOR_MASTER_PHD`, `MASTER`, `GOVERNMENT_FUNDED`, `GOVERNMENT_FUNDED_FULL`, and `TUITION_AND_STIPEND`; unknown stored values have `labelAr: null` and must not receive a guessed label.
 
 ## Postman and Detailed Reference
 

@@ -54,6 +54,7 @@ describe('content management APIs', () => {
   let adminToken: string
   let superAdminToken: string
   let contentRepository: InMemoryContentRepository
+  let contentService: ContentService
 
   beforeAll(async () => {
     adminToken = await signAccessToken({ id: ADMIN_ID, role: 'ADMIN' }, JWT_SECRET)
@@ -86,7 +87,7 @@ describe('content management APIs', () => {
       getService: () => new AuthService(authRepository, JWT_SECRET),
     }
     contentRepository = new InMemoryContentRepository()
-    const contentService = new ContentService(
+    contentService = new ContentService(
       contentRepository,
       () => new Date(FIXED_NOW),
     )
@@ -114,6 +115,29 @@ describe('content management APIs', () => {
     const body = await response.json() as { data: { id: string; slug: string; publishedAt: string | null } }
     return { response, body }
   }
+
+  it('labels recognized published Scholarship facets and leaves unknown values unlabeled', async () => {
+    const create = (slug: string, studyLevel: string, fundingType: string, status: 'DRAFT' | 'PUBLISHED' = 'PUBLISHED') => contentService.create('scholarships', {
+      titleAr: slug, slug, studyLevel, fundingType, requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+      officialSourceUrl: 'https://example.invalid/source', status,
+    }, ADMIN_ID)
+    await create('government-scholarship', 'ASSOCIATE_BACHELOR_MASTER_PHD', 'GOVERNMENT_FUNDED')
+    await create('stipend-scholarship', 'MASTER', 'TUITION_AND_STIPEND')
+    await create('unknown-scholarship', 'test', 'test')
+    await create('draft-scholarship', 'MASTER', 'GOVERNMENT_FUNDED', 'DRAFT')
+    await expect(app.request('/api/v1/scholarships/filter-options')).resolves.toMatchObject({ status: 200 })
+    const result = await contentService.scholarshipFilterOptions()
+    expect(result.studyLevels).toEqual(expect.arrayContaining([
+      { value: 'ASSOCIATE_BACHELOR_MASTER_PHD', labelAr: 'دبلوم مشارك، بكالوريوس، ماجستير ودكتوراه', count: 1 },
+      { value: 'MASTER', labelAr: 'ماجستير', count: 1 },
+      { value: 'test', labelAr: null, count: 1 },
+    ]))
+    expect(result.fundingTypes).toEqual(expect.arrayContaining([
+      { value: 'GOVERNMENT_FUNDED', labelAr: 'ممولة حكومياً', count: 1 },
+      { value: 'TUITION_AND_STIPEND', labelAr: 'رسوم دراسية ومخصصات', count: 1 },
+      { value: 'test', labelAr: null, count: 1 },
+    ]))
+  })
 
   it('rejects unauthenticated Admin access and accepts both approved roles', async () => {
     const unauthenticated = await app.request('/api/v1/admin/countries')
