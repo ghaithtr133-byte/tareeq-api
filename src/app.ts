@@ -2,6 +2,8 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 
 import { createAnalyticsRoutes } from './analytics/routes.js'
+import { createAboutUsRoutes } from './about/routes.js'
+import { productionAboutUsRuntime, type AboutUsRuntime } from './about/runtime.js'
 import {
   productionAnalyticsRuntime,
   type AnalyticsRuntime,
@@ -23,6 +25,8 @@ import {
 } from './auth/runtime.js'
 import type { AuthEnv } from './auth/types.js'
 import { createContentRoutes } from './content/routes.js'
+import { createContentDetailsRoutes } from './content-details/routes.js'
+import { ContentDetailsService } from './content-details/service.js'
 import {
   productionContentRuntime,
   type ContentRuntime,
@@ -38,6 +42,8 @@ import {
   productionMediaRuntime,
   type MediaRuntime,
 } from './media/runtime.js'
+import { createMarketingPageImageRoutes } from './marketing/routes.js'
+import { productionMarketingPageImageRuntime, type MarketingPageImageRuntime } from './marketing/runtime.js'
 import { healthRoutes } from './routes/health.js'
 import { landingRoutes } from './routes/landing.js'
 import { postmanDownloadRoutes } from './routes/postman.js'
@@ -52,6 +58,10 @@ import {
   productionSubmissionRuntime,
   type SubmissionRuntime,
 } from './submissions/runtime.js'
+import { createStatisticsRoutes } from './statistics/routes.js'
+import { productionStatisticsRuntime, type StatisticsRuntime } from './statistics/runtime.js'
+import { createStudentJourneyRoutes } from './student-journey/routes.js'
+import { productionStudentJourneyRuntime, type StudentJourneyRuntime } from './student-journey/runtime.js'
 import { createUniversityDirectoryRoutes } from './university-directory/routes.js'
 import {
   productionUniversityDirectoryRuntime,
@@ -65,13 +75,17 @@ import {
 
 type AppOptions = {
   analyticsRuntime?: AnalyticsRuntime
+  aboutUsRuntime?: AboutUsRuntime
   adminManagementRuntime?: AdminManagementRuntime
   auditRuntime?: AuditRuntime
   authRuntime?: AuthRuntime
   contentRuntime?: ContentRuntime
   submissionRuntime?: SubmissionRuntime
   mediaRuntime?: MediaRuntime
+  marketingPageImageRuntime?: MarketingPageImageRuntime
   siteSettingsRuntime?: SiteSettingsRuntime
+  statisticsRuntime?: StatisticsRuntime
+  studentJourneyRuntime?: StudentJourneyRuntime
   emailDispatcher?: EmailDispatchTrigger
   faqRuntime?: FaqRuntime
   universityDirectoryRuntime?: UniversityDirectoryRuntime
@@ -212,6 +226,10 @@ export const createApp = (options: AppOptions = {}) => {
   )
   const authRuntime = options.authRuntime ?? productionAuthRuntime
   app.route('/api/v1/auth', createAuthRoutes(authRuntime))
+  app.route('/api/v1', createAboutUsRoutes(
+    options.aboutUsRuntime ?? productionAboutUsRuntime,
+    authRuntime,
+  ))
   app.route(
     '/api/v1',
     createAnalyticsRoutes(
@@ -258,6 +276,10 @@ export const createApp = (options: AppOptions = {}) => {
       authRuntime,
     ),
   )
+  app.route('/api/v1', createMarketingPageImageRoutes(
+    options.marketingPageImageRuntime ?? productionMarketingPageImageRuntime,
+    authRuntime,
+  ))
   app.route(
     '/api/v1',
     createSiteSettingsRoutes(
@@ -272,6 +294,8 @@ export const createApp = (options: AppOptions = {}) => {
       authRuntime,
     ),
   )
+  app.route('/api/v1', createStatisticsRoutes(options.statisticsRuntime ?? productionStatisticsRuntime, authRuntime))
+  app.route('/api/v1', createStudentJourneyRoutes(options.studentJourneyRuntime ?? productionStudentJourneyRuntime, authRuntime))
   app.route(
     '/api/v1',
     createContentRoutes(
@@ -279,6 +303,7 @@ export const createApp = (options: AppOptions = {}) => {
       authRuntime,
     ),
   )
+  app.route('/api/v1', createContentDetailsRoutes(new ContentDetailsService(), authRuntime))
 
   app.doc31('/openapi.json', {
     openapi: '3.1.0',
@@ -302,6 +327,10 @@ export const createApp = (options: AppOptions = {}) => {
       { name: 'Public — Applications', description: 'Non-credentialed student application submission with consent, spam protection, and shared rate limiting.' },
       { name: 'Public — Inquiries', description: 'Non-credentialed general inquiry submission with consent, spam protection, and shared rate limiting.' },
       { name: 'Public — Site Settings', description: 'Allowlisted public organization and contact settings.' },
+      { name: 'Public — About Us', description: 'Published singleton About Us page content.' },
+      { name: 'Public — Marketing', description: 'Optional Hero and CTA image configuration for fixed marketing pages.' },
+      { name: 'Public — Statistics', description: 'Reusable published catalog and owner-verified trust statistics.' },
+      { name: 'Public — Student Journey', description: 'Active complete Homepage student journey steps.' },
       { name: 'Public — Analytics', description: 'Privacy-conscious anonymous first-party event ingestion.' },
       { name: 'Public — FAQs', description: 'Published Homepage and parent-scoped FAQ collections.' },
       { name: 'Public — University Directory', description: 'Published normalized University programs and dynamic P1/P2 filter options.' },
@@ -317,6 +346,9 @@ export const createApp = (options: AppOptions = {}) => {
       { name: 'Admin — Audit Logs', description: 'Append-only administrative mutation history for SUPER_ADMIN review.' },
       { name: 'Admin — Account Management', description: 'Existing administrator role and activation management for SUPER_ADMIN.' },
       { name: 'Admin — Site Settings', description: 'Allowlisted public site-settings updates for SUPER_ADMIN.' },
+      { name: 'Admin — About Us', description: 'Singleton About Us page editing for ADMIN and SUPER_ADMIN.' },
+      { name: 'Admin — Marketing', description: 'Optional Hero and CTA image configuration for ADMIN and SUPER_ADMIN.' },
+      { name: 'Admin — Student Journey', description: 'Fixed Homepage student journey slot configuration for ADMIN and SUPER_ADMIN.' },
       { name: 'Admin — Analytics', description: 'Anonymous aggregate traffic, conversion, trend, and journey reporting for SUPER_ADMIN.' },
       { name: 'Admin — FAQs', description: 'Parent-scoped FAQ creation, editing, publication, archive, and atomic ordering for ADMIN and SUPER_ADMIN.' },
       { name: 'Admin — University Programs', description: 'Verified normalized University program management for ADMIN and SUPER_ADMIN.' },
@@ -337,6 +369,10 @@ export const createApp = (options: AppOptions = {}) => {
           'Public — Applications',
           'Public — Inquiries',
           'Public — Site Settings',
+          'Public — About Us',
+          'Public — Marketing',
+          'Public — Statistics',
+          'Public — Student Journey',
           'Public — Analytics',
           'Public — FAQs',
           'Public — University Directory',
@@ -357,6 +393,9 @@ export const createApp = (options: AppOptions = {}) => {
           'Admin — Audit Logs',
           'Admin — Account Management',
           'Admin — Site Settings',
+          'Admin — About Us',
+          'Admin — Marketing',
+          'Admin — Student Journey',
           'Admin — Analytics',
           'Admin — FAQs',
           'Admin — University Programs',

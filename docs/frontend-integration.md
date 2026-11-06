@@ -75,6 +75,7 @@ For real authenticated browser testing, use the shared-site production domains o
 | Submit an application or inquiry | Yes | Yes | Yes |
 | Review applications/inquiries and update workflow status or internal notes | No | Yes | Yes |
 | Upload an image for an existing content workflow | No | Yes | Yes |
+| Read or edit the singleton About Us page | Public: published only | Yes | Yes |
 | Read administrator audit logs | No | No | Yes |
 | List and change existing administrator roles/activation | No | No | Yes |
 | Read public site settings | Yes | Yes | Yes |
@@ -89,7 +90,7 @@ For real authenticated browser testing, use the shared-site production domains o
 
 `ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, site-settings updates, and analytics reporting are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
 
-The approved API contains exactly 81 operations:
+The approved API contains exactly 87 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
@@ -104,6 +105,10 @@ The approved API contains exactly 81 operations:
 | Admin Account Management | 2 | SUPER_ADMIN-only list and update |
 | Public Site Settings | 1 | Public read |
 | Admin Site Settings | 1 | SUPER_ADMIN-only update |
+| Public About Us | 1 | Published singleton read |
+| Admin About Us | 2 | ADMIN/SUPER_ADMIN singleton read and update |
+| Public Marketing Images | 1 | HOME/DESTINATIONS Hero and CTA image read |
+| Admin Marketing Images | 2 | ADMIN/SUPER_ADMIN image read and update |
 | Public Analytics | 1 | Anonymous event ingestion |
 | Admin Analytics | 2 | SUPER_ADMIN-only reports |
 | Public FAQs | 5 | Homepage plus four published-resource collections |
@@ -137,6 +142,11 @@ POST /admin/uploads/images
 GET  /admin/audit-logs
 GET  /admin/users                PATCH /admin/users/{id}
 GET  /site-settings              PATCH /admin/site-settings
+GET  /about
+GET  /admin/about                PATCH /admin/about
+GET  /marketing/pages/{pageKey}/images
+GET  /admin/marketing/pages/{pageKey}/images
+PATCH /admin/marketing/pages/{pageKey}/images
 POST /analytics/events
 GET  /admin/analytics/summary    GET /admin/analytics/journeys
 GET  /faqs
@@ -183,6 +193,32 @@ const scholarships = await publicApi.get('/scholarships', {
 Scholarship `status` controls editorial publication. `effectiveApplicationStatus` reports whether applications are effectively `OPEN` or `CLOSED`; a passed `verifiedDeadline` makes it `CLOSED` without hiding the published record.
 
 Services and Articles currently contain only DRAFT seed records, so their public collections may correctly return an empty `items` array.
+
+### About Us singleton
+
+The Public Website reads `GET /about` after the reviewed About Us migration and Backend release are deployed. It returns `404 CONTENT_NOT_FOUND` until an Admin creates and publishes the singleton, and it never exposes DRAFT or ARCHIVED content. The response contains Hero, Introduction, optional Mission/Vision/CTA/SEO fields, `publishedAt`, and `updatedAt`; it deliberately omits Admin-only `status` and `createdAt`.
+
+```ts
+const about = await publicApi.get('/about')
+```
+
+ADMIN and SUPER_ADMIN use the singleton Admin routes. `GET /admin/about` returns `404 CONTENT_NOT_FOUND` before the first save. `PATCH /admin/about` creates on first use and otherwise merges only supplied fields; do not send placeholders for fields that should remain unchanged. A PUBLISHED update requires Arabic `heroTitleAr`, `heroSubtitleAr`, `introTitleAr`, and `introBodyAr` in the fully merged record. Drafts may be incomplete.
+
+```ts
+await adminApi.patch('/admin/about', {
+  heroTitleAr: 'عن أكاديمية طريق',
+  heroSubtitleAr: 'نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.',
+  introTitleAr: 'من نحن',
+  introBodyAr: 'نص تعريفي متعدد الأسطر.\nيبقى محفوظاً كما هو.',
+  status: 'PUBLISHED',
+})
+```
+
+Upload optional Hero or Introduction images through `/admin/uploads/images` with `resource: 'about'`, then place the returned HTTPS `secureUrl` in `heroImageUrl` or `introImageUrl`. Do not attach an alternative-text field without its corresponding image URL. There is no About-specific image endpoint or arbitrary CTA URL field.
+
+### Homepage and destinations marketing images
+
+Use `GET /marketing/pages/HOME/images` or `GET /marketing/pages/DESTINATIONS/images` for optional `heroImageUrl`, `heroImageAltAr`, `ctaImageUrl`, and `ctaImageAltAr`. Every field is nullable; an all-null record means retain the existing static Frontend image fallback. ADMIN and SUPER_ADMIN manage the same fixed page keys through `GET`/`PATCH /admin/marketing/pages/{pageKey}/images`. Upload first through `/admin/uploads/images` with `resource: 'marketing'`, then save the returned HTTPS `secureUrl`. `null` explicitly clears a field and does not delete the Cloudinary asset.
 
 ### Login, current user, and refresh
 
@@ -244,7 +280,7 @@ await adminApi.patch(`/admin/countries/${countryId}`, {
 })
 ```
 
-Allowed `resource` values are `countries`, `universities`, `scholarships`, `services`, and `articles`. The file must be a non-animated JPEG, PNG, or WebP image of at most 4,000,000 bytes. The complete multipart body must remain at or below 4,100,000 bytes, so the Frontend should send only the required `resource` and `file` fields. The Backend verifies the actual bytes and rejects MIME mismatches, malformed files, SVG, GIF, and other formats.
+Allowed `resource` values are `countries`, `universities`, `scholarships`, `services`, `articles`, and `about`. The file must be a non-animated JPEG, PNG, or WebP image of at most 4,000,000 bytes. The complete multipart body must remain at or below 4,100,000 bytes, so the Frontend should send only the required `resource` and `file` fields. The Backend verifies the actual bytes and rejects MIME mismatches, malformed files, SVG, GIF, and other formats.
 
 HTTP `201` returns:
 
@@ -802,11 +838,19 @@ The public Article detail response contains a derived, read-only `relatedScholar
 
 Render the returned order directly. The collection can be empty; `country` and `imageUrl` can be `null`. Article list responses intentionally do not include `scholarshipIds` or `relatedScholarships`.
 
+## Country, Service, and Scholarship detail sections
+
+`GET /countries/{slug}` returns `studentFacts` (four nullable Arabic summaries), optional `overviewImageUrl`/`overviewImageAltAr`, and `studyGuide` (an empty array when unset). `GET /services/{slug}` returns ordered `stepsAr` and `benefitsAr`; `GET /scholarships/{slug}` returns ordered `benefitsAr`, `requirementItemsAr`, and `applicationStepsAr`. These public collections are visible only when their parent record is PUBLISHED.
+
+Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study-guide`, `/admin/services/{serviceId}/service-detail-items`, and `/admin/scholarships/{scholarshipId}/scholarship-detail-items`; individual entries use their corresponding `/admin/{collection}/{id}` PATCH and DELETE routes. Reorder requests must supply the complete, duplicate-free ID set for one parent and kind. Monetary Scholarship benefits require currency, coverage period, official source URL, and verification time.
+
+`GET /scholarships/filter-options` returns pagination-independent PUBLISHED `studyLevels` and `fundingTypes` with canonical `value`, `count`, and `labelAr`; unknown stored values have `labelAr: null`.
+
 ## Postman and Detailed Reference
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 81 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 87 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

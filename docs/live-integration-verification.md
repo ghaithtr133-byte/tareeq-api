@@ -4,6 +4,24 @@ This runbook prepares the first controlled provider checks after deployment. It 
 
 ## Read-only readiness gate
 
+For a timestamped production report that combines the safe API acceptance suite, read-only Neon checks, and provider configuration preflight, run:
+
+```powershell
+npm run verify:production:readonly
+```
+
+The report is written beneath the Git-ignored `reports/production-verification/` directory. It never authenticates a user, invokes a provider, or mutates production data.
+
+Use the companion plan before any separately authorized live scenario:
+
+```powershell
+npm run verify:production:live
+npm run verify:production:live -- --cloudinary
+npm run verify:production:live -- --resend
+```
+
+This remains a dry-run until an owner supplies the exact independent execution and provider gates in an ephemeral shell. It intentionally has no generic force option. Review the report and obtain a separate written authorization before any future execution mode is enabled.
+
 Run the local preflight first:
 
 ```powershell

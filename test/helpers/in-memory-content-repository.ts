@@ -120,7 +120,7 @@ export class InMemoryContentRepository implements ContentRepository {
     const total = records.length
     const offset = (query.page - 1) * query.limit
     const items = records.slice(offset, offset + query.limit).map((record) => {
-      if (resource !== 'articles') return record
+      if (resource !== 'articles') return this.withRelationships(resource, record)
       const listing = { ...record }
       delete listing.scholarshipIds
       delete listing.relatedScholarships
@@ -131,14 +131,14 @@ export class InMemoryContentRepository implements ContentRepository {
 
   async findById(resource: ContentResource, id: string) {
     const record = this.records.get(resource)?.find((item) => item.id === id) ?? null
-    return resource === 'articles' && record ? this.articleDetails(record, false) : record
+    return resource === 'articles' && record ? this.articleDetails(record, false) : record ? this.withRelationships(resource, record) : null
   }
 
   async findBySlug(resource: ContentResource, slug: string, publicOnly: boolean) {
     const record = this.records.get(resource)?.find(
       (record) => record.slug === slug && (!publicOnly || record.status === 'PUBLISHED'),
     ) ?? null
-    return resource === 'articles' && record ? this.articleDetails(record, publicOnly) : record
+    return resource === 'articles' && record ? this.articleDetails(record, publicOnly) : record ? this.withRelationships(resource, record) : null
   }
 
   async findCityById(id: string) {
@@ -149,6 +149,12 @@ export class InMemoryContentRepository implements ContentRepository {
   async countScholarshipsByIds(ids: string[]) {
     const selected = new Set(ids)
     return (this.records.get('scholarships') ?? []).filter(({ id }) => selected.has(id)).length
+  }
+
+  async scholarshipFilterOptions() {
+    const published = (this.records.get('scholarships') ?? []).filter((item) => item.status === 'PUBLISHED')
+    const aggregate = (field: 'studyLevel' | 'fundingType') => [...new Map(published.filter((item) => typeof item[field] === 'string' && item[field] !== '').map((item) => [String(item[field]), 0])).keys()].sort().map((value) => ({ value, count: published.filter((item) => item[field] === value).length }))
+    return { studyLevels: aggregate('studyLevel'), fundingTypes: aggregate('fundingType') }
   }
 
   async create(
@@ -208,6 +214,22 @@ export class InMemoryContentRepository implements ContentRepository {
         country: country ? { id: country.id, slug: country.slug, nameAr: country.nameAr } : null,
       }]
     })
-    return { ...record, scholarshipIds, relatedScholarships }
+    return this.withRelationships('articles', { ...record, scholarshipIds, relatedScholarships })
+  }
+
+  private withRelationships(resource: ContentResource, record: ContentEntity): ContentEntity {
+    const countries = this.records.get('countries') ?? []
+    const universities = this.records.get('universities') ?? []
+    const country = typeof record.countryId === 'string'
+      ? countries.find((item) => item.id === record.countryId)
+      : undefined
+    const university = typeof record.universityId === 'string'
+      ? universities.find((item) => item.id === record.universityId)
+      : undefined
+    return {
+      ...record,
+      ...(country ? { country: { id: country.id, slug: country.slug, nameAr: country.nameAr, countryCode: country.countryCode ?? null } } : {}),
+      ...(university ? { university: { id: university.id, slug: university.slug, nameAr: university.nameAr } } : {}),
+    }
   }
 }

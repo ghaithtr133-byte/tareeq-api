@@ -14,6 +14,12 @@ export const auditResourceTypes = [
   'CITY',
   'UNIVERSITY_ADMISSION_REQUIREMENT',
   'UNIVERSITY_GALLERY_IMAGE',
+  'ABOUT_US',
+  'MARKETING_PAGE_IMAGE',
+  'STUDENT_JOURNEY_STEP',
+  'COUNTRY_STUDY_GUIDE_SECTION',
+  'SERVICE_DETAIL_ITEM',
+  'SCHOLARSHIP_DETAIL_ITEM',
 ] as const
 
 export type AuditResourceType = (typeof auditResourceTypes)[number]

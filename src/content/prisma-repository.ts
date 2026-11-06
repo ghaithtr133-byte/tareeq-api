@@ -12,7 +12,7 @@ import type {
 } from './types.js'
 
 const relationSelections = {
-  country: { select: { id: true, slug: true, nameAr: true, nameEn: true } },
+  country: { select: { id: true, slug: true, nameAr: true, nameEn: true, countryCode: true } },
   city: { select: { id: true, slug: true, nameAr: true, nameEn: true } },
   university: { select: { id: true, slug: true, nameAr: true } },
 } as const
@@ -300,10 +300,10 @@ export class PrismaContentRepository implements ContentRepository {
     const prisma = getPrisma()
     const record = await (async () => {
       switch (resource) {
-        case 'countries': return prisma.country.findUnique({ where: { id } })
+        case 'countries': return prisma.country.findUnique({ where: { id }, include: { studyGuideSections: { orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }] } } })
         case 'universities': return prisma.university.findUnique({ where: { id }, include: { country: relationSelections.country, city: relationSelections.city } })
-        case 'scholarships': return prisma.scholarship.findUnique({ where: { id }, include: { country: relationSelections.country, university: relationSelections.university } })
-        case 'services': return prisma.service.findUnique({ where: { id } })
+        case 'scholarships': return prisma.scholarship.findUnique({ where: { id }, include: { country: relationSelections.country, university: relationSelections.university, detailItems: { orderBy: [{ kind: 'asc' }, { displayOrder: 'asc' }, { id: 'asc' }] } } })
+        case 'services': return prisma.service.findUnique({ where: { id }, include: { detailItems: { orderBy: [{ kind: 'asc' }, { displayOrder: 'asc' }, { id: 'asc' }] } } })
         case 'articles': return prisma.article.findUnique({ where: { id }, include: articleInclude(false) })
       }
     })()
@@ -315,10 +315,10 @@ export class PrismaContentRepository implements ContentRepository {
     const status = publicOnly ? { status: 'PUBLISHED' as const } : {}
     const record = await (async () => {
       switch (resource) {
-        case 'countries': return prisma.country.findFirst({ where: { slug, ...status } })
+        case 'countries': return prisma.country.findFirst({ where: { slug, ...status }, include: { studyGuideSections: { orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }] } } })
         case 'universities': return prisma.university.findFirst({ where: { slug, ...status }, include: { country: relationSelections.country, city: relationSelections.city } })
-        case 'scholarships': return prisma.scholarship.findFirst({ where: { slug, ...status }, include: { country: relationSelections.country, university: relationSelections.university } })
-        case 'services': return prisma.service.findFirst({ where: { slug, ...status } })
+        case 'scholarships': return prisma.scholarship.findFirst({ where: { slug, ...status }, include: { country: relationSelections.country, university: relationSelections.university, detailItems: { orderBy: [{ kind: 'asc' }, { displayOrder: 'asc' }, { id: 'asc' }] } } })
+        case 'services': return prisma.service.findFirst({ where: { slug, ...status }, include: { detailItems: { orderBy: [{ kind: 'asc' }, { displayOrder: 'asc' }, { id: 'asc' }] } } })
         case 'articles': return prisma.article.findFirst({ where: { slug, ...status }, include: articleInclude(publicOnly) })
       }
     })()
@@ -331,6 +331,14 @@ export class PrismaContentRepository implements ContentRepository {
 
   async countScholarshipsByIds(ids: string[]) {
     return getPrisma().scholarship.count({ where: { id: { in: ids } } })
+  }
+
+  async scholarshipFilterOptions() {
+    const [studyLevels, fundingTypes] = await Promise.all([
+      getPrisma().scholarship.groupBy({ by: ['studyLevel'], where: { status: 'PUBLISHED', studyLevel: { not: '' } }, _count: { _all: true }, orderBy: { studyLevel: 'asc' } }),
+      getPrisma().scholarship.groupBy({ by: ['fundingType'], where: { status: 'PUBLISHED', fundingType: { not: '' } }, _count: { _all: true }, orderBy: { fundingType: 'asc' } }),
+    ])
+    return { studyLevels: studyLevels.map((row) => ({ value: row.studyLevel, count: row._count._all })), fundingTypes: fundingTypes.map((row) => ({ value: row.fundingType, count: row._count._all })) }
   }
 
   async create(

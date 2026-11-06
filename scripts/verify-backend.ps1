@@ -382,6 +382,8 @@ $expectedOperations.Add('POST /api/v1/analytics/events')
 $expectedOperations.Add('GET /api/v1/admin/analytics/summary')
 $expectedOperations.Add('GET /api/v1/admin/analytics/journeys')
 $expectedOperations.Add('GET /api/v1/site-settings')
+$expectedOperations.Add('GET /api/v1/about')
+$expectedOperations.Add('GET /api/v1/marketing/pages/{pageKey}/images')
 $expectedOperations.Add('GET /api/v1/faqs')
 $expectedOperations.Add('GET /api/v1/countries/{slug}/faqs')
 $expectedOperations.Add('GET /api/v1/universities/{slug}/faqs')
@@ -413,6 +415,10 @@ $expectedOperations.Add('POST /api/v1/admin/cities')
 $expectedOperations.Add('GET /api/v1/admin/users')
 $expectedOperations.Add('PATCH /api/v1/admin/users/{id}')
 $expectedOperations.Add('PATCH /api/v1/admin/site-settings')
+$expectedOperations.Add('GET /api/v1/admin/about')
+$expectedOperations.Add('PATCH /api/v1/admin/about')
+$expectedOperations.Add('GET /api/v1/admin/marketing/pages/{pageKey}/images')
+$expectedOperations.Add('PATCH /api/v1/admin/marketing/pages/{pageKey}/images')
 foreach ($resource in $resources) {
   foreach ($entry in @(
     "GET /api/v1/$resource",
@@ -462,16 +468,16 @@ if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
   }
 }
 $operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
-$operationPass = $actualOperations.Count -eq 81 -and $operationDifference.Count -eq 0
+$operationPass = $actualOperations.Count -eq 87 -and $operationDifference.Count -eq 0
 Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Exactly the approved 81 operations with no missing or unexpected operations.' `
+  -Expected 'Exactly the approved 87 operations with no missing or unexpected operations.' `
   -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
   -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, submission, media-upload, audit-log, Admin-management, site-settings, analytics, FAQ, and University-directory surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
   -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 81
+$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 87
 $documentationEvidence = if ($documentationIssues.Count -eq 0) {
-  'All 81 live operations passed documentation metadata checks.'
+  'All 87 live operations passed documentation metadata checks.'
 } else {
   $issueLimit = [Math]::Min(10, $documentationIssues.Count)
   @($documentationIssues.GetRange(0, $issueLimit)) -join '; '
@@ -557,9 +563,9 @@ $collectionDownloadPass = $collectionDownload.statusCode -eq 200 -and
   $collectionDownload.contentDisposition -match 'attachment;\s*filename="tareeq-api\.postman_collection\.json"' -and
   (Test-Property $downloadedCollection 'info') -and
   $downloadedCollection.info.schema -eq 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' -and
-  $downloadedRequestCount -eq 81
+  $downloadedRequestCount -eq 87
 Add-Check -Id 'postman.collection_download' -Category 'Documentation' -Status $(if ($collectionDownloadPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 81 requests.' `
+  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 87 requests.' `
   -Actual "HTTP $($collectionDownload.statusCode); requests=$downloadedRequestCount; content type=$($collectionDownload.contentType); attachment=$(-not [string]::IsNullOrWhiteSpace($collectionDownload.contentDisposition))." `
   -Evidence 'GET /postman/collection.json; downloaded content is parsed in memory and is not retained in reports.' `
   -Classification $(if ($collectionDownload.statusCode -eq 0 -or $collectionDownload.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($collectionDownloadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })

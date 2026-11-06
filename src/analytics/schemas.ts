@@ -12,6 +12,8 @@ export const analyticsCtaIdSchema = z.enum(analyticsCtaIds).openapi('AnalyticsCt
 export const analyticsEngagementTypeSchema = z.enum(
   analyticsEngagementTypes,
 ).openapi('AnalyticsEngagementType')
+const nullableAnalyticsCtaIdSchema = z.enum(analyticsCtaIds).nullable()
+const nullableAnalyticsEngagementTypeSchema = z.enum(analyticsEngagementTypes).nullable()
 
 const safePath = z.string().trim().min(1).max(500).regex(
   /^\/[A-Za-z0-9\-._~!$&'()*+,;=:@%/]*$/,
@@ -133,8 +135,8 @@ const journeyStepSchema = z.object({
   type: analyticsEventTypeSchema,
   path: z.string(),
   targetPath: z.string().nullable(),
-  ctaId: analyticsCtaIdSchema.nullable(),
-  engagementType: analyticsEngagementTypeSchema.nullable(),
+  ctaId: nullableAnalyticsCtaIdSchema,
+  engagementType: nullableAnalyticsEngagementTypeSchema,
   occurredAt: z.iso.datetime({ offset: true }),
 })
 

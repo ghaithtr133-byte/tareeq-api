@@ -1,0 +1,3 @@
+import { getPrisma } from '../database/client.js'
+import type { StatisticsRepository } from './types.js'
+export class PrismaStatisticsRepository implements StatisticsRepository { async counts() { const p = getPrisma(); const [countries, universities, scholarships, programs] = await Promise.all([p.country.count({ where: { status: 'PUBLISHED' } }), p.university.count({ where: { status: 'PUBLISHED' } }), p.scholarship.count({ where: { status: 'PUBLISHED' } }), p.universityProgram.count({ where: { status: 'PUBLISHED', university: { status: 'PUBLISHED' } } })]); return { countries, universities, scholarships, programs } } }

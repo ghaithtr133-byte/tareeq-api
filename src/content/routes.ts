@@ -1,4 +1,4 @@
-import { OpenAPIHono, type z } from '@hono/zod-openapi'
+import { OpenAPIHono, z } from '@hono/zod-openapi'
 
 import { requireAuthentication, requireRole } from '../auth/middleware.js'
 import type { AuthRuntime } from '../auth/runtime.js'
@@ -8,7 +8,7 @@ import {
   requireTrustedOrigin,
 } from '../auth/security.js'
 import type { AuthEnv } from '../auth/types.js'
-import { ApiError, successResponse } from '../shared/http.js'
+import { ApiError, successEnvelopeSchema, successResponse } from '../shared/http.js'
 import type { ContentRuntime } from './runtime.js'
 import {
   adminQuerySchemas,
@@ -84,7 +84,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     id: exampleCountryId, nameAr: 'ألمانيا', nameEn: 'Germany', slug: 'germany',
     introductionAr: 'مقدمة عن الدراسة في ألمانيا', introductionEn: null,
     detailsAr: 'تفاصيل الدراسة والمعيشة', detailsEn: null,
-    imageUrl: null, imageAltAr: null, imageAltEn: null,
+    imageUrl: null, imageAltAr: null, imageAltEn: null, countryCode: null,
     featured: true, displayOrder: 10, seoTitleAr: null, seoDescriptionAr: null,
     ...exampleDates,
   },
@@ -93,9 +93,9 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     officialName: 'Example University', slug: 'example-university', countryId: exampleCountryId,
     cityId: null, universityType: null, cityAr: 'مدينة تجريبية', cityEn: 'Example City', overviewAr: 'نظرة عامة أكاديمية',
     overviewEn: null, officialWebsite: 'https://example.edu', imageUrl: null,
-    imageAltAr: null, imageAltEn: null, featured: false,
+    imageAltAr: null, imageAltEn: null, logoUrl: null, logoAltAr: null, logoAltEn: null, featured: false,
     seoTitleAr: null, seoDescriptionAr: null,
-    country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', nameEn: 'Germany' },
+    country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', nameEn: 'Germany', countryCode: 'DE' },
     ...exampleDates,
   },
   scholarships: {
@@ -107,7 +107,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     verifiedDeadline: '2027-01-31T23:59:59.000Z', officialSourceUrl: 'https://example.edu/scholarship',
     applicationStatus: 'OPEN', effectiveApplicationStatus: 'OPEN', featured: true,
     seoTitleAr: null, seoDescriptionAr: null,
-    country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا' },
+    country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', countryCode: 'DE' },
     university: { id: exampleUniversityId, slug: 'example-university', nameAr: 'جامعة تجريبية' },
     ...exampleDates,
   },
@@ -131,7 +131,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
       effectiveApplicationStatus: 'OPEN',
     }],
     featured: true, seoTitleAr: null, seoDescriptionAr: null,
-    country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا' },
+    country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', countryCode: 'DE' },
     ...exampleDates,
   },
 }
@@ -141,8 +141,6 @@ const publicEntityExample = (resource: ContentResource) => {
   delete example.status
   delete example.createdAt
   delete example.updatedAt
-  delete example.country
-  delete example.university
   delete example.scholarship
   delete example.scholarshipIds
   return example
@@ -310,6 +308,17 @@ export const createContentRoutes = (
   adminRoutes.use('*', requireTrustedOrigin(authRuntime))
   adminRoutes.use('*', requireAuthentication(authRuntime))
   adminRoutes.use('*', requireRole('ADMIN', 'SUPER_ADMIN'))
+
+  const scholarshipFilterOptionsSchema = z.object({
+    studyLevels: z.array(z.object({ value: z.string(), labelAr: z.string().nullable(), count: z.number().int() })),
+    fundingTypes: z.array(z.object({ value: z.string(), labelAr: z.string().nullable(), count: z.number().int() })),
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'get', path: '/scholarships/filter-options', tags: ['Public — Scholarships'], summary: 'Get published Scholarship filter options',
+    description: 'Distinct studyLevel and fundingType values across the complete PUBLISHED Scholarship dataset, independent of listing pagination. Unknown values are retained with labelAr=null rather than receiving a speculative label.',
+    responses: { 200: { description: 'Published Scholarship facets.', content: { 'application/json': { schema: successEnvelopeSchema(scholarshipFilterOptionsSchema), example: { success: true, data: { studyLevels: [{ value: 'MASTERS', labelAr: 'ماجستير', count: 4 }], fundingTypes: [{ value: 'FULL', labelAr: 'تمويل كامل', count: 3 }] } } } } } },
+  })
+  publicRoutes.get('/scholarships/filter-options', async (c) => c.json(successResponse(await contentRuntime.getService().scholarshipFilterOptions()), 200))
 
   for (const resource of contentResources) {
     registerDocumentation(routes, resource)

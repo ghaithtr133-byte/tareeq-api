@@ -199,6 +199,15 @@ describe('visitor analytics and student journeys', () => {
     })
   })
 
+  it('aggregates safe empty and populated summaries at weekly and monthly granularity', async () => {
+    expect((await ingest(event({ occurredAt: '2026-11-01T12:00:00.000Z' }))).status).toBe(202)
+    expect((await ingest(event({ visitorId: VISITOR_TWO, sessionId: SESSION_TWO, occurredAt: '2026-11-02T10:00:00.000Z' }))).status).toBe(202)
+    const weekly = await adminGet('/api/v1/admin/analytics/summary?from=2026-11-01&to=2026-11-02&granularity=week')
+    const monthly = await adminGet('/api/v1/admin/analytics/summary?from=2026-11-01&to=2026-11-02&granularity=month')
+    await expect(weekly.json()).resolves.toMatchObject({ data: { range: { granularity: 'week' }, trends: [{ periodStart: '2026-10-26T00:00:00.000Z' }, { periodStart: '2026-11-02T00:00:00.000Z' }] } })
+    await expect(monthly.json()).resolves.toMatchObject({ data: { range: { granularity: 'month' }, trends: [{ periodStart: '2026-11-01T00:00:00.000Z' }] } })
+  })
+
   it('counts funnel stages only when they occur in page-view, CTA, conversion order', async () => {
     const conversionOnlySession = '3753122c-544c-4d4f-8681-d385f4eaeb36'
     const outOfOrderSession = '35b40178-63d1-432d-8237-818250ba445e'

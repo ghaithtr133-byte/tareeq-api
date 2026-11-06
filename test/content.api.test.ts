@@ -33,6 +33,8 @@ const countryInput = (slug = 'germany') => ({
   slug,
   introductionAr: 'مقدمة عن الدراسة في ألمانيا',
   detailsAr: 'تفاصيل الدراسة في ألمانيا',
+  imageUrl: 'https://example.invalid/country.webp',
+  imageAltAr: 'صورة للدراسة في ألمانيا',
   featured: false,
   displayOrder: 10,
   status: 'DRAFT',
@@ -270,6 +272,17 @@ describe('content management APIs', () => {
     const publicResponse = await app.request('/api/v1/universities/berlin-university')
     expect(publicResponse.status).toBe(200)
     await expect(publicResponse.json()).resolves.toMatchObject({ data: { countryId: country.body.data.id } })
+  })
+
+  it('supports assigned ISO country codes, independent University logos, and public relationship summaries', async () => {
+    const country = await createCountry({ ...countryInput(), countryCode: 'de', status: 'PUBLISHED' })
+    const university = await adminRequest('/api/v1/admin/universities', 'POST', {
+      nameAr: 'جامعة برلين', officialName: 'Berlin University', slug: 'berlin-logo-university', countryId: country.body.data.id,
+      cityAr: 'برلين', overviewAr: 'نظرة عامة', logoUrl: 'https://example.invalid/logo.webp', logoAltAr: 'شعار الجامعة', status: 'PUBLISHED',
+    })
+    expect(university.status).toBe(201)
+    await expect((await app.request('/api/v1/universities/berlin-logo-university')).json()).resolves.toMatchObject({ data: { logoUrl: 'https://example.invalid/logo.webp', country: { countryCode: 'DE' } } })
+    expect((await adminRequest('/api/v1/admin/countries', 'POST', { ...countryInput('invalid-code'), countryCode: 'ZZ' })).status).toBe(400)
   })
 
   it('enforces scholarship publication source and relationship consistency', async () => {

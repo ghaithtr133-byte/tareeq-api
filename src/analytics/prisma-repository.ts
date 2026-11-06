@@ -15,6 +15,13 @@ import type {
 const asNumber = (value: bigint | number) => Number(value)
 const rate = (numerator: number, denominator: number) =>
   denominator === 0 ? 0 : Math.round((numerator / denominator) * 10_000) / 100
+const summaryQuery = async <T>(name: string, operation: () => Promise<T>) => {
+  try { return await operation() } catch (cause) {
+    const error = new Error('Analytics summary query failed.')
+    Object.assign(error, { analyticsQuery: name, cause })
+    throw error
+  }
+}
 
 type TotalsRow = {
   pageViews: bigint
@@ -98,7 +105,7 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
       serverApplications,
       serverInquiries,
     ] = await Promise.all([
-      prisma.$queryRaw<TotalsRow[]>`
+      summaryQuery('totals', () => prisma.$queryRaw<TotalsRow[]>`
         SELECT
           COUNT(*) FILTER (WHERE "type" = 'PAGE_VIEW')::bigint AS "pageViews",
           COUNT(DISTINCT "visitorId")::bigint AS "visitors",
@@ -110,8 +117,8 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
           COUNT(DISTINCT "sessionId") FILTER (WHERE "type" = 'CTA_CLICK')::bigint AS "ctaSessions"
         FROM "AnalyticsEvent"
         WHERE "occurredAt" >= ${from} AND "occurredAt" < ${toExclusive}
-      `,
-      prisma.$queryRaw<FunnelRow[]>`
+      `),
+      summaryQuery('funnel', () => prisma.$queryRaw<FunnelRow[]>`
         WITH "firstPage" AS (
           SELECT "sessionId", MIN("occurredAt") AS "firstPageAt"
           FROM "AnalyticsEvent"
@@ -144,16 +151,16 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
           COUNT(*) FILTER (WHERE "firstCtaAt" IS NOT NULL)::bigint AS "ctaSessions",
           COUNT(*) FILTER (WHERE "firstConversionAt" IS NOT NULL)::bigint AS "conversionSessions"
         FROM "stages"
-      `,
-      prisma.$queryRaw<Array<{ path: string; pageViews: bigint; visitors: bigint }>>`
+      `),
+      summaryQuery('topPages', () => prisma.$queryRaw<Array<{ path: string; pageViews: bigint; visitors: bigint }>>`
         SELECT "path", COUNT(*)::bigint AS "pageViews", COUNT(DISTINCT "visitorId")::bigint AS "visitors"
         FROM "AnalyticsEvent"
         WHERE "occurredAt" >= ${from} AND "occurredAt" < ${toExclusive} AND "type" = 'PAGE_VIEW'
         GROUP BY "path"
         ORDER BY COUNT(*) DESC, "path" ASC
         LIMIT ${topLimit}
-      `,
-      prisma.$queryRaw<Array<{ source: string; medium: string | null; campaign: string | null; sessions: bigint; pageViews: bigint }>>`
+      `),
+      summaryQuery('trafficSources', () => prisma.$queryRaw<Array<{ source: string; medium: string | null; campaign: string | null; sessions: bigint; pageViews: bigint }>>`
         SELECT
           COALESCE("utmSource", "referrerHost", 'direct') AS "source",
           "utmMedium" AS "medium",
@@ -165,43 +172,46 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
         GROUP BY COALESCE("utmSource", "referrerHost", 'direct'), "utmMedium", "utmCampaign"
         ORDER BY COUNT(DISTINCT "sessionId") DESC, "source" ASC, "medium" ASC NULLS LAST, "campaign" ASC NULLS LAST
         LIMIT ${topLimit}
-      `,
-      prisma.$queryRaw<Array<{ ctaId: AnalyticsCtaId; clicks: bigint; sessions: bigint }>>`
+      `),
+      summaryQuery('ctaEngagement', () => prisma.$queryRaw<Array<{ ctaId: AnalyticsCtaId; clicks: bigint; sessions: bigint }>>`
         SELECT "ctaId", COUNT(*)::bigint AS "clicks", COUNT(DISTINCT "sessionId")::bigint AS "sessions"
         FROM "AnalyticsEvent"
         WHERE "occurredAt" >= ${from} AND "occurredAt" < ${toExclusive} AND "type" = 'CTA_CLICK'
         GROUP BY "ctaId"
         ORDER BY COUNT(*) DESC, "ctaId" ASC
-      `,
-      prisma.$queryRaw<TrendRow[]>`
-        SELECT
-          date_trunc(${granularity}, "occurredAt" AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS "periodStart",
+      `),
+      summaryQuery('analyticsTrends', () => prisma.$queryRaw<TrendRow[]>`
+        WITH "trendEvents" AS (
+          SELECT date_trunc(CAST(${granularity} AS text), "occurredAt" AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS "periodStart",
+            "type", "visitorId", "sessionId"
+          FROM "AnalyticsEvent"
+          WHERE "occurredAt" >= ${from} AND "occurredAt" < ${toExclusive}
+        )
+        SELECT "periodStart",
           COUNT(*) FILTER (WHERE "type" = 'PAGE_VIEW')::bigint AS "pageViews",
           COUNT(DISTINCT "visitorId")::bigint AS "visitors",
           COUNT(DISTINCT "sessionId")::bigint AS "sessions",
           COUNT(*) FILTER (WHERE "type" = 'CTA_CLICK')::bigint AS "ctaClicks",
           COUNT(DISTINCT "sessionId") FILTER (WHERE "type" IN ('APPLICATION_SUBMITTED', 'INQUIRY_SUBMITTED'))::bigint AS "clientReportedConversions"
-        FROM "AnalyticsEvent"
-        WHERE "occurredAt" >= ${from} AND "occurredAt" < ${toExclusive}
-        GROUP BY date_trunc(${granularity}, "occurredAt" AT TIME ZONE 'UTC')
-        ORDER BY "periodStart" ASC
-      `,
-      prisma.$queryRaw<SubmissionTrendRow[]>`
-        SELECT "periodStart", SUM("applications")::bigint AS "applications", SUM("inquiries")::bigint AS "inquiries"
-        FROM (
-          SELECT date_trunc(${granularity}, "createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS "periodStart", COUNT(*)::bigint AS "applications", 0::bigint AS "inquiries"
-          FROM "StudentApplication" WHERE "createdAt" >= ${from} AND "createdAt" < ${toExclusive}
-          GROUP BY date_trunc(${granularity}, "createdAt" AT TIME ZONE 'UTC')
-          UNION ALL
-          SELECT date_trunc(${granularity}, "createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS "periodStart", 0::bigint AS "applications", COUNT(*)::bigint AS "inquiries"
-          FROM "GeneralInquiry" WHERE "createdAt" >= ${from} AND "createdAt" < ${toExclusive}
-          GROUP BY date_trunc(${granularity}, "createdAt" AT TIME ZONE 'UTC')
-        ) AS "submissionTrends"
+        FROM "trendEvents"
         GROUP BY "periodStart"
         ORDER BY "periodStart" ASC
-      `,
-      prisma.studentApplication.count({ where: { createdAt: { gte: from, lt: toExclusive } } }),
-      prisma.generalInquiry.count({ where: { createdAt: { gte: from, lt: toExclusive } } }),
+      `),
+      summaryQuery('submissionTrends', () => prisma.$queryRaw<SubmissionTrendRow[]>`
+        WITH "submissionEvents" AS (
+          SELECT date_trunc(CAST(${granularity} AS text), "createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS "periodStart", 1::bigint AS "applications", 0::bigint AS "inquiries"
+          FROM "StudentApplication" WHERE "createdAt" >= ${from} AND "createdAt" < ${toExclusive}
+          UNION ALL
+          SELECT date_trunc(CAST(${granularity} AS text), "createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' AS "periodStart", 0::bigint AS "applications", 1::bigint AS "inquiries"
+          FROM "GeneralInquiry" WHERE "createdAt" >= ${from} AND "createdAt" < ${toExclusive}
+        )
+        SELECT "periodStart", SUM("applications")::bigint AS "applications", SUM("inquiries")::bigint AS "inquiries"
+        FROM "submissionEvents"
+        GROUP BY "periodStart"
+        ORDER BY "periodStart" ASC
+      `),
+      summaryQuery('serverApplications', () => prisma.studentApplication.count({ where: { createdAt: { gte: from, lt: toExclusive } } })),
+      summaryQuery('serverInquiries', () => prisma.generalInquiry.count({ where: { createdAt: { gte: from, lt: toExclusive } } })),
     ])
 
     const totals = totalRows[0] ?? {

@@ -3,6 +3,7 @@ import { z } from '@hono/zod-openapi'
 import { publicationStatusSchema } from '../content/schemas.js'
 import { errorResponseSchema, successEnvelopeSchema } from '../shared/http.js'
 import { programStudyLevelSchema } from '../university-directory/schemas.js'
+import { programStudyLevels } from '../university-directory/types.js'
 import { admissionRequirementScopes } from './types.js'
 
 export const admissionRequirementScopeSchema = z.enum(admissionRequirementScopes).openapi('AdmissionRequirementScope')
@@ -18,9 +19,10 @@ export const detailsListQuerySchema = z.object({ ...pageFields, status: publicat
 export const admissionListQuerySchema = z.object({ ...pageFields, status: publicationStatusSchema.optional(), scope: admissionRequirementScopeSchema.optional() }).strict()
 
 const nullableText = z.string().trim().min(1).max(20_000).nullable().optional()
+const nullableProgramStudyLevelSchema = z.enum(programStudyLevels).nullable()
 const admissionCreateBase = z.object({
   scope: admissionRequirementScopeSchema,
-  studyLevel: programStudyLevelSchema.nullable().optional().default(null),
+  studyLevel: nullableProgramStudyLevelSchema.optional().default(null),
   programId: uuid.nullable().optional().default(null),
   contentAr: z.string().trim().min(1).max(20_000),
   contentEn: nullableText,
@@ -58,7 +60,7 @@ export const galleryReorderSchema = z.object({ orderedIds: z.array(uuid).max(100
 
 const programSummarySchema = z.object({ id: uuid, nameAr: z.string().nullable(), nameEn: z.string().nullable(), studyLevel: programStudyLevelSchema })
 const admissionPublicSchema = z.object({
-  id: uuid, scope: admissionRequirementScopeSchema, studyLevel: programStudyLevelSchema.nullable(), programId: uuid.nullable(),
+  id: uuid, scope: admissionRequirementScopeSchema, studyLevel: nullableProgramStudyLevelSchema, programId: uuid.nullable(),
   contentAr: z.string(), contentEn: z.string().nullable(), officialSourceUrl: z.string().nullable(), verifiedAt: date.nullable(), publishedAt: date.nullable(), program: programSummarySchema.nullable(),
 })
 const admissionAdminSchema = admissionPublicSchema.extend({ universityId: uuid, status: publicationStatusSchema, createdAt: date, updatedAt: date })

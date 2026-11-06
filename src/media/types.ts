@@ -4,6 +4,8 @@ export const mediaResources = [
   'scholarships',
   'services',
   'articles',
+  'about',
+  'marketing',
 ] as const
 
 export type MediaResource = (typeof mediaResources)[number]

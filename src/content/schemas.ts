@@ -3,6 +3,7 @@ import { z } from '@hono/zod-openapi'
 import { errorResponseSchema, successEnvelopeSchema } from '../shared/http.js'
 import { programStudyLevels, teachingLanguages, universityTypes } from '../university-directory/types.js'
 import type { ContentResource } from './types.js'
+import { assignedIsoCountryCodes } from './iso-country-codes.js'
 
 export const publicationStatusSchema = z
   .enum(['DRAFT', 'PUBLISHED', 'ARCHIVED'])
@@ -11,6 +12,7 @@ export const applicationStatusSchema = z
   .enum(['OPEN', 'CLOSED'])
   .openapi('ScholarshipApplicationStatus')
 export const universityTypeSchema = z.enum(universityTypes).openapi('UniversityType')
+const nullableUniversityTypeSchema = z.enum(universityTypes).nullable()
 
 const slugSchema = z
   .string()
@@ -26,6 +28,12 @@ const webUrlSchema = z.url().max(2_048).refine(
   'Use an HTTP or HTTPS URL.',
 )
 const optionalUrl = webUrlSchema.optional()
+const optionalNullableUrl = webUrlSchema.nullable().optional()
+const optionalNullableArabicText = z.string().trim().min(1).max(20_000).nullable().optional()
+const countryCodeSchema = z.string().trim().toUpperCase().refine(
+  (value) => assignedIsoCountryCodes.has(value),
+  'Use an assigned ISO 3166-1 alpha-2 country code.',
+)
 
 export const richTextBlockSchema = z
   .object({
@@ -61,6 +69,13 @@ export const countryCreateSchema = z
     imageUrl: optionalUrl,
     imageAltAr: z.string().trim().min(1).max(300).optional(),
     imageAltEn: z.string().trim().min(1).max(300).optional(),
+    overviewImageUrl: optionalNullableUrl,
+    overviewImageAltAr: z.string().trim().min(1).max(300).nullable().optional(),
+    studyLanguageAr: optionalNullableArabicText,
+    tuitionSummaryAr: optionalNullableArabicText,
+    admissionSummaryAr: optionalNullableArabicText,
+    applicationDatesSummaryAr: optionalNullableArabicText,
+    countryCode: countryCodeSchema.nullable().optional(),
     displayOrder: z.number().int().min(0).max(1_000_000).optional().default(0),
     ...commonCreateFields,
   })
@@ -74,7 +89,7 @@ export const universityCreateSchema = z
     officialName: z.string().trim().min(1).max(300),
     countryId: z.uuid(),
     cityId: z.uuid().nullable().optional(),
-    universityType: universityTypeSchema.nullable().optional(),
+    universityType: nullableUniversityTypeSchema.optional(),
     cityAr: z.string().trim().min(1).max(200),
     cityEn: z.string().trim().min(1).max(200).optional(),
     overviewAr: requiredArabicText,
@@ -83,6 +98,9 @@ export const universityCreateSchema = z
     imageUrl: optionalUrl,
     imageAltAr: z.string().trim().min(1).max(300).optional(),
     imageAltEn: z.string().trim().min(1).max(300).optional(),
+    logoUrl: optionalUrl,
+    logoAltAr: z.string().trim().min(1).max(300).optional(),
+    logoAltEn: z.string().trim().min(1).max(300).optional(),
     ...commonCreateFields,
   })
   .strict()
@@ -206,6 +224,10 @@ export const countrySchema = z.object({
   introductionAr: z.string(), introductionEn: z.string().nullable(),
   detailsAr: z.string(), detailsEn: z.string().nullable(),
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
+  overviewImageUrl: z.string().nullable(), overviewImageAltAr: z.string().nullable(),
+  studyLanguageAr: z.string().nullable(), tuitionSummaryAr: z.string().nullable(),
+  admissionSummaryAr: z.string().nullable(), applicationDatesSummaryAr: z.string().nullable(),
+  countryCode: z.string().nullable(),
   displayOrder: z.number().int(),
   ...adminFields,
 }).openapi('Country')
@@ -213,10 +235,11 @@ export const countrySchema = z.object({
 export const universitySchema = z.object({
   ...entityBase,
   nameAr: z.string(), nameEn: z.string().nullable(), officialName: z.string(),
-  countryId: z.uuid(), cityId: z.uuid().nullable(), universityType: universityTypeSchema.nullable(), cityAr: z.string(), cityEn: z.string().nullable(),
+  countryId: z.uuid(), cityId: z.uuid().nullable(), universityType: nullableUniversityTypeSchema, cityAr: z.string(), cityEn: z.string().nullable(),
   overviewAr: z.string(), overviewEn: z.string().nullable(), officialWebsite: z.string().nullable(),
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
-  country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string().nullable() }).optional(),
+  logoUrl: z.string().nullable(), logoAltAr: z.string().nullable(), logoAltEn: z.string().nullable(),
+  country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).optional(),
   city: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string() }).nullable().optional(),
   ...adminFields,
 }).openapi('University')
@@ -229,7 +252,7 @@ export const scholarshipSchema = z.object({
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   officialSourceUrl: z.string().nullable(), applicationStatus: applicationStatusSchema,
   effectiveApplicationStatus: applicationStatusSchema.optional(),
-  country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
+  country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).nullable().optional(),
   university: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
   ...adminFields,
 }).openapi('Scholarship')
@@ -248,7 +271,7 @@ export const articleSchema = z.object({
   bodyAr: z.array(richTextBlockSchema), bodyEn: z.array(richTextBlockSchema).nullable(),
   coverImageUrl: z.string().nullable(), coverImageAltAr: z.string().nullable(), coverImageAltEn: z.string().nullable(),
   countryId: z.uuid().nullable(), universityId: z.uuid().nullable(), scholarshipId: z.uuid().nullable(),
-  country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
+  country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).nullable().optional(),
   university: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
   scholarship: z.object({ id: z.uuid(), slug: z.string(), titleAr: z.string() }).nullable().optional(),
   ...adminFields,
@@ -281,10 +304,10 @@ export const contentEntitySchemas = {
 
 export const publicContentEntitySchemas = {
   countries: countrySchema.omit({ status: true, createdAt: true, updatedAt: true }),
-  universities: universitySchema.omit({ status: true, createdAt: true, updatedAt: true, country: true }),
-  scholarships: scholarshipSchema.omit({ status: true, createdAt: true, updatedAt: true, country: true, university: true }),
+  universities: universitySchema.omit({ status: true, createdAt: true, updatedAt: true }),
+  scholarships: scholarshipSchema.omit({ status: true, createdAt: true, updatedAt: true }),
   services: serviceSchema.omit({ status: true, createdAt: true, updatedAt: true }),
-  articles: articleSchema.omit({ status: true, createdAt: true, updatedAt: true, country: true, university: true, scholarship: true }),
+  articles: articleSchema.omit({ status: true, createdAt: true, updatedAt: true, scholarship: true }),
 } as const
 
 export const paginationSchema = z.object({

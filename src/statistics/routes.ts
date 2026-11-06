@@ -1,0 +1,9 @@
+import { OpenAPIHono } from '@hono/zod-openapi'
+import type { AuthRuntime } from '../auth/runtime.js'
+import { publicReadCors } from '../auth/security.js'
+import type { AuthEnv } from '../auth/types.js'
+import { successEnvelopeSchema, successResponse } from '../shared/http.js'
+import type { StatisticsRuntime } from './runtime.js'
+import { z } from '@hono/zod-openapi'
+const response = successEnvelopeSchema(z.object({ publishedContent: z.object({ publishedCountries: z.number().int(), publishedUniversities: z.number().int(), publishedScholarships: z.number().int(), publishedUniversityPrograms: z.number().int(), calculationMethod: z.string(), computedAt: z.iso.datetime({ offset: true }) }) })).openapi('PublicStatisticsResponse')
+export const createStatisticsRoutes = (runtime: StatisticsRuntime, auth: AuthRuntime) => { const routes = new OpenAPIHono<AuthEnv>(), pub = new OpenAPIHono<AuthEnv>(); const example = { success: true, data: { publishedContent: { publishedCountries: 0, publishedUniversities: 0, publishedScholarships: 0, publishedUniversityPrograms: 0, calculationMethod: 'COUNT_DISTINCT_PUBLISHED_RECORDS_WITH_PUBLISHED_PARENT', computedAt: '2026-11-05T00:00:00.000Z' } } }; routes.openAPIRegistry.registerPath({ method: 'get', path: '/statistics', tags: ['Public — Statistics'], summary: 'Get reusable published content statistics', description: 'Counts complete published datasets, never page results. Programs require a published Program and published parent University. No inferred or manually claimed metrics are included.', responses: { 200: { description: 'Public statistics.', content: { 'application/json': { schema: response, example } } } } }); pub.use('/statistics', publicReadCors(auth)); pub.get('/statistics', async c => c.json(successResponse(await runtime.getService().getPublic()), 200)); routes.route('/', pub); return routes }

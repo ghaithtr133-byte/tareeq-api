@@ -53,12 +53,13 @@ export const directoryIdParamSchema = z.object({ id: z.uuid() })
 const httpsUrlSchema = z.url().max(2_048).refine((value) => new URL(value).protocol === 'https:', 'Use an HTTPS official source URL.')
 const localizedOptionalSchema = z.string().trim().min(1).max(300).nullable().optional()
 const isoCurrencies = new Set(Intl.supportedValuesOf('currency'))
-const tuitionSchema = z.object({
+const tuitionFields = {
   amount: z.string().trim().regex(/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/, 'Use a non-negative decimal amount with at most two fractional digits.'),
   currency: z.string().trim().regex(/^[A-Z]{3}$/, 'Use an uppercase ISO 4217 currency code.').refine((value) => isoCurrencies.has(value), 'Use a recognized ISO 4217 currency code.'),
   billingPeriod: tuitionBillingPeriodSchema,
   academicYear: z.string().regex(/^\d{4}\/\d{4}$/, 'Use academic year format YYYY/YYYY.').refine((value) => Number(value.slice(5)) === Number(value.slice(0, 4)) + 1, 'Academic year must contain consecutive years.'),
-}).strict().openapi('UniversityProgramTuitionInput')
+}
+const tuitionSchema = z.object(tuitionFields).strict().openapi('UniversityProgramTuitionInput')
 const programFields = {
   academicMajorId: z.uuid(),
   nameAr: z.string().trim().min(1).max(300),
@@ -97,7 +98,7 @@ export const cityCreateSchema = z.object({
 
 const dateSchema = z.iso.datetime({ offset: true })
 const majorSchema = z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string(), category: z.string().nullable() }).openapi('AcademicMajorSummary')
-const tuitionResponseSchema = tuitionSchema.extend({ id: z.uuid(), createdAt: dateSchema, updatedAt: dateSchema }).openapi('UniversityProgramTuition')
+const tuitionResponseSchema = z.object({ ...tuitionFields, id: z.uuid(), createdAt: dateSchema, updatedAt: dateSchema }).strict().openapi('UniversityProgramTuition')
 const programPublicSchema = z.object({
   id: z.uuid(), nameAr: z.string().nullable(), nameEn: z.string().nullable(),
   facultyNameAr: z.string().nullable(), facultyNameEn: z.string().nullable(),

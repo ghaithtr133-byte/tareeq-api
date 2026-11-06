@@ -51,7 +51,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(collection.info.schema).toBe(
       'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     )
-    expect(collectRequests(collection.item)).toHaveLength(81)
+    expect(collectRequests(collection.item)).toHaveLength(108)
 
     const zipResponse = await app.request('/postman/download.zip')
     const zip = Buffer.from(await zipResponse.arrayBuffer())
@@ -168,7 +168,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(document.components.schemas.HealthResponse).toBeDefined()
   })
 
-  it('documents the complete 81-operation API with descriptions, examples, and Admin security', async () => {
+  it('documents the complete 108-operation API with descriptions, examples, and Admin security', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
       info?: { description?: string }
@@ -195,7 +195,7 @@ describe('Tareeq Academy API foundation', () => {
         .map(([method, operation]) => ({ path, method, operation })),
     )
 
-    expect(operations).toHaveLength(81)
+    expect(operations).toHaveLength(108)
     const contentResources = '(countries|universities|scholarships|services|articles)'
     const operationGroups = {
       system: operations.filter(({ path }) => path === '/api/v1/health'),
@@ -221,6 +221,10 @@ describe('Tareeq Academy API foundation', () => {
       adminSiteSettings: operations.filter(({ path }) =>
         path === '/api/v1/admin/site-settings',
       ),
+      publicAboutUs: operations.filter(({ path }) => path === '/api/v1/about'),
+      adminAboutUs: operations.filter(({ path }) => path === '/api/v1/admin/about'),
+      publicMarketing: operations.filter(({ path }) => path.startsWith('/api/v1/marketing/')),
+      adminMarketing: operations.filter(({ path }) => path.startsWith('/api/v1/admin/marketing/')),
       publicAnalytics: operations.filter(({ path }) =>
         path === '/api/v1/analytics/events',
       ),
@@ -261,6 +265,10 @@ describe('Tareeq Academy API foundation', () => {
       adminManagement: 2,
       publicSiteSettings: 1,
       adminSiteSettings: 1,
+      publicAboutUs: 1,
+      adminAboutUs: 2,
+      publicMarketing: 1,
+      adminMarketing: 2,
       publicAnalytics: 1,
       adminAnalytics: 2,
       publicFaqs: 5,
@@ -282,6 +290,10 @@ describe('Tareeq Academy API foundation', () => {
       'Public — Applications',
       'Public — Inquiries',
       'Public — Site Settings',
+      'Public — About Us',
+      'Public — Marketing',
+      'Public — Statistics',
+      'Public — Student Journey',
       'Public — Analytics',
       'Public — FAQs',
       'Public — University Directory',
@@ -297,6 +309,9 @@ describe('Tareeq Academy API foundation', () => {
       'Admin — Audit Logs',
       'Admin — Account Management',
       'Admin — Site Settings',
+      'Admin — About Us',
+      'Admin — Marketing',
+      'Admin — Student Journey',
       'Admin — Analytics',
       'Admin — FAQs',
       'Admin — University Programs',
@@ -317,6 +332,10 @@ describe('Tareeq Academy API foundation', () => {
           'Public — Applications',
           'Public — Inquiries',
           'Public — Site Settings',
+          'Public — About Us',
+          'Public — Marketing',
+          'Public — Statistics',
+          'Public — Student Journey',
           'Public — Analytics',
           'Public — FAQs',
           'Public — University Directory',
@@ -337,6 +356,9 @@ describe('Tareeq Academy API foundation', () => {
           'Admin — Audit Logs',
           'Admin — Account Management',
           'Admin — Site Settings',
+          'Admin — About Us',
+          'Admin — Marketing',
+          'Admin — Student Journey',
           'Admin — Analytics',
           'Admin — FAQs',
           'Admin — University Programs',
@@ -367,6 +389,9 @@ describe('Tareeq Academy API foundation', () => {
       'audit-logs': 'Admin — Audit Logs',
       users: 'Admin — Account Management',
       'site-settings': 'Admin — Site Settings',
+      about: 'Admin — About Us',
+      marketing: 'Admin — Marketing',
+      'student-journey-steps': 'Admin — Student Journey',
       analytics: 'Admin — Analytics',
       faqs: 'Admin — FAQs',
       'university-programs': 'Admin — University Programs',
@@ -409,6 +434,12 @@ describe('Tareeq Academy API foundation', () => {
         )
         const expectedAdminTag = path.includes('/admission-requirements') || path.includes('/university-admission-requirements/') || path.includes('/gallery') || path.includes('/university-gallery/')
           ? 'Admin — University Details'
+          : path.includes('/study-guide')
+            ? 'Admin — Countries'
+            : path.includes('/service-detail-items')
+              ? 'Admin — Services'
+              : path.includes('/scholarship-detail-items')
+                ? 'Admin — Scholarships'
           : path === '/api/v1/admin/universities/{universityId}/programs'
           ? 'Admin — University Programs'
           : adminTagByResource[path.split('/')[4] ?? '']

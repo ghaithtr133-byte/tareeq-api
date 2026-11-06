@@ -1,0 +1,2 @@
+import type { StatisticsRepository } from './types.js'
+export class StatisticsService { constructor(private readonly repository: StatisticsRepository) {} async getPublic() { const counts = await this.repository.counts(); return { publishedContent: { publishedCountries: counts.countries, publishedUniversities: counts.universities, publishedScholarships: counts.scholarships, publishedUniversityPrograms: counts.programs, calculationMethod: 'COUNT_DISTINCT_PUBLISHED_RECORDS_WITH_PUBLISHED_PARENT', computedAt: new Date().toISOString() } } } }

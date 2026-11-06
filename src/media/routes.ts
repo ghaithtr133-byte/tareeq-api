@@ -74,7 +74,7 @@ export const createMediaRoutes = (
     path: '/admin/uploads/images',
     tags: ['Admin — Media'],
     summary: 'Upload a content image',
-    description: `ADMIN or SUPER_ADMIN only. Accepts one verified JPEG, PNG, or WebP image up to ${MAX_IMAGE_BYTES} bytes for a Country, University, Scholarship, Service, or Article. The complete multipart body is limited to ${MAX_MULTIPART_BODY_BYTES} bytes for Vercel Functions compatibility. Returns the Cloudinary secure URL and stable identifiers; use \`secureUrl\` in the existing content image field. This endpoint does not create, update, replace, or delete a content record.`,
+    description: `ADMIN or SUPER_ADMIN only. Accepts one verified JPEG, PNG, or WebP image up to ${MAX_IMAGE_BYTES} bytes for a Country, University, Scholarship, Service, Article, About Us page, or fixed marketing page. The complete multipart body is limited to ${MAX_MULTIPART_BODY_BYTES} bytes for Vercel Functions compatibility. Returns the Cloudinary secure URL and stable identifiers; use \`secureUrl\` in the existing content image field. This endpoint does not create, update, replace, or delete a content record.`,
     security: [{ accessCookie: [] }],
     request: {
       body: {

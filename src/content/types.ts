@@ -75,6 +75,7 @@ export interface ContentRepository {
   ): Promise<ContentEntity | null>
   findCityById(id: string): Promise<CityReference | null>
   countScholarshipsByIds(ids: string[]): Promise<number>
+  scholarshipFilterOptions(): Promise<{ studyLevels: Array<{ value: string; count: number }>; fundingTypes: Array<{ value: string; count: number }> }>
   create(
     resource: ContentResource,
     data: ContentWriteData,

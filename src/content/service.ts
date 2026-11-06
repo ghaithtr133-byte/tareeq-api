@@ -63,10 +63,36 @@ const publicView = (record: ContentEntity, now: Date) => {
   delete publicRecord.status
   delete publicRecord.createdAt
   delete publicRecord.updatedAt
-  delete publicRecord.country
-  delete publicRecord.university
   delete publicRecord.scholarship
   delete publicRecord.scholarshipIds
+  if ('detailsAr' in publicRecord) {
+    publicRecord.studentFacts = {
+      studyLanguageAr: publicRecord.studyLanguageAr ?? null,
+      tuitionSummaryAr: publicRecord.tuitionSummaryAr ?? null,
+      admissionSummaryAr: publicRecord.admissionSummaryAr ?? null,
+      applicationDatesSummaryAr: publicRecord.applicationDatesSummaryAr ?? null,
+    }
+    delete publicRecord.studyLanguageAr
+    delete publicRecord.tuitionSummaryAr
+    delete publicRecord.admissionSummaryAr
+    delete publicRecord.applicationDatesSummaryAr
+  }
+  if ('detailsAr' in publicRecord) {
+    publicRecord.studyGuide = Array.isArray(publicRecord.studyGuideSections) ? publicRecord.studyGuideSections : []
+    delete publicRecord.studyGuideSections
+  }
+  if ('summaryAr' in publicRecord || 'fundingType' in publicRecord) {
+    const items = Array.isArray(publicRecord.detailItems) ? publicRecord.detailItems as Array<Record<string, unknown>> : []
+    if ('summaryAr' in publicRecord) {
+      publicRecord.stepsAr = items.filter((item) => item.kind === 'STEP')
+      publicRecord.benefitsAr = items.filter((item) => item.kind === 'BENEFIT')
+    } else {
+      publicRecord.benefitsAr = items.filter((item) => item.kind === 'BENEFIT')
+      publicRecord.requirementItemsAr = items.filter((item) => item.kind === 'REQUIREMENT')
+      publicRecord.applicationStepsAr = items.filter((item) => item.kind === 'APPLICATION_STEP')
+    }
+    delete publicRecord.detailItems
+  }
   if ('applicationStatus' in publicRecord) {
     const deadline = publicRecord.verifiedDeadline
     publicRecord.effectiveApplicationStatus =
@@ -132,6 +158,13 @@ export class ContentService {
     return adminView(record, this.now())
   }
 
+  async scholarshipFilterOptions() {
+    const options = await this.repository.scholarshipFilterOptions()
+    const labels: Record<string, string> = { FOUNDATION: 'السنة التحضيرية', DIPLOMA: 'دبلوم', BACHELORS: 'بكالوريوس', MASTERS: 'ماجستير', PHD: 'دكتوراه', FULL: 'تمويل كامل', PARTIAL: 'تمويل جزئي' }
+    const map = (items: Array<{ value: string; count: number }>) => items.map((item) => ({ ...item, labelAr: labels[item.value] ?? null }))
+    return { studyLevels: map(options.studyLevels), fundingTypes: map(options.fundingTypes) }
+  }
+
   async create(
     resource: ContentResource,
     input: ContentWriteData,
@@ -145,7 +178,7 @@ export class ContentService {
       publishedAt: status === 'PUBLISHED' ? this.now() : null,
     }
     this.normalizeDates(data)
-    await this.validateWrite(resource, data)
+    await this.validateWrite(resource, data, status === 'PUBLISHED')
     await this.ensureUniqueSlug(resource, String(data.slug))
     return adminView(await this.repository.create(resource, data, {
       actorAdminId,
@@ -188,7 +221,7 @@ export class ContentService {
 
     const next = { ...current, ...input } as ContentWriteData
     this.normalizeDates(next)
-    await this.validateWrite(resource, next)
+    await this.validateWrite(resource, next, input.status === 'PUBLISHED' && current.status !== 'PUBLISHED')
     if (typeof input.slug === 'string' && input.slug !== current.slug) {
       await this.ensureUniqueSlug(resource, input.slug, id)
     }
@@ -261,7 +294,7 @@ export class ContentService {
     }
   }
 
-  private async validateWrite(resource: ContentResource, data: ContentWriteData) {
+  private async validateWrite(resource: ContentResource, data: ContentWriteData, enteringPublication = false) {
     const status = data.status as PublicationStatus | undefined
     if (
       resource === 'scholarships' &&
@@ -274,6 +307,11 @@ export class ContentService {
         'The scholarship cannot be published without an official source URL.',
         { fields: { officialSourceUrl: ['An official source URL is required before publication.'] } },
       )
+    }
+    if (resource === 'countries' && enteringPublication && (!data.imageUrl || !data.imageAltAr)) {
+      throw new ApiError(400, 'PUBLICATION_REQUIREMENTS_NOT_MET', 'The Country cannot be published without a hero image and Arabic alternative text.', {
+        fields: { imageUrl: ['A hero image is required before publication.'], imageAltAr: ['Meaningful Arabic alternative text is required before publication.'] },
+      })
     }
 
     const countryId = typeof data.countryId === 'string' ? data.countryId : null

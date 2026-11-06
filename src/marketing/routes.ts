@@ -1,0 +1,24 @@
+import { OpenAPIHono, type z } from '@hono/zod-openapi'
+import { requireAuthentication, requireRole } from '../auth/middleware.js'
+import type { AuthRuntime } from '../auth/runtime.js'
+import { authCors, publicReadCors, requireTrustedOrigin } from '../auth/security.js'
+import type { AuthEnv } from '../auth/types.js'
+import { ApiError, successResponse } from '../shared/http.js'
+import type { MarketingPageImageRuntime } from './runtime.js'
+import { marketingErrors, marketingPageParamsSchema, marketingPageResponseSchema, marketingPageUpdateSchema } from './schemas.js'
+import type { MarketingPageImageUpdate, MarketingPageKey } from './types.js'
+
+const parse = <T>(schema: z.ZodType<T>, value: unknown): T => { const parsed = schema.safeParse(value); if (parsed.success) return parsed.data; const fields: Record<string, string[]> = {}; for (const issue of parsed.error.issues) (fields[issue.path.join('.') || '_request'] ??= []).push(issue.message); throw new ApiError(400, 'VALIDATION_ERROR', 'The request contains invalid fields.', { fields }) }
+const readJson = async (request: Request) => { if (!request.headers.get('content-type')?.toLowerCase().includes('application/json')) throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Content-Type must be application/json.'); try { return await request.json() } catch { throw new ApiError(400, 'VALIDATION_ERROR', 'The request body must contain valid JSON.', { fields: { _request: ['Provide a valid JSON request body.'] } }) } }
+const example = { pageKey: 'HOME', heroImageUrl: null, heroImageAltAr: null, ctaImageUrl: null, ctaImageAltAr: null, updatedAt: null }
+
+export const createMarketingPageImageRoutes = (runtime: MarketingPageImageRuntime, authRuntime: AuthRuntime) => {
+  const routes = new OpenAPIHono<AuthEnv>(); const publicRoutes = new OpenAPIHono<AuthEnv>(); const adminRoutes = new OpenAPIHono<AuthEnv>()
+  routes.openAPIRegistry.registerPath({ method: 'get', path: '/marketing/pages/{pageKey}/images', tags: ['Public — Marketing'], summary: 'Get optional marketing page images', description: 'Returns nullable Hero and CTA image fields for HOME or DESTINATIONS. Null preserves the Frontend static-image fallback.', request: { params: marketingPageParamsSchema }, responses: { 200: { description: 'Marketing page image configuration.', content: { 'application/json': { schema: marketingPageResponseSchema, example: { success: true, data: example } } } }, 400: marketingErrors[400] } })
+  for (const method of ['get', 'patch'] as const) routes.openAPIRegistry.registerPath({ method, path: '/admin/marketing/pages/{pageKey}/images', tags: ['Admin — Marketing'], summary: method === 'get' ? 'Get editable marketing page images' : 'Update optional marketing page images', description: 'ADMIN or SUPER_ADMIN only. Null explicitly clears an image field; no Cloudinary operation occurs.', security: [{ accessCookie: [] }], request: method === 'get' ? { params: marketingPageParamsSchema } : { params: marketingPageParamsSchema, body: { required: true, content: { 'application/json': { schema: marketingPageUpdateSchema, example: { heroImageUrl: 'https://res.cloudinary.com/example/image/upload/tareeq/home-hero.webp', heroImageAltAr: 'طلاب في حرم جامعي' } } } } }, responses: { 200: { description: 'Marketing page image configuration.', content: { 'application/json': { schema: marketingPageResponseSchema, example: { success: true, data: example } } } }, 400: marketingErrors[400], 401: marketingErrors[401], 403: marketingErrors[403], 415: marketingErrors[415] } })
+  publicRoutes.use('/marketing/pages/:pageKey/images', publicReadCors(authRuntime)); adminRoutes.use('/marketing/pages/:pageKey/images', authCors(authRuntime)); adminRoutes.use('/marketing/pages/:pageKey/images', requireTrustedOrigin(authRuntime)); adminRoutes.use('/marketing/pages/:pageKey/images', requireAuthentication(authRuntime)); adminRoutes.use('/marketing/pages/:pageKey/images', requireRole('ADMIN', 'SUPER_ADMIN'))
+  publicRoutes.get('/marketing/pages/:pageKey/images', async (c) => c.json(successResponse(await runtime.getService().get(parse(marketingPageParamsSchema, { pageKey: c.req.param('pageKey') }).pageKey as MarketingPageKey)), 200))
+  adminRoutes.get('/marketing/pages/:pageKey/images', async (c) => c.json(successResponse(await runtime.getService().get(parse(marketingPageParamsSchema, { pageKey: c.req.param('pageKey') }).pageKey as MarketingPageKey)), 200))
+  adminRoutes.patch('/marketing/pages/:pageKey/images', async (c) => { const pageKey = parse(marketingPageParamsSchema, { pageKey: c.req.param('pageKey') }).pageKey as MarketingPageKey; return c.json(successResponse(await runtime.getService().update(c.get('authClaims').userId, pageKey, parse(marketingPageUpdateSchema, await readJson(c.req.raw)) as MarketingPageImageUpdate)), 200) })
+  routes.route('/', publicRoutes); routes.route('/admin', adminRoutes); return routes
+}

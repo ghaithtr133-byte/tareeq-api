@@ -16,6 +16,8 @@ Frontend developers should start with [docs/frontend-integration.md](docs/fronte
 
 Provider verification is intentionally separate from normal tests and deployment. Use `npm run integrations:preflight` for a read-only configuration, scheduler, Admin-recipient, and actionable-outbox gate, then follow [Cloudinary and Resend live integration verification](docs/live-integration-verification.md). The preflight never calls Cloudinary or Resend and never changes database records.
 
+Production verification has two report-producing runners. `npm run verify:production:readonly` invokes the existing safe acceptance verifier and read-only Neon/provider checks, then writes timestamped sanitized JSON and Markdown reports to `reports/production-verification/`. `npm run verify:production:live` is a non-mutating live-test plan by default. It does not send mail, create submissions, upload assets, authenticate, or dispatch anything; it reports the independent owner gates required before a later controlled scenario can be authorized. Reports are Git-ignored.
+
 Never provide Frontend applications with database URLs, JWT secrets, administrator credentials, or other Backend-only configuration.
 
 ## Local Backend setup
@@ -79,7 +81,9 @@ npm start                      # Run compiled local server
 npm test                       # Safe default Vitest suite
 npm run test:api               # Isolated health/auth/content/submission/media/audit/settings/analytics/FAQ/directory regression
 npm run postman:generate       # Regenerate Postman artifacts from OpenAPI
-npm run postman:check          # Verify all 81 Collection operations
+npm run postman:check          # Verify all 87 Collection operations
+npm run verify:production:readonly # Timestamped safe production/API/Neon readiness report
+npm run verify:production:live # Non-mutating controlled-live-test plan and safety-gate report
 npm run notifications:dispatch # Safely retry pending email outbox records
 npm run prisma:generate        # Generate Prisma Client
 npm run prisma:validate        # Validate Prisma configuration/schema
@@ -117,7 +121,17 @@ State-changing Authentication/Admin requests require an exact trusted `Origin`. 
 
 ## Content image uploads
 
-`POST /api/v1/admin/uploads/images` accepts one authenticated Admin multipart upload for a Country, University, Scholarship, Service, or Article. The required `resource` field is one of `countries`, `universities`, `scholarships`, `services`, or `articles`; the required `file` field must be a complete JPEG, PNG, or WebP image no larger than 4,000,000 bytes. The entire multipart request body is capped at 4,100,000 bytes, leaving room for form headers while remaining below Vercel Functions' 4.5 MB payload limit. SVG, GIF, animation, mismatched MIME declarations, malformed containers, and images exceeding the documented dimension limits are rejected before Cloudinary is called.
+`POST /api/v1/admin/uploads/images` accepts one authenticated Admin multipart upload for a Country, University, Scholarship, Service, Article, or About Us page. The required `resource` field is one of `countries`, `universities`, `scholarships`, `services`, `articles`, or `about`; the required `file` field must be a complete JPEG, PNG, or WebP image no larger than 4,000,000 bytes. The entire multipart request body is capped at 4,100,000 bytes, leaving room for form headers while remaining below Vercel Functions' 4.5 MB payload limit. SVG, GIF, animation, mismatched MIME declarations, malformed containers, and images exceeding the documented dimension limits are rejected before Cloudinary is called.
+
+## About Us page
+
+`GET /api/v1/about` returns the singleton page only when it is PUBLISHED; a missing, DRAFT, or ARCHIVED singleton responds with `404 CONTENT_NOT_FOUND`. Its public response includes `publishedAt` and `updatedAt`, while the Admin-only `status` and `createdAt` fields remain private. ADMIN and SUPER_ADMIN use `GET` and `PATCH /api/v1/admin/about`. The first PATCH creates the singleton and later PATCH requests merge only supplied fields. Publishing requires non-empty Arabic Hero title/subtitle and Introduction title/body; the original `publishedAt` is retained through future edits and unpublishing. Updates create an atomic `ABOUT_US` audit event. Hero and Introduction image URLs may be supplied from the existing `resource=about` upload flow; no image is required to publish. These locally implemented endpoints require owner review, migration deployment, and Backend deployment before Frontend production use.
+
+## Directory presentation and marketing images
+
+Countries may carry a nullable, unique assigned ISO 3166-1 alpha-2 `countryCode`; inputs normalize to uppercase and no existing Country is backfilled. Universities independently support nullable `logoUrl`, `logoAltAr`, and `logoAltEn` alongside their existing cover image fields. Public University, Scholarship, and Article responses retain concise real relationship summaries, including a related Country’s `id`, `slug`, `nameAr`, and nullable `countryCode`.
+
+`GET /api/v1/marketing/pages/{pageKey}/images` returns optional `HOME` or `DESTINATIONS` Hero/CTA image fields. A missing configuration is a successful all-null response so the Frontend keeps its static fallback. ADMIN and SUPER_ADMIN use the matching Admin GET/PATCH route; null explicitly clears a field. Upload through the existing image endpoint with `resource=marketing`, then save the returned HTTPS URL. No Cloudinary deletion occurs.
 
 The Backend generates a unique Cloudinary public ID under `CLOUDINARY_FOLDER`, performs a signed server-side image upload with an explicit format allowlist, and returns only safe asset metadata including `assetId`, `publicId`, and `secureUrl`. Use `secureUrl` in the existing `imageUrl` or `coverImageUrl` content field. Uploading does not create or update a content record, and this task does not provide deletion or a media library. Missing or invalid Cloudinary configuration fails closed with HTTP `503`; provider failures return a sanitized HTTP `502` response.
 
@@ -251,4 +265,4 @@ The PowerShell verifier is read-only by default. Authenticated mode performs the
 
 `src/index.ts` is the Vercel Hono entrypoint and `src/server.ts` is the local Node entrypoint. The Project Owner manages Git publishing, deployment, and management consoles.
 
-The implemented API contains exactly 81 operations: the previous 71-operation surface plus 2 public University Details reads and 8 Admin admission/gallery operations. Admin creation/deletion, password recovery, Cloudinary asset deletion, a standalone media library, public analytics reporting, tuition-range filtering, exchange-rate conversion, scheduled-job management, student accounts, and payments are not available endpoints.
+The implemented API contains exactly 87 operations. Admin creation/deletion, password recovery, Cloudinary asset deletion, a standalone media library, public analytics reporting, tuition-range filtering, exchange-rate conversion, scheduled-job management, student accounts, and payments are not available endpoints.

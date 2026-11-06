@@ -69,7 +69,7 @@ describe('University Programs and advanced directory filters', () => {
     directoryRepository.addCountry(COUNTRY_ID)
 
     const country = await contentService.create('countries', {
-      id: COUNTRY_ID, nameAr: 'رومانيا', nameEn: 'Romania', slug: 'romania', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', status: 'PUBLISHED', featured: true, displayOrder: 1,
+      id: COUNTRY_ID, nameAr: 'رومانيا', nameEn: 'Romania', slug: 'romania', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.invalid/romania.webp', imageAltAr: 'صورة رومانيا', status: 'PUBLISHED', featured: true, displayOrder: 1,
     }, ADMIN_ID)
     expect(country.id).toBe(COUNTRY_ID)
     bucharestId = (await directoryService.createCity({ countryId: COUNTRY_ID, slug: 'bucharest', nameAr: 'بوخارست', nameEn: 'Bucharest' }, ADMIN_ID)).id

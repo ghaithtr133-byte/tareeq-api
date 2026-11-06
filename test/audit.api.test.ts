@@ -38,6 +38,8 @@ const countryInput = {
   slug: 'germany',
   introductionAr: 'مقدمة',
   detailsAr: 'تفاصيل',
+  imageUrl: 'https://example.invalid/germany.webp',
+  imageAltAr: 'صورة ألمانيا',
   status: 'DRAFT',
 }
 

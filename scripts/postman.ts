@@ -86,6 +86,10 @@ const folderNames = [
   'Public — Applications',
   'Public — Inquiries',
   'Public — Site Settings',
+  'Public — About Us',
+  'Public — Marketing',
+  'Public — Statistics',
+  'Public — Student Journey',
   'Public — Analytics',
   'Public — FAQs',
   'Public — University Directory',
@@ -97,6 +101,9 @@ const folderNames = [
   'Admin — Audit Logs',
   'Admin — Account Management',
   'Admin — Site Settings',
+  'Admin — About Us',
+  'Admin — Marketing',
+  'Admin — Student Journey',
   'Admin — Analytics',
   'Admin — FAQs',
   'Admin — University Programs',
@@ -166,12 +173,20 @@ const folderFor = (entry: OperationEntry) => {
   if (entry.path === '/api/v1/admin/universities/{universityId}/programs' || entry.path === '/api/v1/admin/university-programs/{id}') return 'Admin — University Programs'
   if (entry.path === '/api/v1/admin/academic-majors' || entry.path === '/api/v1/admin/cities') return 'Admin — Directory Catalogs'
   if (entry.path.includes('/admission-requirements') || entry.path.includes('/university-admission-requirements/') || entry.path.includes('/gallery') || entry.path.includes('/university-gallery/')) return 'Admin — University Details'
+  if (entry.path.includes('/study-guide') || entry.path.includes('/service-detail-items') || entry.path.includes('/scholarship-detail-items')) return 'Admin — Content Management'
   if (entry.path === '/api/v1/faqs' || (/^\/api\/v1\/(countries|universities|services|scholarships)\/\{slug\}\/faqs$/.test(entry.path))) return 'Public — FAQs'
   if (entry.path === '/api/v1/admin/faqs' || entry.path.startsWith('/api/v1/admin/faqs/')) return 'Admin — FAQs'
   if (entry.path === '/api/v1/analytics/events') return 'Public — Analytics'
   if (entry.path.startsWith('/api/v1/admin/analytics/')) return 'Admin — Analytics'
   if (entry.path === '/api/v1/site-settings') return 'Public — Site Settings'
   if (entry.path === '/api/v1/admin/site-settings') return 'Admin — Site Settings'
+  if (entry.path === '/api/v1/about') return 'Public — About Us'
+  if (entry.path === '/api/v1/admin/about') return 'Admin — About Us'
+  if (entry.path.startsWith('/api/v1/marketing/')) return 'Public — Marketing'
+  if (entry.path.startsWith('/api/v1/admin/marketing/')) return 'Admin — Marketing'
+  if (entry.path === '/api/v1/statistics') return 'Public — Statistics'
+  if (entry.path === '/api/v1/student-journey-steps') return 'Public — Student Journey'
+  if (entry.path.startsWith('/api/v1/admin/student-journey-steps')) return 'Admin — Student Journey'
   if (entry.path === '/api/v1/admin/users' || entry.path.startsWith('/api/v1/admin/users/')) return 'Admin — Account Management'
   const submissionResource = submissionResourceForPath(entry.path)
   if (submissionResource) {
@@ -210,6 +225,12 @@ const operationRank = (entry: OperationEntry) => {
   if (entry.path === '/api/v1/admin/analytics/journeys') return 2
   if (entry.path === '/api/v1/site-settings') return 1
   if (entry.path === '/api/v1/admin/site-settings') return 1
+  if (entry.path === '/api/v1/about' || entry.path === '/api/v1/admin/about') return 1
+  if (entry.path.startsWith('/api/v1/marketing/') || entry.path.startsWith('/api/v1/admin/marketing/')) return entry.method === 'get' ? 1 : 2
+  if (entry.path === '/api/v1/statistics' || entry.path === '/api/v1/student-journey-steps') return 1
+  if (entry.path === '/api/v1/admin/student-journey-steps') return 1
+  if (entry.path === '/api/v1/admin/student-journey-steps/{slot}') return 2
+  if (entry.path === '/api/v1/admin/student-journey-steps/order') return 3
   if (entry.path === '/api/v1/admin/users') return 1
   if (entry.path.startsWith('/api/v1/admin/users/')) return 2
   if (entry.path.startsWith('/api/v1/auth/')) {
@@ -758,8 +779,8 @@ const check = async (document: OpenApiDocument) => {
   const expectedKeys = operationEntries(document).map((entry) => `${entry.method.toUpperCase()} ${entry.path}`).sort()
   const missing = expectedKeys.filter((key) => !actualKeys.includes(key))
   const obsolete = actualKeys.filter((key) => !expectedKeys.includes(key))
-  if (requests.length !== 81 || missing.length > 0 || obsolete.length > 0) {
-    throw new Error(`Postman operation mismatch. Expected 81, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
+  if (requests.length !== 108 || missing.length > 0 || obsolete.length > 0) {
+    throw new Error(`Postman operation mismatch. Expected 108, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
   }
 
   for (const [path, expected] of Object.entries(expectedArtifacts)) {
@@ -816,7 +837,7 @@ const main = async () => {
   if (command !== 'generate' && command !== 'check') throw new Error('Usage: tsx scripts/postman.ts <generate|check>')
   const document = await getOpenApiDocument()
   if (document.openapi !== '3.1.0') throw new Error(`Expected OpenAPI 3.1.0, received ${document.openapi}.`)
-  if (operationEntries(document).length !== 81) throw new Error(`Expected 81 OpenAPI operations, received ${operationEntries(document).length}.`)
+  if (operationEntries(document).length !== 108) throw new Error(`Expected 108 OpenAPI operations, received ${operationEntries(document).length}.`)
   if (command === 'generate') await generate(document)
   else await check(document)
 }
