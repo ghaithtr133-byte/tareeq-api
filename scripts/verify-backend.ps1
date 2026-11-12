@@ -392,6 +392,7 @@ $expectedOperations.Add('GET /api/v1/scholarships/{slug}/faqs')
 $expectedOperations.Add('GET /api/v1/admin/faqs')
 $expectedOperations.Add('POST /api/v1/admin/faqs')
 $expectedOperations.Add('PATCH /api/v1/admin/faqs/{id}')
+$expectedOperations.Add('DELETE /api/v1/admin/faqs/{id}')
 $expectedOperations.Add('PATCH /api/v1/admin/faqs/order')
 $expectedOperations.Add('GET /api/v1/universities/filter-options')
 $expectedOperations.Add('GET /api/v1/universities/{slug}/programs')
@@ -410,8 +411,12 @@ $expectedOperations.Add('PATCH /api/v1/admin/universities/{universityId}/gallery
 $expectedOperations.Add('DELETE /api/v1/admin/university-gallery/{id}')
 $expectedOperations.Add('GET /api/v1/admin/academic-majors')
 $expectedOperations.Add('POST /api/v1/admin/academic-majors')
+$expectedOperations.Add('PATCH /api/v1/admin/academic-majors/{id}')
+$expectedOperations.Add('DELETE /api/v1/admin/academic-majors/{id}')
 $expectedOperations.Add('GET /api/v1/admin/cities')
 $expectedOperations.Add('POST /api/v1/admin/cities')
+$expectedOperations.Add('PATCH /api/v1/admin/cities/{id}')
+$expectedOperations.Add('DELETE /api/v1/admin/cities/{id}')
 $expectedOperations.Add('GET /api/v1/admin/users')
 $expectedOperations.Add('PATCH /api/v1/admin/users/{id}')
 $expectedOperations.Add('PATCH /api/v1/admin/site-settings')
@@ -473,9 +478,9 @@ if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
   }
 }
 $operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
-$operationPass = $actualOperations.Count -eq 121 -and $operationDifference.Count -eq 0
+$operationPass = $actualOperations.Count -eq 126 -and $operationDifference.Count -eq 0
 Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Exactly the approved 121 operations with no missing or unexpected operations.' `
+  -Expected 'Exactly the approved 126 operations with no missing or unexpected operations.' `
   -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
   -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, submission, media-upload, audit-log, Admin-management, site-settings, analytics, FAQ, and University-directory surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
   -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })

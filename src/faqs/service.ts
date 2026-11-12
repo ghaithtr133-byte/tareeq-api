@@ -49,9 +49,17 @@ export class FaqService {
   }
 
   async update(id: string, input: FaqUpdateInput, actorAdminId: string) {
+    if (input.scope !== undefined) this.validateParentShape({ scope: input.scope, parentId: input.parentId ?? null })
     const result = await this.repository.update(id, input, actorAdminId, this.now())
     if (result.outcome !== 'UPDATED') throw mutationError(result.outcome)
     return result.record
+  }
+
+  async delete(id: string, actorAdminId: string) {
+    const result = await this.repository.delete(id, actorAdminId)
+    if (result.outcome === 'NOT_FOUND') throw mutationError('NOT_FOUND')
+    if (result.outcome === 'PUBLISHED') throw new ApiError(409, 'FAQ_PUBLISHED_DELETE_FORBIDDEN', 'Published FAQs must be archived instead of deleted.')
+    return { id }
   }
 
   async reorder(parent: FaqParent, orderedIds: string[], actorAdminId: string) {

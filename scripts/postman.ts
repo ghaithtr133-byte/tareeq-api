@@ -171,7 +171,7 @@ const folderFor = (entry: OperationEntry) => {
   if (entry.path === '/api/v1/universities/filter-options' || entry.path === '/api/v1/universities/{slug}/programs') return 'Public — University Directory'
   if (entry.path === '/api/v1/universities/{slug}/admission-requirements' || entry.path === '/api/v1/universities/{slug}/gallery') return 'Public — University Details'
   if (entry.path === '/api/v1/admin/universities/{universityId}/programs' || entry.path === '/api/v1/admin/university-programs/{id}') return 'Admin — University Programs'
-  if (entry.path === '/api/v1/admin/academic-majors' || entry.path === '/api/v1/admin/cities') return 'Admin — Directory Catalogs'
+  if (entry.path === '/api/v1/admin/academic-majors' || entry.path === '/api/v1/admin/cities' || entry.path === '/api/v1/admin/academic-majors/{id}' || entry.path === '/api/v1/admin/cities/{id}') return 'Admin — Directory Catalogs'
   if (entry.path.includes('/admission-requirements') || entry.path.includes('/university-admission-requirements/') || entry.path.includes('/gallery') || entry.path.includes('/university-gallery/')) return 'Admin — University Details'
   if (entry.path.includes('/study-guide') || entry.path.includes('/service-detail-items') || entry.path.includes('/scholarship-detail-items')) return 'Admin — Content Management'
   if (entry.path === '/api/v1/faqs' || (/^\/api\/v1\/(countries|universities|services|scholarships)\/\{slug\}\/faqs$/.test(entry.path))) return 'Public — FAQs'
@@ -209,7 +209,9 @@ const operationRank = (entry: OperationEntry) => {
   if (entry.path === '/api/v1/admin/universities/{universityId}/programs') return entry.method === 'get' ? 1 : 2
   if (entry.path === '/api/v1/admin/university-programs/{id}') return 3
   if (entry.path === '/api/v1/admin/academic-majors') return entry.method === 'get' ? 1 : 2
+  if (entry.path === '/api/v1/admin/academic-majors/{id}') return entry.method === 'patch' ? 3 : 4
   if (entry.path === '/api/v1/admin/cities') return entry.method === 'get' ? 3 : 4
+  if (entry.path === '/api/v1/admin/cities/{id}') return entry.method === 'patch' ? 5 : 6
   if (entry.path === '/api/v1/admin/universities/{universityId}/admission-requirements') return entry.method === 'get' ? 1 : 2
   if (entry.path === '/api/v1/admin/university-admission-requirements/{id}') return 3
   if (entry.path === '/api/v1/admin/universities/{universityId}/gallery') return entry.method === 'get' ? 4 : 5
@@ -779,8 +781,8 @@ const check = async (document: OpenApiDocument) => {
   const expectedKeys = operationEntries(document).map((entry) => `${entry.method.toUpperCase()} ${entry.path}`).sort()
   const missing = expectedKeys.filter((key) => !actualKeys.includes(key))
   const obsolete = actualKeys.filter((key) => !expectedKeys.includes(key))
-  if (requests.length !== 121 || missing.length > 0 || obsolete.length > 0) {
-    throw new Error(`Postman operation mismatch. Expected 121, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
+  if (requests.length !== 126 || missing.length > 0 || obsolete.length > 0) {
+    throw new Error(`Postman operation mismatch. Expected 126, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
   }
 
   for (const [path, expected] of Object.entries(expectedArtifacts)) {
@@ -837,7 +839,7 @@ const main = async () => {
   if (command !== 'generate' && command !== 'check') throw new Error('Usage: tsx scripts/postman.ts <generate|check>')
   const document = await getOpenApiDocument()
   if (document.openapi !== '3.1.0') throw new Error(`Expected OpenAPI 3.1.0, received ${document.openapi}.`)
-  if (operationEntries(document).length !== 121) throw new Error(`Expected 121 OpenAPI operations, received ${operationEntries(document).length}.`)
+  if (operationEntries(document).length !== 126) throw new Error(`Expected 126 OpenAPI operations, received ${operationEntries(document).length}.`)
   if (command === 'generate') await generate(document)
   else await check(document)
 }

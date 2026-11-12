@@ -25,6 +25,10 @@ const fields = {
     /^\+?[0-9][0-9 ()-]{5,23}[0-9]$/,
     'Use a valid public phone number.',
   ).nullable().optional(),
+  whatsappPhone: z.string().trim().min(7).max(25).regex(
+    /^\+[1-9][0-9]{6,14}$/,
+    'Use an international WhatsApp number in E.164 format.',
+  ).nullable().optional(),
   addressAr: nullableText(1_000),
   addressEn: nullableText(1_000),
   facebookUrl: socialUrl('Facebook', ['facebook.com']),
@@ -43,6 +47,7 @@ const outputFields = {
   academyNameEn: z.string().nullable(),
   contactEmail: z.email().nullable(),
   contactPhone: z.string().nullable(),
+  whatsappPhone: z.string().nullable(),
   addressAr: z.string().nullable(),
   addressEn: z.string().nullable(),
   facebookUrl: z.url().nullable(),

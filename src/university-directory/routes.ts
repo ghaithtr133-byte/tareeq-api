@@ -8,11 +8,13 @@ import { ApiError, successResponse } from '../shared/http.js'
 import type { UniversityDirectoryRuntime } from './runtime.js'
 import {
   academicMajorCreateSchema,
+  academicMajorUpdateSchema,
   adminProgramListQuerySchema,
   adminProgramListResponseSchema,
   adminProgramResponseSchema,
   cityListQuerySchema,
   cityCreateSchema,
+  cityUpdateSchema,
   cityListResponseSchema,
   cityResponseSchema,
   directoryErrorResponses,
@@ -29,7 +31,7 @@ import {
   universityIdParamSchema,
   universitySlugParamSchema,
 } from './schemas.js'
-import type { ProgramCreateInput, ProgramUpdateInput } from './types.js'
+import type { ProgramCreateInput, ProgramUpdateInput, AcademicMajorUpdateInput, CityUpdateInput } from './types.js'
 import type { CatalogListQuery, ProgramListQuery, UniversityDirectoryFilters } from './types.js'
 
 const validationError = (issues: z.core.$ZodIssue[]) => {
@@ -115,6 +117,16 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
     responses: { 201: success(majorResponseSchema, { success: true, data: { ...majorExample, createdAt: cityExample.createdAt, updatedAt: cityExample.updatedAt } }, 'Major created.'), 400: directoryErrorResponses[400], 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 409: directoryErrorResponses[409], 415: directoryErrorResponses[415] },
   })
   routes.openAPIRegistry.registerPath({
+    method: 'patch', path: '/admin/academic-majors/{id}', tags: ['Admin — Directory Catalogs'], summary: 'Update a normalized academic major',
+    description: 'ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.', security: [{ accessCookie: [] }], request: { params: directoryIdParamSchema, body: { required: true, content: { 'application/json': { schema: academicMajorUpdateSchema, example: { nameAr: 'الطب البشري' } } } } },
+    responses: { 200: success(majorResponseSchema, { success: true, data: { ...majorExample, createdAt: cityExample.createdAt, updatedAt: cityExample.updatedAt } }, 'Major updated.'), 400: directoryErrorResponses[400], 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 404: directoryErrorResponses[404], 409: directoryErrorResponses[409], 415: directoryErrorResponses[415] },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'delete', path: '/admin/academic-majors/{id}', tags: ['Admin — Directory Catalogs'], summary: 'Delete an unused academic major',
+    description: 'ADMIN or SUPER_ADMIN only. A major referenced by any University Program is rejected with 409; no Program is cascaded or changed.', security: [{ accessCookie: [] }], request: { params: directoryIdParamSchema },
+    responses: { 200: success(majorResponseSchema, { success: true, data: { id: majorExample.id } }, 'Major deleted.'), 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 404: directoryErrorResponses[404], 409: directoryErrorResponses[409] },
+  })
+  routes.openAPIRegistry.registerPath({
     method: 'get', path: '/admin/cities', tags: ['Admin — Directory Catalogs'], summary: 'List normalized cities',
     description: 'ADMIN or SUPER_ADMIN only. Bounded city lookup with optional Country UUID filtering.', security: [{ accessCookie: [] }], request: { query: cityListQuerySchema },
     responses: { 200: success(cityListResponseSchema, { success: true, data: { items: [cityExample], pagination } }, 'Cities.'), 400: directoryErrorResponses[400], 401: directoryErrorResponses[401], 403: directoryErrorResponses[403] },
@@ -124,6 +136,16 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
     description: 'ADMIN or SUPER_ADMIN only. Creates a stable bilingual city under an existing Country; it does not alter existing Universities.', security: [{ accessCookie: [] }],
     request: { body: { required: true, content: { 'application/json': { schema: cityCreateSchema, example: { countryId: cityExample.countryId, slug: 'bucharest', nameAr: 'بوخارست', nameEn: 'Bucharest' } } } } },
     responses: { 201: success(cityResponseSchema, { success: true, data: cityExample }, 'City created.'), 400: directoryErrorResponses[400], 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 409: directoryErrorResponses[409], 415: directoryErrorResponses[415] },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'patch', path: '/admin/cities/{id}', tags: ['Admin — Directory Catalogs'], summary: 'Update a normalized city',
+    description: 'ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.', security: [{ accessCookie: [] }], request: { params: directoryIdParamSchema, body: { required: true, content: { 'application/json': { schema: cityUpdateSchema, example: { nameAr: 'بوخارست الجديدة' } } } } },
+    responses: { 200: success(cityResponseSchema, { success: true, data: cityExample }, 'City updated.'), 400: directoryErrorResponses[400], 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 404: directoryErrorResponses[404], 409: directoryErrorResponses[409], 415: directoryErrorResponses[415] },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'delete', path: '/admin/cities/{id}', tags: ['Admin — Directory Catalogs'], summary: 'Delete an unused city',
+    description: 'ADMIN or SUPER_ADMIN only. A city referenced by any University is rejected with 409; no University is unlinked or deleted.', security: [{ accessCookie: [] }], request: { params: directoryIdParamSchema },
+    responses: { 200: success(cityResponseSchema, { success: true, data: { id: cityExample.id } }, 'City deleted.'), 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 404: directoryErrorResponses[404], 409: directoryErrorResponses[409] },
   })
 
   publicRoutes.use('/universities/filter-options', publicReadCors(authRuntime))
@@ -168,6 +190,15 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
     const body = parse(academicMajorCreateSchema, await readJson(c.req.raw))
     return c.json(successResponse(await runtime.getService().createMajor(body, c.get('authClaims').userId)), 201)
   })
+  adminRoutes.patch('/academic-majors/:id', async (c) => {
+    const { id } = parse(directoryIdParamSchema, { id: c.req.param('id') })
+    const body = parse(academicMajorUpdateSchema, await readJson(c.req.raw))
+    return c.json(successResponse(await runtime.getService().updateMajor(id, body as AcademicMajorUpdateInput, c.get('authClaims').userId)), 200)
+  })
+  adminRoutes.delete('/academic-majors/:id', async (c) => {
+    const { id } = parse(directoryIdParamSchema, { id: c.req.param('id') })
+    return c.json(successResponse(await runtime.getService().deleteMajor(id, c.get('authClaims').userId)), 200)
+  })
   adminRoutes.get('/cities', async (c) => {
     const query = parse(cityListQuerySchema, queryObject(c.req.url))
     return c.json(successResponse(await runtime.getService().listCities(query as CatalogListQuery)), 200)
@@ -175,6 +206,15 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
   adminRoutes.post('/cities', async (c) => {
     const body = parse(cityCreateSchema, await readJson(c.req.raw))
     return c.json(successResponse(await runtime.getService().createCity(body, c.get('authClaims').userId)), 201)
+  })
+  adminRoutes.patch('/cities/:id', async (c) => {
+    const { id } = parse(directoryIdParamSchema, { id: c.req.param('id') })
+    const body = parse(cityUpdateSchema, await readJson(c.req.raw))
+    return c.json(successResponse(await runtime.getService().updateCity(id, body as CityUpdateInput, c.get('authClaims').userId)), 200)
+  })
+  adminRoutes.delete('/cities/:id', async (c) => {
+    const { id } = parse(directoryIdParamSchema, { id: c.req.param('id') })
+    return c.json(successResponse(await runtime.getService().deleteCity(id, c.get('authClaims').userId)), 200)
   })
 
   routes.route('/', publicRoutes)

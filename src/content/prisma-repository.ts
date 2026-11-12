@@ -719,10 +719,31 @@ export class PrismaContentRepository implements ContentRepository {
       return await prisma.$transaction(async (transaction) => {
         const record = await (async () => {
           switch (resource) {
-            case 'countries': return transaction.country.create({ data: data as unknown as Prisma.CountryUncheckedCreateInput })
+            case 'countries': {
+              const { studyGuideSections, ...fields } = data
+              const sections = Array.isArray(studyGuideSections) ? studyGuideSections as Array<{ section: string; contentAr: string | null }> : []
+              return transaction.country.create({
+                data: {
+                  ...fields as unknown as Prisma.CountryUncheckedCreateInput,
+                  ...(sections.length ? { studyGuideSections: { create: sections.map((item, displayOrder) => ({
+                    section: item.section as never,
+                    titleAr: ({ ACADEMIC_SYSTEM: 'النظام الأكاديمي والتخصصات', ADMISSION_DOCUMENTS: 'القبول والوثائق المطلوبة', COSTS_STUDENT_LIFE: 'التكاليف والحياة الطلابية' } as Record<string, string>)[item.section] ?? 'دليل الدراسة',
+                    bodyAr: item.contentAr ?? '', displayOrder,
+                  })) } } : {}),
+                } as unknown as Prisma.CountryCreateInput,
+                include: { studyGuideSections: { orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }] } },
+              })
+            }
             case 'universities': return transaction.university.create({ data: data as unknown as Prisma.UniversityUncheckedCreateInput, include: { country: relationSelections.country, city: relationSelections.city } })
             case 'scholarships': return transaction.scholarship.create({ data: data as unknown as Prisma.ScholarshipUncheckedCreateInput, include: { country: relationSelections.country, university: relationSelections.university } })
-            case 'services': return transaction.service.create({ data: data as unknown as Prisma.ServiceUncheckedCreateInput })
+            case 'services': {
+              const { detailItems, ...fields } = data
+              const items = Array.isArray(detailItems) ? detailItems as Array<{ kind: 'STEP' | 'BENEFIT'; titleAr: string; descriptionAr?: string | null; iconKey?: string | null }> : []
+              return transaction.service.create({ data: {
+                ...fields as unknown as Prisma.ServiceUncheckedCreateInput,
+                ...(items.length ? { detailItems: { create: items.map((item, displayOrder) => ({ ...item, descriptionAr: item.descriptionAr ?? null, iconKey: item.iconKey ?? null, displayOrder })) } } : {}),
+              }, include: { detailItems: { orderBy: [{ kind: 'asc' }, { displayOrder: 'asc' }, { id: 'asc' }] } } })
+            }
             case 'articles': {
               const { scholarshipIds, ...fields } = data
               const ids = Array.isArray(scholarshipIds) ? scholarshipIds as string[] : []
@@ -755,10 +776,34 @@ export class PrismaContentRepository implements ContentRepository {
       return await prisma.$transaction(async (transaction) => {
         const record = await (async () => {
           switch (resource) {
-            case 'countries': return transaction.country.update({ where: { id }, data: data as unknown as Prisma.CountryUncheckedUpdateInput })
+            case 'countries': {
+              const { studyGuideSections, ...fields } = data
+              if (Array.isArray(studyGuideSections)) {
+                for (const [displayOrder, item] of (studyGuideSections as Array<{ section: string; contentAr: string | null }>).entries()) {
+                  const update = await transaction.countryStudyGuideSection.updateMany({ where: { countryId: id, section: item.section as never }, data: { bodyAr: item.contentAr ?? '', displayOrder } })
+                  if (update.count === 0) await transaction.countryStudyGuideSection.create({ data: { countryId: id, section: item.section as never, titleAr: ({ ACADEMIC_SYSTEM: 'النظام الأكاديمي والتخصصات', ADMISSION_DOCUMENTS: 'القبول والوثائق المطلوبة', COSTS_STUDENT_LIFE: 'التكاليف والحياة الطلابية' } as Record<string, string>)[item.section] ?? 'دليل الدراسة', bodyAr: item.contentAr ?? '', displayOrder } })
+                }
+              }
+              return transaction.country.update({ where: { id }, data: fields as unknown as Prisma.CountryUncheckedUpdateInput, include: { studyGuideSections: { orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }] } } })
+            }
             case 'universities': return transaction.university.update({ where: { id }, data: data as unknown as Prisma.UniversityUncheckedUpdateInput, include: { country: relationSelections.country, city: relationSelections.city } })
             case 'scholarships': return transaction.scholarship.update({ where: { id }, data: data as unknown as Prisma.ScholarshipUncheckedUpdateInput, include: { country: relationSelections.country, university: relationSelections.university } })
-            case 'services': return transaction.service.update({ where: { id }, data: data as unknown as Prisma.ServiceUncheckedUpdateInput })
+            case 'services': {
+              const { detailItems, ...fields } = data
+              if (Array.isArray(detailItems)) {
+                for (const item of detailItems as Array<{ id?: string; kind: 'STEP' | 'BENEFIT'; titleAr: string; descriptionAr?: string | null; iconKey?: string | null }>) {
+                  if (item.id) {
+                    const { id: itemId, ...update } = item
+                    const result = await transaction.serviceDetailItem.updateMany({ where: { id: itemId, serviceId: id }, data: { ...update, descriptionAr: update.descriptionAr ?? null, iconKey: update.iconKey ?? null } })
+                    if (result.count === 0) throw new Error('SERVICE_DETAIL_ITEM_NOT_FOUND')
+                  } else {
+                    const maximum = await transaction.serviceDetailItem.aggregate({ where: { serviceId: id, kind: item.kind }, _max: { displayOrder: true } })
+                    await transaction.serviceDetailItem.create({ data: { serviceId: id, kind: item.kind, titleAr: item.titleAr, descriptionAr: item.descriptionAr ?? null, iconKey: item.iconKey ?? null, displayOrder: (maximum._max.displayOrder ?? -1) + 1 } })
+                  }
+                }
+              }
+              return transaction.service.update({ where: { id }, data: fields as unknown as Prisma.ServiceUncheckedUpdateInput, include: { detailItems: { orderBy: [{ kind: 'asc' }, { displayOrder: 'asc' }, { id: 'asc' }] } } })
+            }
             case 'articles': {
               const { scholarshipIds, ...fields } = data
               const replacesAssociations = Array.isArray(scholarshipIds)

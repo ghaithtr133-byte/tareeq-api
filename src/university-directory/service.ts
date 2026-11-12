@@ -1,8 +1,10 @@
 import { ApiError } from '../shared/http.js'
 import type {
   AcademicMajorRecord,
+  AcademicMajorUpdateInput,
   CatalogListQuery,
   CityRecord,
+  CityUpdateInput,
   ProgramCreateInput,
   ProgramListQuery,
   ProgramUpdateInput,
@@ -97,6 +99,19 @@ export class UniversityDirectoryService {
     return result.record
   }
 
+  async updateMajor(id: string, input: AcademicMajorUpdateInput, actorAdminId: string) {
+    const result = await this.repository.updateMajor(id, input, actorAdminId)
+    if (result.outcome !== 'UPDATED') throw mutationError(result.outcome)
+    return result.record
+  }
+
+  async deleteMajor(id: string, actorAdminId: string) {
+    const result = await this.repository.deleteMajor(id, actorAdminId)
+    if (result.outcome === 'NOT_FOUND') throw mutationError('NOT_FOUND')
+    if (result.outcome === 'IN_USE') throw new ApiError(409, 'ACADEMIC_MAJOR_IN_USE', 'This academic major is referenced by University programs and cannot be deleted.')
+    return { id }
+  }
+
   async listCities(query: CatalogListQuery) {
     const result = await this.repository.listCities(query)
     return this.paginated(result.items, result.total, query.page, query.limit)
@@ -106,6 +121,19 @@ export class UniversityDirectoryService {
     const result = await this.repository.createCity(input, actorAdminId)
     if (result.outcome !== 'UPDATED') throw mutationError(result.outcome)
     return result.record
+  }
+
+  async updateCity(id: string, input: CityUpdateInput, actorAdminId: string) {
+    const result = await this.repository.updateCity(id, input, actorAdminId)
+    if (result.outcome !== 'UPDATED') throw mutationError(result.outcome)
+    return result.record
+  }
+
+  async deleteCity(id: string, actorAdminId: string) {
+    const result = await this.repository.deleteCity(id, actorAdminId)
+    if (result.outcome === 'NOT_FOUND') throw mutationError('NOT_FOUND')
+    if (result.outcome === 'IN_USE') throw new ApiError(409, 'CITY_IN_USE', 'This city is referenced by Universities and cannot be deleted.')
+    return { id }
   }
 
   private validateProgram(input: ProgramCreateInput) {

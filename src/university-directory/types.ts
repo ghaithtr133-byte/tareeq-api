@@ -116,6 +116,8 @@ export type CatalogListQuery = {
   search?: string
   countryId?: string
 }
+export type AcademicMajorUpdateInput = Partial<Pick<AcademicMajorRecord, 'slug' | 'nameAr' | 'nameEn' | 'category'>>
+export type CityUpdateInput = Partial<Pick<CityRecord, 'countryId' | 'slug' | 'nameAr' | 'nameEn'>>
 
 export type FacetOption = { value: string; count: number }
 export type FilterOptions = {
@@ -140,6 +142,10 @@ export interface UniversityDirectoryRepository {
   filterOptions(filters: UniversityDirectoryFilters): Promise<FilterOptions>
   listMajors(query: CatalogListQuery): Promise<{ items: AcademicMajorRecord[]; total: number }>
   createMajor(input: Pick<AcademicMajorRecord, 'slug' | 'nameAr' | 'nameEn' | 'category'>, actorAdminId: string): Promise<MutationResult<AcademicMajorRecord>>
+  updateMajor(id: string, input: AcademicMajorUpdateInput, actorAdminId: string): Promise<MutationResult<AcademicMajorRecord>>
+  deleteMajor(id: string, actorAdminId: string): Promise<{ outcome: 'DELETED' | 'NOT_FOUND' | 'IN_USE' }>
   listCities(query: CatalogListQuery): Promise<{ items: CityRecord[]; total: number }>
   createCity(input: Pick<CityRecord, 'countryId' | 'slug' | 'nameAr' | 'nameEn'>, actorAdminId: string): Promise<MutationResult<CityRecord>>
+  updateCity(id: string, input: CityUpdateInput, actorAdminId: string): Promise<MutationResult<CityRecord>>
+  deleteCity(id: string, actorAdminId: string): Promise<{ outcome: 'DELETED' | 'NOT_FOUND' | 'IN_USE' }>
 }

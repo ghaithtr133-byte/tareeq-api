@@ -99,9 +99,13 @@ export class InMemoryFaqRepository implements FaqRepository {
     const answerEn = input.answerEn === undefined ? current.answerEn : input.answerEn
     if ((questionEn == null) !== (answerEn == null)) return { outcome: 'INVALID_TRANSLATION' as const }
     const status = input.status ?? current.status
+    const target = input.scope === undefined ? { scope: current.scope, parentId: current.parentId } : { scope: input.scope, parentId: input.parentId ?? null }
+    if (!await this.parentExists(target)) return { outcome: 'PARENT_NOT_FOUND' as const }
     const updated: FaqRecord = {
       ...current,
       ...input,
+      scope: target.scope,
+      parentId: target.parentId,
       questionEn,
       answerEn,
       publishedAt: status === 'PUBLISHED' && current.publishedAt === null ? now : current.publishedAt,
@@ -130,6 +134,16 @@ export class InMemoryFaqRepository implements FaqRepository {
     }, id)
     this.records[index] = updated
     return { outcome: 'UPDATED' as const, record: { ...updated } }
+  }
+
+  async delete(id: string, actorAdminId: string) {
+    const index = this.records.findIndex((record) => record.id === id)
+    const current = this.records[index]
+    if (!current) return { outcome: 'NOT_FOUND' as const }
+    if (current.status === 'PUBLISHED') return { outcome: 'PUBLISHED' as const }
+    this.records.splice(index, 1)
+    await this.audit.append({ actorAdminId, action: 'faq.deleted', resourceType: 'FAQ_ENTRY', metadata: { scope: current.scope, parentId: current.parentId } }, id)
+    return { outcome: 'DELETED' as const }
   }
 
   async reorder(parent: FaqParent, orderedIds: string[], actorAdminId: string) {

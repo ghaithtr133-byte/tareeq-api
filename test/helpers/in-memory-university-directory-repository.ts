@@ -1,8 +1,10 @@
 import type { PublicationStatus } from '../../src/content/types.js'
 import type {
   AcademicMajorRecord,
+  AcademicMajorUpdateInput,
   CatalogListQuery,
   CityRecord,
+  CityUpdateInput,
   FilterOptions,
   ProgramCreateInput,
   ProgramListQuery,
@@ -178,11 +180,28 @@ export class InMemoryUniversityDirectoryRepository implements UniversityDirector
     return { items: items.slice((query.page - 1) * query.limit, query.page * query.limit), total: items.length }
   }
   async createMajor(input: Pick<AcademicMajorRecord, 'slug' | 'nameAr' | 'nameEn' | 'category'>, actorAdminId: string) {
-    if (this.majors.some(({ slug }) => slug === input.slug)) return { outcome: 'CONFLICT' as const }
+    if (this.majors.some((item) => item.slug === input.slug || item.nameAr.trim().toLowerCase() === input.nameAr.trim().toLowerCase() || item.nameEn.trim().toLowerCase() === input.nameEn.trim().toLowerCase())) return { outcome: 'CONFLICT' as const }
     const record = { ...input, id: crypto.randomUUID(), createdAt: this.now(), updatedAt: this.now() }
     await this.audit.append({ actorAdminId, action: 'academic_major.created', resourceType: 'ACADEMIC_MAJOR', metadata: { slug: record.slug, category: record.category } }, record.id)
     this.majors.push(record)
     return { outcome: 'UPDATED' as const, record: { ...record } }
+  }
+  async updateMajor(id: string, input: AcademicMajorUpdateInput, actorAdminId: string) {
+    const current = this.majors.find((item) => item.id === id)
+    if (!current) return { outcome: 'NOT_FOUND' as const }
+    const next = { ...current, ...input, updatedAt: this.now() }
+    if (this.majors.some((item) => item.id !== id && (item.slug === next.slug || item.nameAr.trim().toLowerCase() === next.nameAr.trim().toLowerCase() || item.nameEn.trim().toLowerCase() === next.nameEn.trim().toLowerCase()))) return { outcome: 'CONFLICT' as const }
+    Object.assign(current, next)
+    await this.audit.append({ actorAdminId, action: 'academic_major.updated', resourceType: 'ACADEMIC_MAJOR', metadata: { changedFields: Object.keys(input).sort() } }, id)
+    return { outcome: 'UPDATED' as const, record: { ...current } }
+  }
+  async deleteMajor(id: string, actorAdminId: string) {
+    const index = this.majors.findIndex((item) => item.id === id)
+    if (index < 0) return { outcome: 'NOT_FOUND' as const }
+    if (this.programs.some((program) => program.academicMajorId === id)) return { outcome: 'IN_USE' as const }
+    this.majors.splice(index, 1)
+    await this.audit.append({ actorAdminId, action: 'academic_major.deleted', resourceType: 'ACADEMIC_MAJOR', metadata: {} }, id)
+    return { outcome: 'DELETED' as const }
   }
   async listCities(query: CatalogListQuery) {
     const items = this.cities.filter((city) => (!query.countryId || city.countryId === query.countryId) && (!query.search || [city.slug, city.nameAr, city.nameEn].some((value) => textIncludes(value, query.search!)))).sort((a, b) => a.nameAr.localeCompare(b.nameAr, 'ar') || a.id.localeCompare(b.id))
@@ -190,10 +209,29 @@ export class InMemoryUniversityDirectoryRepository implements UniversityDirector
   }
   async createCity(input: Pick<CityRecord, 'countryId' | 'slug' | 'nameAr' | 'nameEn'>, actorAdminId: string) {
     if (!this.countryIds.has(input.countryId)) return { outcome: 'COUNTRY_NOT_FOUND' as const }
-    if (this.cities.some(({ slug }) => slug === input.slug)) return { outcome: 'CONFLICT' as const }
+    if (this.cities.some((item) => item.slug === input.slug || (item.countryId === input.countryId && (item.nameAr.trim().toLowerCase() === input.nameAr.trim().toLowerCase() || item.nameEn.trim().toLowerCase() === input.nameEn.trim().toLowerCase())))) return { outcome: 'CONFLICT' as const }
     const record = { ...input, id: crypto.randomUUID(), createdAt: this.now(), updatedAt: this.now() }
     await this.audit.append({ actorAdminId, action: 'city.created', resourceType: 'CITY', metadata: { countryId: record.countryId, slug: record.slug } }, record.id)
     this.cities.push(record)
     return { outcome: 'UPDATED' as const, record: { ...record } }
+  }
+  async updateCity(id: string, input: CityUpdateInput, actorAdminId: string) {
+    const current = this.cities.find((item) => item.id === id)
+    if (!current) return { outcome: 'NOT_FOUND' as const }
+    const next = { ...current, ...input, updatedAt: this.now() }
+    if (input.countryId && input.countryId !== current.countryId && this.universities.some((university) => university.cityId === id)) return { outcome: 'CONFLICT' as const }
+    if (input.countryId && !this.countryIds.has(input.countryId)) return { outcome: 'COUNTRY_NOT_FOUND' as const }
+    if (this.cities.some((item) => item.id !== id && (item.slug === next.slug || (item.countryId === next.countryId && (item.nameAr.trim().toLowerCase() === next.nameAr.trim().toLowerCase() || item.nameEn.trim().toLowerCase() === next.nameEn.trim().toLowerCase()))))) return { outcome: 'CONFLICT' as const }
+    Object.assign(current, next)
+    await this.audit.append({ actorAdminId, action: 'city.updated', resourceType: 'CITY', metadata: { changedFields: Object.keys(input).sort() } }, id)
+    return { outcome: 'UPDATED' as const, record: { ...current } }
+  }
+  async deleteCity(id: string, actorAdminId: string) {
+    const index = this.cities.findIndex((item) => item.id === id)
+    if (index < 0) return { outcome: 'NOT_FOUND' as const }
+    if (this.universities.some((university) => university.cityId === id)) return { outcome: 'IN_USE' as const }
+    this.cities.splice(index, 1)
+    await this.audit.append({ actorAdminId, action: 'city.deleted', resourceType: 'CITY', metadata: {} }, id)
+    return { outcome: 'DELETED' as const }
   }
 }

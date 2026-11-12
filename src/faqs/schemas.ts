@@ -59,8 +59,15 @@ export const faqUpdateSchema = z.object({
   questionEn: faqTextFields.questionEn,
   answerEn: faqTextFields.answerEn,
   status: publicationStatusSchema.optional(),
+  scope: faqScopeSchema.optional(),
+  parentId: z.uuid().nullable().optional(),
 }).strict().refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field must be provided.',
+}).superRefine((value, context) => {
+  const hasScope = value.scope !== undefined
+  const hasParent = Object.prototype.hasOwnProperty.call(value, 'parentId')
+  if (hasScope !== hasParent) context.addIssue({ code: 'custom', path: ['parentId'], message: 'scope and parentId must be changed together.' })
+  if (hasScope && (value.scope === 'GLOBAL' ? value.parentId !== null : value.parentId === null)) context.addIssue({ code: 'custom', path: ['parentId'], message: value.scope === 'GLOBAL' ? 'GLOBAL FAQs cannot have a parent.' : 'A parentId is required for this scope.' })
 }).openapi('FaqUpdateRequest')
 
 export const faqIdParamSchema = z.object({ id: z.uuid() })
@@ -94,6 +101,7 @@ export const adminFaqListResponseSchema = successEnvelopeSchema(z.object({
   items: z.array(adminFaqSchema), pagination: paginationSchema,
 })).openapi('AdminFaqListResponse')
 export const adminFaqResponseSchema = successEnvelopeSchema(adminFaqSchema).openapi('AdminFaqResponse')
+export const faqDeleteResponseSchema = successEnvelopeSchema(z.object({ id: z.uuid() })).openapi('FaqDeleteResponse')
 export const faqOrderResponseSchema = successEnvelopeSchema(z.object({ items: z.array(adminFaqSchema) })).openapi('FaqOrderResponse')
 
 const errorContent = (example: unknown) => ({ 'application/json': { schema: errorResponseSchema, example } })

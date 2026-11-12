@@ -90,7 +90,7 @@ For real authenticated browser testing, use the shared-site production domains o
 
 `ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, site-settings updates, and analytics reporting are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
 
-The local generated OpenAPI contains exactly 121 operations:
+The local generated OpenAPI contains exactly 126 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
@@ -159,13 +159,17 @@ GET  /faqs
 GET  /countries/{slug}/faqs     GET /universities/{slug}/faqs
 GET  /services/{slug}/faqs      GET /scholarships/{slug}/faqs
 GET  /admin/faqs                POST /admin/faqs
-PATCH /admin/faqs/{id}          PATCH /admin/faqs/order
+PATCH /admin/faqs/{id}          DELETE /admin/faqs/{id}
+PATCH /admin/faqs/order
 GET  /universities/filter-options
 GET  /universities/{slug}/programs
 GET  /admin/universities/{universityId}/programs
 POST /admin/universities/{universityId}/programs
 PATCH /admin/university-programs/{id}
 GET  /admin/academic-majors     POST /admin/academic-majors
+PATCH /admin/academic-majors/{id} DELETE /admin/academic-majors/{id}
+GET  /admin/cities              POST /admin/cities
+PATCH /admin/cities/{id}        DELETE /admin/cities/{id}
 GET  /admin/cities              POST /admin/cities
 ```
 
@@ -698,6 +702,17 @@ Self-deactivation and self-demotion return `409`. The Backend also preserves at 
 
 ## Public Site Settings
 
+## Admin redesign completion handoff
+
+- **TA-47 Country Study Guide:** Country create/PATCH accepts optional `studyGuideSections: [{ section: 'ACADEMIC_SYSTEM'|'ADMISSION_DOCUMENTS'|'COSTS_STUDENT_LIFE', contentAr: string|null }]`. Supplied slots are atomically upserted; omitted slots are untouched and `null` clears a slot to an empty draft. Country Admin/detail responses expose legacy and fixed-slot rows as `studyGuideSections`; the Public detail exposes `studyGuide`.
+- **TA-51 Scholarship content:** `summaryAr?: string|null` is independently stored and returned by Admin/Public Scholarship detail. `descriptionAr` and `requirementsAr` reject executable markup (`script`, event attributes, and javascript URLs). Existing publications with no summary remain readable during the compatibility transition.
+- **TA-53 Services:** Service create/PATCH accepts optional `detailItems` with `{ id?, kind: 'STEP'|'BENEFIT', titleAr, descriptionAr?, iconKey? }`. Omitted items are never cleared. Public service detail returns `stepsAr` and `benefitsAr`, each deterministically ordered.
+- **TA-55 Universities:** `summaryAr?: string|null` is independent of `overviewAr` and is returned in Admin/Public University payloads. Existing records remain compatible.
+- **TA-59 Academic Majors:** `PATCH|DELETE /admin/academic-majors/{id}`. PATCH keeps id/slug unless slug is supplied. DELETE returns 409 when any University Program references the major.
+- **TA-62 Cities:** `PATCH|DELETE /admin/cities/{id}`. Country changes are rejected when Universities reference the city; DELETE returns 409 for referenced cities.
+- **TA-63 FAQs:** PATCH accepts `scope` and `parentId` only as a pair and atomically relinks/reorders. `DELETE /admin/faqs/{id}` permits only DRAFT/ARCHIVED records; PUBLISHED returns 409.
+- **TA-65 Site Settings:** Admin/Public settings include nullable `whatsappPhone`, independently validated as E.164 (for example `+963...`). Omitted PATCH fields preserve values; explicit `null` clears.
+
 The Public Website can read allowlisted organizational information without cookies:
 
 ```ts
@@ -876,7 +891,7 @@ Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 121 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 126 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

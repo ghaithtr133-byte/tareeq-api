@@ -312,6 +312,8 @@ describe('University Programs and advanced directory filters', () => {
 
     const majorCreated = await adminRequest('/api/v1/admin/academic-majors', 'POST', { slug: 'law', nameAr: 'القانون', nameEn: 'Law', category: 'Social Sciences' })
     expect(majorCreated.status).toBe(201)
+    const majorBody = await majorCreated.json() as { data: { id: string } }
+    expect((await adminRequest(`/api/v1/admin/academic-majors/${majorBody.data.id}`, 'PATCH', { nameAr: 'القانون العام' })).status).toBe(200)
     const cityCreated = await adminRequest('/api/v1/admin/cities', 'POST', { countryId: COUNTRY_ID, slug: 'iasi', nameAr: 'ياش', nameEn: 'Iasi' })
     expect(cityCreated.status).toBe(201)
     const cityBody = await cityCreated.json() as { data: { id: string } }
@@ -325,6 +327,8 @@ describe('University Programs and advanced directory filters', () => {
     expect(programCreated.status).toBe(201)
     const programBody = await programCreated.json() as { data: { id: string } }
     expect((await adminRequest(`/api/v1/admin/university-programs/${programBody.data.id}`, 'PATCH', { status: 'PUBLISHED' })).status).toBe(200)
+    expect((await adminRequest(`/api/v1/admin/academic-majors/${engineeringId}`, 'DELETE')).status).toBe(409)
+    expect((await adminRequest(`/api/v1/admin/cities/${bucharestId}`, 'DELETE')).status).toBe(409)
     const publicProgram = await app.request('/api/v1/universities/legacy-university/programs?search=Software&studyLevel=BACHELORS&language=ENGLISH&faculty=الهندسة')
     expect(publicProgram.status).toBe(200)
     await expect(publicProgram.json()).resolves.toMatchObject({ data: { items: [{ nameAr: 'هندسة البرمجيات', durationValue: 4, durationUnit: 'YEARS', tuition: { amount: '0', currency: 'EUR', academicYear: '2026/2027' } }], pagination: { total: 1 } } })

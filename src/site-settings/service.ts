@@ -11,6 +11,7 @@ const emptySettings = (): SiteSettingsRecord => ({
   academyNameEn: null,
   contactEmail: null,
   contactPhone: null,
+  whatsappPhone: null,
   addressAr: null,
   addressEn: null,
   facebookUrl: null,

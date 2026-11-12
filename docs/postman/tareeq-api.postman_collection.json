@@ -28812,7 +28812,7 @@
                 }
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
+            "description": "ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
@@ -28866,7 +28866,7 @@
                     }
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
+                "description": "ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
@@ -28931,7 +28931,7 @@
                     }
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
+                "description": "ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
@@ -28996,7 +28996,7 @@
                     }
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
+                "description": "ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
@@ -29061,7 +29061,7 @@
                     }
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
+                "description": "ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
@@ -29126,7 +29126,7 @@
                     }
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
+                "description": "ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
@@ -29191,7 +29191,7 @@
                     }
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
+                "description": "ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ updated.\n400: FAQ validation or parent relationship error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"PUBLISHED\"\n}",
@@ -29213,6 +29213,303 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Delete a draft or archived FAQ",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/faqs/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "faqs",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{faqId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Published FAQs are protected and must be archived first. This never affects the linked parent resource.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n409: The submitted order is stale or contains another parent’s FAQs."
+          },
+          "response": [
+            {
+              "name": "200 FAQ deleted.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/faqs/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "faqs",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{faqId}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Published FAQs are protected and must be archived first. This never affects the linked parent resource.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n409: The submitted order is stale or contains another parent’s FAQs."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"f0000000-0000-4000-8000-000000000001\"\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/faqs/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "faqs",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{faqId}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Published FAQs are protected and must be archived first. This never affects the linked parent resource.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n409: The submitted order is stale or contains another parent’s FAQs."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and a trusted origin are required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/faqs/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "faqs",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{faqId}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Published FAQs are protected and must be archived first. This never affects the linked parent resource.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n409: The submitted order is stale or contains another parent’s FAQs."
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 FAQ or public parent resource not found.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/faqs/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "faqs",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{faqId}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Published FAQs are protected and must be archived first. This never affects the linked parent resource.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n409: The submitted order is stale or contains another parent’s FAQs."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FAQ_NOT_FOUND\",\n    \"message\": \"FAQ entry not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The submitted order is stale or contains another parent’s FAQs.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/faqs/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "faqs",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{faqId}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Published FAQs are protected and must be archived first. This never affects the linked parent resource.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: FAQ deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and a trusted origin are required.\n404: FAQ or public parent resource not found.\n409: The submitted order is stale or contains another parent’s FAQs."
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FAQ_ORDER_SET_MISMATCH\",\n    \"message\": \"The ordered IDs must contain every non-archived FAQ for exactly one parent.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         },
@@ -31695,6 +31992,517 @@
           ]
         },
         {
+          "name": "[MANUAL] Update a normalized academic major",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "academic-majors",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Major updated.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"10000000-0000-4000-8000-000000000001\",\n    \"slug\": \"medicine\",\n    \"nameAr\": \"الطب\",\n    \"nameEn\": \"Medicine\",\n    \"category\": \"Health Sciences\",\n    \"createdAt\": \"2026-11-02T11:00:00.000Z\",\n    \"updatedAt\": \"2026-11-02T11:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation, relationship, or publication prerequisite error.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and trusted origin are required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 University or program not found.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNIVERSITY_PROGRAM_NOT_FOUND\",\n    \"message\": \"University program not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug or normalized program already exists.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DIRECTORY_SLUG_OR_PROGRAM_CONFLICT\",\n    \"message\": \"The slug or university program already exists.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 Content-Type must be JSON.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Stable IDs and slugs are preserved unless slug is explicitly supplied. Arabic and English normalized names are globally unique.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"الطب البشري\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "List normalized cities",
           "request": {
             "method": "GET",
@@ -31997,6 +32805,303 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Delete an unused academic major",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "academic-majors",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. A major referenced by any University Program is rejected with 409; no Program is cascaded or changed.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+          },
+          "response": [
+            {
+              "name": "200 Major deleted.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A major referenced by any University Program is rejected with 409; no Program is cascaded or changed.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"10000000-0000-4000-8000-000000000001\"\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A major referenced by any University Program is rejected with 409; no Program is cascaded or changed.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and trusted origin are required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A major referenced by any University Program is rejected with 409; no Program is cascaded or changed.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 University or program not found.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A major referenced by any University Program is rejected with 409; no Program is cascaded or changed.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNIVERSITY_PROGRAM_NOT_FOUND\",\n    \"message\": \"University program not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug or normalized program already exists.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/academic-majors/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "academic-majors",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A major referenced by any University Program is rejected with 409; no Program is cascaded or changed.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Major deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DIRECTORY_SLUG_OR_PROGRAM_CONFLICT\",\n    \"message\": \"The slug or university program already exists.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         },
@@ -32387,6 +33492,814 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Update a normalized city",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "cities",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 City updated.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"30000000-0000-4000-8000-000000000001\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"slug\": \"bucharest\",\n    \"nameAr\": \"بوخارست\",\n    \"nameEn\": \"Bucharest\",\n    \"createdAt\": \"2026-11-02T11:00:00.000Z\",\n    \"updatedAt\": \"2026-11-02T11:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation, relationship, or publication prerequisite error.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and trusted origin are required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 University or program not found.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNIVERSITY_PROGRAM_NOT_FOUND\",\n    \"message\": \"University program not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug or normalized program already exists.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DIRECTORY_SLUG_OR_PROGRAM_CONFLICT\",\n    \"message\": \"The slug or university program already exists.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 Content-Type must be JSON.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Name uniqueness is scoped to Country. A referenced city cannot be moved to another Country.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nameAr\": \"بوخارست الجديدة\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Delete an unused city",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "cities",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. A city referenced by any University is rejected with 409; no University is unlinked or deleted.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+          },
+          "response": [
+            {
+              "name": "200 City deleted.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A city referenced by any University is rejected with 409; no University is unlinked or deleted.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"30000000-0000-4000-8000-000000000001\"\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A city referenced by any University is rejected with 409; no University is unlinked or deleted.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and trusted origin are required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A city referenced by any University is rejected with 409; no University is unlinked or deleted.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 University or program not found.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A city referenced by any University is rejected with 409; no University is unlinked or deleted.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNIVERSITY_PROGRAM_NOT_FOUND\",\n    \"message\": \"University program not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug or normalized program already exists.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/cities/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "cities",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. A city referenced by any University is rejected with 409; no University is unlinked or deleted.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: City deleted.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists."
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DIRECTORY_SLUG_OR_PROGRAM_CONFLICT\",\n    \"message\": \"The slug or university program already exists.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         }

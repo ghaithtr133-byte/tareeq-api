@@ -453,7 +453,7 @@ describe('student applications and inquiries APIs', () => {
       (total, path) => total + Object.keys(path).filter((method) => methods.has(method)).length,
       0,
     )
-    expect(operationCount).toBe(121)
+    expect(operationCount).toBe(126)
     expect(response.headers.get('x-request-id')).toBe('task-5-openapi-check')
   })
 })

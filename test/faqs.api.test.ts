@@ -159,10 +159,11 @@ describe('reusable FAQ management', () => {
     expect(edited.status).toBe(200)
     await expect(edited.json()).resolves.toMatchObject({ data: { questionAr: 'سؤال محدّث' } })
     const move = await adminRequest(`/api/v1/admin/faqs/${created.body.data.id}`, 'PATCH', { scope: 'COUNTRY', parentId: COUNTRY_ID })
-    expect(move.status).toBe(400)
+    expect(move.status).toBe(200)
     const partialTranslation = await adminRequest(`/api/v1/admin/faqs/${created.body.data.id}`, 'PATCH', { answerEn: null })
     expect(partialTranslation.status).toBe(400)
     await expect(partialTranslation.json()).resolves.toMatchObject({ error: { code: 'FAQ_TRANSLATION_INCOMPLETE' } })
+    expect((await adminRequest(`/api/v1/admin/faqs/${created.body.data.id}`, 'DELETE')).status).toBe(200)
   })
 
   it('requires authentication, accepts both roles, and preserves trusted-origin CSRF enforcement', async () => {

@@ -79,6 +79,12 @@ enum ServiceDetailItemKind {
   BENEFIT
 }
 
+enum StudyGuideSectionKind {
+  ACADEMIC_SYSTEM
+  ADMISSION_DOCUMENTS
+  COSTS_STUDENT_LIFE
+}
+
 enum ScholarshipDetailItemKind {
   BENEFIT
   REQUIREMENT
@@ -211,6 +217,7 @@ model SiteSettings {
   academyNameEn String?
   contactEmail  String?  @db.Citext
   contactPhone  String?
+  whatsappPhone String?
   addressAr     String?
   addressEn     String?
   facebookUrl   String?
@@ -373,12 +380,14 @@ model CountryStudyGuideSection {
   countryId    String   @db.Uuid
   titleAr      String
   bodyAr       String
+  section      StudyGuideSectionKind?
   displayOrder Int
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
   country      Country  @relation(fields: [countryId], references: [id], onDelete: Restrict)
 
   @@index([countryId, displayOrder, id])
+  @@unique([countryId, section])
 }
 
 model University {
@@ -393,6 +402,7 @@ model University {
   cityAr                String
   cityEn                String?
   overviewAr            String
+  summaryAr             String?
   overviewEn            String?
   officialWebsite       String?
   imageUrl              String?
@@ -555,6 +565,7 @@ model Scholarship {
   universityId        String?                      @db.Uuid
   studyLevel          String
   fundingType         String
+  summaryAr           String?
   requirementsAr      String
   requirementsEn      String?
   descriptionAr       String
@@ -640,6 +651,7 @@ model ServiceDetailItem {
   kind         ServiceDetailItemKind
   titleAr      String
   descriptionAr String?
+  iconKey      String?
   displayOrder Int
   createdAt    DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime              @updatedAt @db.Timestamptz(3)

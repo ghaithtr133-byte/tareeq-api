@@ -30,6 +30,21 @@ const webUrlSchema = z.url().max(2_048).refine(
 const optionalUrl = webUrlSchema.optional()
 const optionalNullableUrl = webUrlSchema.nullable().optional()
 const optionalNullableArabicText = z.string().trim().min(1).max(20_000).nullable().optional()
+const safeArabicRichText = z.string().trim().max(20_000).refine(
+  (value) => !/(?:<\s*\/?\s*(?:script|style|iframe|object|embed)|\bon\w+\s*=|javascript\s*:)/i.test(value),
+  'Rich text contains unsupported or unsafe markup.',
+)
+const studyGuideSectionSchema = z.object({
+  section: z.enum(['ACADEMIC_SYSTEM', 'ADMISSION_DOCUMENTS', 'COSTS_STUDENT_LIFE']),
+  contentAr: safeArabicRichText.nullable(),
+}).strict()
+const serviceDetailInputSchema = z.object({
+  id: z.uuid().optional(),
+  kind: z.enum(['STEP', 'BENEFIT']),
+  titleAr: z.string().trim().min(1).max(300),
+  descriptionAr: safeArabicRichText.nullable().optional(),
+  iconKey: z.string().trim().min(1).max(80).nullable().optional(),
+}).strict()
 const countryCodeSchema = z.string().trim().toUpperCase().refine(
   (value) => assignedIsoCountryCodes.has(value),
   'Use an assigned ISO 3166-1 alpha-2 country code.',
@@ -75,6 +90,9 @@ export const countryCreateSchema = z
     tuitionSummaryAr: optionalNullableArabicText,
     admissionSummaryAr: optionalNullableArabicText,
     applicationDatesSummaryAr: optionalNullableArabicText,
+    studyGuideSections: z.array(studyGuideSectionSchema).max(3).superRefine((items, context) => {
+      if (new Set(items.map((item) => item.section)).size !== items.length) context.addIssue({ code: 'custom', message: 'Each fixed study-guide section may be supplied only once.' })
+    }).optional(),
     countryCode: countryCodeSchema.nullable().optional(),
     displayOrder: z.number().int().min(0).max(1_000_000).optional().default(0),
     ...commonCreateFields,
@@ -93,6 +111,7 @@ export const universityCreateSchema = z
     cityAr: z.string().trim().min(1).max(200),
     cityEn: z.string().trim().min(1).max(200).optional(),
     overviewAr: requiredArabicText,
+    summaryAr: safeArabicRichText.nullable().optional(),
     overviewEn: optionalText,
     officialWebsite: optionalUrl,
     imageUrl: optionalUrl,
@@ -114,9 +133,10 @@ export const scholarshipCreateSchema = z
     universityId: z.uuid().nullable().optional(),
     studyLevel: z.string().trim().min(1).max(120),
     fundingType: z.string().trim().min(1).max(120),
-    requirementsAr: requiredArabicText,
+    summaryAr: safeArabicRichText.nullable().optional(),
+    requirementsAr: safeArabicRichText,
     requirementsEn: optionalText,
-    descriptionAr: requiredArabicText,
+    descriptionAr: safeArabicRichText,
     descriptionEn: optionalText,
     imageUrl: optionalUrl,
     imageAltAr: z.string().trim().min(1).max(300).optional(),
@@ -141,6 +161,10 @@ export const serviceCreateSchema = z
     imageAltAr: z.string().trim().min(1).max(300).optional(),
     imageAltEn: z.string().trim().min(1).max(300).optional(),
     displayOrder: z.number().int().min(0).max(1_000_000).optional().default(0),
+    detailItems: z.array(serviceDetailInputSchema).max(100).superRefine((items, context) => {
+      const ids = items.flatMap((item) => item.id ? [item.id] : [])
+      if (new Set(ids).size !== ids.length) context.addIssue({ code: 'custom', message: 'Duplicate service detail IDs are not allowed.' })
+    }).optional(),
     ...commonCreateFields,
   })
   .strict()
@@ -227,6 +251,7 @@ export const countrySchema = z.object({
   overviewImageUrl: z.string().nullable(), overviewImageAltAr: z.string().nullable(),
   studyLanguageAr: z.string().nullable(), tuitionSummaryAr: z.string().nullable(),
   admissionSummaryAr: z.string().nullable(), applicationDatesSummaryAr: z.string().nullable(),
+  studyGuideSections: z.array(z.object({ id: z.uuid(), section: z.enum(['ACADEMIC_SYSTEM', 'ADMISSION_DOCUMENTS', 'COSTS_STUDENT_LIFE']).nullable(), titleAr: z.string(), bodyAr: z.string(), displayOrder: z.number().int() })).optional(),
   countryCode: z.string().nullable(),
   displayOrder: z.number().int(),
   ...adminFields,
@@ -236,7 +261,7 @@ export const universitySchema = z.object({
   ...entityBase,
   nameAr: z.string(), nameEn: z.string().nullable(), officialName: z.string(),
   countryId: z.uuid(), cityId: z.uuid().nullable(), universityType: nullableUniversityTypeSchema, cityAr: z.string(), cityEn: z.string().nullable(),
-  overviewAr: z.string(), overviewEn: z.string().nullable(), officialWebsite: z.string().nullable(),
+  overviewAr: z.string(), overviewEn: z.string().nullable(), summaryAr: z.string().nullable(), officialWebsite: z.string().nullable(),
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   logoUrl: z.string().nullable(), logoAltAr: z.string().nullable(), logoAltEn: z.string().nullable(),
   displayOrder: z.number().int(),
@@ -248,7 +273,7 @@ export const universitySchema = z.object({
 export const scholarshipSchema = z.object({
   ...entityBase,
   titleAr: z.string(), titleEn: z.string().nullable(), countryId: z.uuid().nullable(), universityId: z.uuid().nullable(),
-  studyLevel: z.string(), fundingType: z.string(), requirementsAr: z.string(), requirementsEn: z.string().nullable(),
+  studyLevel: z.string(), fundingType: z.string(), summaryAr: z.string().nullable(), requirementsAr: z.string(), requirementsEn: z.string().nullable(),
   descriptionAr: z.string(), descriptionEn: z.string().nullable(), verifiedDeadline: nullableDateSchema,
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   officialSourceUrl: z.string().nullable(), applicationStatus: applicationStatusSchema,
@@ -264,6 +289,7 @@ export const serviceSchema = z.object({
   titleAr: z.string(), titleEn: z.string().nullable(), summaryAr: z.string(), summaryEn: z.string().nullable(),
   descriptionAr: z.string(), descriptionEn: z.string().nullable(), imageUrl: z.string().nullable(),
   imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(), displayOrder: z.number().int(),
+  detailItems: z.array(z.object({ id: z.uuid(), kind: z.enum(['STEP', 'BENEFIT']), titleAr: z.string(), descriptionAr: z.string().nullable(), iconKey: z.string().nullable(), displayOrder: z.number().int() })).optional(),
   ...adminFields,
 }).openapi('Service')
 

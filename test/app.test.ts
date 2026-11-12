@@ -51,7 +51,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(collection.info.schema).toBe(
       'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     )
-    expect(collectRequests(collection.item)).toHaveLength(121)
+    expect(collectRequests(collection.item)).toHaveLength(126)
 
     const zipResponse = await app.request('/postman/download.zip')
     const zip = Buffer.from(await zipResponse.arrayBuffer())
@@ -195,7 +195,7 @@ describe('Tareeq Academy API foundation', () => {
         .map(([method, operation]) => ({ path, method, operation })),
     )
 
-    expect(operations).toHaveLength(121)
+    expect(operations).toHaveLength(126)
     const contentResources = '(countries|universities|scholarships|services|articles)'
     const operationGroups = {
       system: operations.filter(({ path }) => path === '/api/v1/health'),
@@ -244,7 +244,8 @@ describe('Tareeq Academy API foundation', () => {
         path === '/api/v1/admin/universities/{universityId}/programs' || path === '/api/v1/admin/university-programs/{id}',
       ),
       adminDirectoryCatalogs: operations.filter(({ path }) =>
-        path === '/api/v1/admin/academic-majors' || path === '/api/v1/admin/cities',
+        path === '/api/v1/admin/academic-majors' || path === '/api/v1/admin/cities' ||
+        path === '/api/v1/admin/academic-majors/{id}' || path === '/api/v1/admin/cities/{id}',
       ),
       publicUniversityDetails: operations.filter(({ path }) =>
         path === '/api/v1/universities/{slug}/admission-requirements' || path === '/api/v1/universities/{slug}/gallery',
@@ -272,10 +273,10 @@ describe('Tareeq Academy API foundation', () => {
       publicAnalytics: 1,
       adminAnalytics: 2,
       publicFaqs: 5,
-      adminFaqs: 4,
+      adminFaqs: 5,
       publicUniversityDirectory: 2,
       adminUniversityPrograms: 3,
-      adminDirectoryCatalogs: 4,
+      adminDirectoryCatalogs: 8,
       publicUniversityDetails: 2,
       adminUniversityDetails: 8,
     })

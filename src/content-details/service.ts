@@ -10,6 +10,7 @@ export type DetailInput = {
   titleAr?: string
   bodyAr?: string | null
   descriptionAr?: string | null
+  iconKey?: string | null
   category?: string | null
   amount?: string | null
   currency?: string | null
@@ -37,6 +38,7 @@ const output = (parent: DetailParent, value: Record<string, unknown>) => ({
   ...(parent === 'COUNTRY_GUIDE' ? { countryId: value.countryId, kind: 'STEP' } : parent === 'SERVICE' ? { serviceId: value.serviceId, kind: value.kind } : { scholarshipId: value.scholarshipId, kind: value.kind }),
   titleAr: value.titleAr, descriptionAr: parent === 'COUNTRY_GUIDE' ? value.bodyAr : value.descriptionAr,
   displayOrder: value.displayOrder,
+  ...(parent === 'SERVICE' ? { iconKey: value.iconKey ?? null } : {}),
   ...(parent === 'SCHOLARSHIP' ? {
     kind: value.kind, category: value.category, amount: value.amount === null || value.amount === undefined ? null : String(value.amount),
     currency: value.currency, coveragePeriod: value.coveragePeriod, officialSourceUrl: value.officialSourceUrl,
@@ -81,7 +83,7 @@ export class ContentDetailsService {
       const displayOrder = (max._max.displayOrder ?? -1) + 1
       const row = await ({
         COUNTRY_GUIDE: () => tx.countryStudyGuideSection.create({ data: { countryId: parentId, titleAr: input.titleAr, bodyAr: input.bodyAr ?? '', displayOrder } }),
-        SERVICE: () => tx.serviceDetailItem.create({ data: { serviceId: parentId, kind: input.kind as 'STEP' | 'BENEFIT', titleAr: input.titleAr, descriptionAr: input.descriptionAr ?? null, displayOrder } }),
+        SERVICE: () => tx.serviceDetailItem.create({ data: { serviceId: parentId, kind: input.kind as 'STEP' | 'BENEFIT', titleAr: input.titleAr, descriptionAr: input.descriptionAr ?? null, iconKey: input.iconKey ?? null, displayOrder } }),
         SCHOLARSHIP: () => tx.scholarshipDetailItem.create({ data: { scholarshipId: parentId, kind: input.kind as 'BENEFIT' | 'REQUIREMENT' | 'APPLICATION_STEP', titleAr: input.titleAr, descriptionAr: input.descriptionAr ?? null, displayOrder, category: input.category ?? null, amount: input.amount ?? null, currency: input.currency ?? null, coveragePeriod: input.coveragePeriod ?? null, officialSourceUrl: input.officialSourceUrl ?? null, verifiedAt: input.verifiedAt ?? null } }),
       })[parent]()
       await tx.adminAuditLog.create({ data: { actorAdminId, action: `${actionPrefix[parent]}.created`, resourceType: resourceType[parent], resourceId: row.id, metadata: { parentId, kind: input.kind, displayOrder } } })
@@ -98,7 +100,7 @@ export class ContentDetailsService {
       if (!current) throw notFound()
       const row = await ({
         COUNTRY_GUIDE: () => tx.countryStudyGuideSection.update({ where: { id }, data: { ...(input.titleAr === undefined ? {} : { titleAr: input.titleAr }), ...(input.bodyAr === undefined ? {} : { bodyAr: input.bodyAr ?? '' }) } }),
-        SERVICE: () => tx.serviceDetailItem.update({ where: { id }, data: { ...(input.titleAr === undefined ? {} : { titleAr: input.titleAr }), ...(input.descriptionAr === undefined ? {} : { descriptionAr: input.descriptionAr }) } }),
+        SERVICE: () => tx.serviceDetailItem.update({ where: { id }, data: { ...(input.titleAr === undefined ? {} : { titleAr: input.titleAr }), ...(input.descriptionAr === undefined ? {} : { descriptionAr: input.descriptionAr }), ...(input.iconKey === undefined ? {} : { iconKey: input.iconKey }) } }),
         SCHOLARSHIP: () => tx.scholarshipDetailItem.update({ where: { id }, data: { ...(input.titleAr === undefined ? {} : { titleAr: input.titleAr }), ...(input.descriptionAr === undefined ? {} : { descriptionAr: input.descriptionAr }), ...(input.category === undefined ? {} : { category: input.category }), ...(input.amount === undefined ? {} : { amount: input.amount }), ...(input.currency === undefined ? {} : { currency: input.currency }), ...(input.coveragePeriod === undefined ? {} : { coveragePeriod: input.coveragePeriod }), ...(input.officialSourceUrl === undefined ? {} : { officialSourceUrl: input.officialSourceUrl }), ...(input.verifiedAt === undefined ? {} : { verifiedAt: input.verifiedAt }) } }),
       })[parent]()
       await tx.adminAuditLog.create({ data: { actorAdminId, action: `${actionPrefix[parent]}.updated`, resourceType: resourceType[parent], resourceId: id, metadata: { changedFields: Object.keys(input).sort() } } })

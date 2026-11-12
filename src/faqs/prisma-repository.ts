@@ -149,17 +149,34 @@ export class PrismaFaqRepository implements FaqRepository {
       await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${FAQ_MUTATION_LOCK})`
       const current = await transaction.faqEntry.findUnique({ where: { id } })
       if (!current) return { outcome: 'NOT_FOUND' as const }
+      const currentParent = { scope: current.scope as FaqScope, parentId: parentIdFor(current) }
+      const nextParent: FaqParent = input.scope === undefined
+        ? currentParent
+        : { scope: input.scope, parentId: input.parentId ?? null }
+      if (input.scope !== undefined && !await this.parentExists(nextParent)) return { outcome: 'PARENT_NOT_FOUND' as const }
       const questionEn = input.questionEn === undefined ? current.questionEn : input.questionEn
       const answerEn = input.answerEn === undefined ? current.answerEn : input.answerEn
       if ((questionEn === null) !== (answerEn === null)) return { outcome: 'INVALID_TRANSLATION' as const }
 
       const nextStatus = input.status ?? current.status
+      const moved = nextParent.scope !== currentParent.scope || nextParent.parentId !== currentParent.parentId
+      const maximum = moved ? await transaction.faqEntry.aggregate({ where: parentWhere(nextParent), _max: { displayOrder: true } }) : null
       const record = await transaction.faqEntry.update({
         where: { id },
         data: {
-          ...input,
+          ...(input.questionAr === undefined ? {} : { questionAr: input.questionAr }),
+          ...(input.answerAr === undefined ? {} : { answerAr: input.answerAr }),
+          ...(input.questionEn === undefined ? {} : { questionEn: input.questionEn }),
+          ...(input.answerEn === undefined ? {} : { answerEn: input.answerEn }),
+          ...(input.status === undefined ? {} : { status: input.status }),
+          ...(moved ? {
+            scope: nextParent.scope,
+            countryId: null, universityId: null, serviceId: null, scholarshipId: null,
+            ...parentData(nextParent),
+            displayOrder: (maximum?._max.displayOrder ?? -1) + 1,
+          } : {}),
           ...(nextStatus === 'PUBLISHED' && current.publishedAt === null ? { publishedAt: now } : {}),
-        },
+        } as Prisma.FaqEntryUncheckedUpdateInput,
       })
       const changedFields = Object.keys(input).filter((field) =>
         input[field as keyof FaqUpdateInput] !== current[field as keyof FaqEntry],
@@ -171,18 +188,37 @@ export class PrismaFaqRepository implements FaqRepository {
           : current.status === 'PUBLISHED' && nextStatus !== 'PUBLISHED'
             ? 'faq.unpublished'
             : 'faq.updated'
-      const parent = { scope: current.scope as FaqScope, parentId: parentIdFor(current) }
       await transaction.adminAuditLog.create({ data: {
         actorAdminId,
         action,
         resourceType: 'FAQ_ENTRY',
         resourceId: id,
-        metadata: auditMetadata(parent, {
+        metadata: auditMetadata(nextParent, {
           changedFields,
+          ...(moved ? { previousScope: currentParent.scope, previousParentId: currentParent.parentId } : {}),
           ...(current.status !== nextStatus ? { fromStatus: current.status, toStatus: nextStatus } : {}),
         }),
       } })
+      if (moved) {
+        const remaining = await transaction.faqEntry.findMany({ where: { ...parentWhere(currentParent), status: { not: 'ARCHIVED' } }, orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }] })
+        for (const [displayOrder, item] of remaining.entries()) await transaction.faqEntry.update({ where: { id: item.id }, data: { displayOrder } })
+      }
       return { outcome: 'UPDATED' as const, record: asRecord(record) }
+    }, { maxWait: 15_000, timeout: 15_000 })
+  }
+
+  async delete(id: string, actorAdminId: string) {
+    return getPrisma().$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${FAQ_MUTATION_LOCK})`
+      const current = await transaction.faqEntry.findUnique({ where: { id } })
+      if (!current) return { outcome: 'NOT_FOUND' as const }
+      if (current.status === 'PUBLISHED') return { outcome: 'PUBLISHED' as const }
+      await transaction.faqEntry.delete({ where: { id } })
+      await transaction.adminAuditLog.create({ data: {
+        actorAdminId, action: 'faq.deleted', resourceType: 'FAQ_ENTRY', resourceId: id,
+        metadata: auditMetadata({ scope: current.scope as FaqScope, parentId: parentIdFor(current) }, { previousStatus: current.status }),
+      } })
+      return { outcome: 'DELETED' as const }
     }, { maxWait: 15_000, timeout: 15_000 })
   }
 

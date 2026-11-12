@@ -3,8 +3,10 @@ import { getPrisma } from '../database/client.js'
 import type { PublicationStatus } from '../content/types.js'
 import type {
   AcademicMajorRecord,
+  AcademicMajorUpdateInput,
   CatalogListQuery,
   CityRecord,
+  CityUpdateInput,
   FilterOptions,
   ProgramCreateInput,
   ProgramListQuery,
@@ -341,6 +343,32 @@ export class PrismaUniversityDirectoryRepository implements UniversityDirectoryR
     }
   }
 
+  async updateMajor(id: string, input: AcademicMajorUpdateInput, actorAdminId: string) {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        const current = await transaction.academicMajor.findUnique({ where: { id } })
+        if (!current) return { outcome: 'NOT_FOUND' as const }
+        const record = await transaction.academicMajor.update({ where: { id }, data: input })
+        await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'academic_major.updated', resourceType: 'ACADEMIC_MAJOR', resourceId: id, metadata: auditMetadata({ changedFields: Object.keys(input).sort() }) } })
+        return { outcome: 'UPDATED' as const, record: asMajor(record) }
+      })
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return { outcome: 'CONFLICT' as const }
+      throw error
+    }
+  }
+
+  async deleteMajor(id: string, actorAdminId: string) {
+    return getPrisma().$transaction(async (transaction) => {
+      const current = await transaction.academicMajor.findUnique({ where: { id } })
+      if (!current) return { outcome: 'NOT_FOUND' as const }
+      if (await transaction.universityProgram.count({ where: { academicMajorId: id } }) > 0) return { outcome: 'IN_USE' as const }
+      await transaction.academicMajor.delete({ where: { id } })
+      await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'academic_major.deleted', resourceType: 'ACADEMIC_MAJOR', resourceId: id, metadata: auditMetadata({ slug: current.slug }) } })
+      return { outcome: 'DELETED' as const }
+    })
+  }
+
   async listCities(query: CatalogListQuery) {
     const where: Prisma.CityWhereInput = {
       ...(query.countryId ? { countryId: query.countryId } : {}),
@@ -370,5 +398,35 @@ export class PrismaUniversityDirectoryRepository implements UniversityDirectoryR
       if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return { outcome: 'CONFLICT' as const }
       throw error
     }
+  }
+
+  async updateCity(id: string, input: CityUpdateInput, actorAdminId: string) {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        const current = await transaction.city.findUnique({ where: { id } })
+        if (!current) return { outcome: 'NOT_FOUND' as const }
+        if (input.countryId && input.countryId !== current.countryId) {
+          if (await transaction.university.count({ where: { cityId: id } }) > 0) return { outcome: 'CONFLICT' as const }
+          if (await transaction.country.count({ where: { id: input.countryId } }) !== 1) return { outcome: 'COUNTRY_NOT_FOUND' as const }
+        }
+        const record = await transaction.city.update({ where: { id }, data: input, include: { country: { select: { id: true, slug: true, nameAr: true, nameEn: true } } } })
+        await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'city.updated', resourceType: 'CITY', resourceId: id, metadata: auditMetadata({ changedFields: Object.keys(input).sort() }) } })
+        return { outcome: 'UPDATED' as const, record: asCity(record) }
+      })
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return { outcome: 'CONFLICT' as const }
+      throw error
+    }
+  }
+
+  async deleteCity(id: string, actorAdminId: string) {
+    return getPrisma().$transaction(async (transaction) => {
+      const current = await transaction.city.findUnique({ where: { id } })
+      if (!current) return { outcome: 'NOT_FOUND' as const }
+      if (await transaction.university.count({ where: { cityId: id } }) > 0) return { outcome: 'IN_USE' as const }
+      await transaction.city.delete({ where: { id } })
+      await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'city.deleted', resourceType: 'CITY', resourceId: id, metadata: auditMetadata({ slug: current.slug, countryId: current.countryId }) } })
+      return { outcome: 'DELETED' as const }
+    })
   }
 }

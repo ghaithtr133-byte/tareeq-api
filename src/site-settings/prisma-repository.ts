@@ -14,6 +14,7 @@ const toRecord = (value: {
   academyNameEn: string | null
   contactEmail: string | null
   contactPhone: string | null
+  whatsappPhone: string | null
   addressAr: string | null
   addressEn: string | null
   facebookUrl: string | null

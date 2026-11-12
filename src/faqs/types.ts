@@ -34,7 +34,7 @@ export type FaqCreateInput = FaqParent & {
 
 export type FaqUpdateInput = Partial<Pick<
   FaqRecord,
-  'questionAr' | 'answerAr' | 'questionEn' | 'answerEn' | 'status'
+  'questionAr' | 'answerAr' | 'questionEn' | 'answerEn' | 'status' | 'scope' | 'parentId'
 >>
 
 export type FaqMutationResult =
@@ -45,11 +45,14 @@ export type FaqReorderResult =
   | { outcome: 'UPDATED'; records: FaqRecord[] }
   | { outcome: 'PARENT_NOT_FOUND' | 'ORDER_SET_MISMATCH' }
 
+export type FaqDeleteResult = { outcome: 'DELETED' } | { outcome: 'NOT_FOUND' | 'PUBLISHED' }
+
 export interface FaqRepository {
   resolvePublishedParent(scope: Exclude<FaqScope, 'GLOBAL'>, slug: string): Promise<string | null>
   parentExists(parent: FaqParent): Promise<boolean>
   list(query: FaqListQuery, publicOnly: boolean): Promise<{ items: FaqRecord[]; total: number }>
   create(input: FaqCreateInput, actorAdminId: string, now: Date): Promise<FaqMutationResult>
   update(id: string, input: FaqUpdateInput, actorAdminId: string, now: Date): Promise<FaqMutationResult>
+  delete(id: string, actorAdminId: string): Promise<FaqDeleteResult>
   reorder(parent: FaqParent, orderedIds: string[], actorAdminId: string): Promise<FaqReorderResult>
 }

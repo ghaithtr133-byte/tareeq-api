@@ -5,6 +5,7 @@ export const siteSettingFields = [
   'academyNameEn',
   'contactEmail',
   'contactPhone',
+  'whatsappPhone',
   'addressAr',
   'addressEn',
   'facebookUrl',

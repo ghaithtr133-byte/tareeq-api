@@ -11,6 +11,7 @@ import {
   adminFaqListResponseSchema,
   adminFaqResponseSchema,
   faqCreateSchema,
+  faqDeleteResponseSchema,
   faqErrorResponses,
   faqIdParamSchema,
   faqOrderResponseSchema,
@@ -113,9 +114,14 @@ export const createFaqRoutes = (runtime: FaqRuntime, authRuntime: AuthRuntime) =
   })
   routes.openAPIRegistry.registerPath({
     method: 'patch', path: '/admin/faqs/{id}', tags: ['Admin — FAQs'], summary: 'Edit, publish, unpublish, or archive an FAQ',
-    description: 'ADMIN or SUPER_ADMIN only. Scope and parent are immutable. Set status=ARCHIVED instead of deleting; archived entries never appear publicly.',
+    description: 'ADMIN or SUPER_ADMIN only. A PATCH may atomically move an FAQ by supplying both scope and parentId; ordering is repaired in the previous group and the FAQ appends in its new group.',
     security: [{ accessCookie: [] }], request: { params: faqIdParamSchema, body: { required: true, content: { 'application/json': { schema: faqUpdateSchema, example: { status: 'PUBLISHED' } } } } },
     responses: { 200: { description: 'FAQ updated.', content: { 'application/json': { schema: adminFaqResponseSchema, example: { success: true, data: faqExample } } } }, 400: faqErrorResponses[400], 401: faqErrorResponses[401], 403: faqErrorResponses[403], 404: faqErrorResponses[404], 415: faqErrorResponses[415] },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'delete', path: '/admin/faqs/{id}', tags: ['Admin — FAQs'], summary: 'Delete a draft or archived FAQ',
+    description: 'ADMIN or SUPER_ADMIN only. Published FAQs are protected and must be archived first. This never affects the linked parent resource.', security: [{ accessCookie: [] }], request: { params: faqIdParamSchema },
+    responses: { 200: { description: 'FAQ deleted.', content: { 'application/json': { schema: faqDeleteResponseSchema, example: { success: true, data: { id: faqExample.id } } } } }, 401: faqErrorResponses[401], 403: faqErrorResponses[403], 404: faqErrorResponses[404], 409: faqErrorResponses[409] },
   })
   routes.openAPIRegistry.registerPath({
     method: 'patch', path: '/admin/faqs/order', tags: ['Admin — FAQs'], summary: 'Atomically reorder one parent’s active FAQs',
@@ -171,6 +177,10 @@ export const createFaqRoutes = (runtime: FaqRuntime, authRuntime: AuthRuntime) =
     const { id } = parse(faqIdParamSchema, { id: c.req.param('id') })
     const input = parse(faqUpdateSchema, await readJson(c.req.raw)) as FaqUpdateInput
     return c.json(successResponse(await runtime.getService().update(id, input, c.get('authClaims').userId)), 200)
+  })
+  adminRoutes.delete('/faqs/:id', async (c) => {
+    const { id } = parse(faqIdParamSchema, { id: c.req.param('id') })
+    return c.json(successResponse(await runtime.getService().delete(id, c.get('authClaims').userId)), 200)
   })
 
   routes.route('/', publicRoutes)

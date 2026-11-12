@@ -343,6 +343,7 @@ describe('SUPER_ADMIN account management and site settings', () => {
         academyNameAr: 'أكاديمية طريق',
         contactEmail: 'CONTACT@example.invalid',
         contactPhone: '+963 900 000 000',
+        whatsappPhone: '+963900000000',
         facebookUrl: 'https://www.facebook.com/tareeqacademy',
       },
     )
@@ -351,6 +352,7 @@ describe('SUPER_ADMIN account management and site settings', () => {
       data: {
         academyNameAr: 'أكاديمية طريق',
         contactEmail: 'contact@example.invalid',
+        whatsappPhone: '+963900000000',
         updatedAt: FIXED_NOW.toISOString(),
       },
     })
@@ -360,6 +362,7 @@ describe('SUPER_ADMIN account management and site settings', () => {
       data: {
         academyNameAr: 'أكاديمية طريق',
         contactEmail: 'contact@example.invalid',
+        whatsappPhone: '+963900000000',
       },
     })
     const event = audit.events.at(-1)
@@ -373,6 +376,7 @@ describe('SUPER_ADMIN account management and site settings', () => {
           'contactEmail',
           'contactPhone',
           'facebookUrl',
+          'whatsappPhone',
         ],
       },
     })

@@ -91,10 +91,12 @@ export const academicMajorCreateSchema = z.object({
   nameEn: z.string().trim().min(1).max(200),
   category: z.string().trim().min(1).max(120).nullable().optional().default(null),
 }).strict().openapi('AcademicMajorCreateRequest')
+export const academicMajorUpdateSchema = academicMajorCreateSchema.partial().strict().refine((value) => Object.keys(value).length > 0, 'At least one field must be provided.').openapi('AcademicMajorUpdateRequest')
 export const cityCreateSchema = z.object({
   countryId: z.uuid(), slug: directorySlugSchema,
   nameAr: z.string().trim().min(1).max(200), nameEn: z.string().trim().min(1).max(200),
 }).strict().openapi('CityCreateRequest')
+export const cityUpdateSchema = cityCreateSchema.partial().strict().refine((value) => Object.keys(value).length > 0, 'At least one field must be provided.').openapi('CityUpdateRequest')
 
 const dateSchema = z.iso.datetime({ offset: true })
 const majorSchema = z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string(), category: z.string().nullable() }).openapi('AcademicMajorSummary')
