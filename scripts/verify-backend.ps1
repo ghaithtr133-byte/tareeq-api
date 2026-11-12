@@ -434,10 +434,8 @@ foreach ($resource in $resources) {
     "PATCH /api/v1/admin/$resource/{id}",
     "PATCH /api/v1/admin/$resource/order"
   )) { $expectedOperations.Add($entry) }
-  if ($resource -ne 'articles') {
-    $expectedOperations.Add("DELETE /api/v1/admin/$resource/{id}")
-    $expectedOperations.Add("POST /api/v1/admin/$resource/{id}/hard-delete/confirm")
-  }
+  $expectedOperations.Add("DELETE /api/v1/admin/$resource/{id}")
+  $expectedOperations.Add("POST /api/v1/admin/$resource/{id}/hard-delete/confirm")
 }
 foreach ($entry in @(
   'POST /api/v1/applications',
@@ -478,16 +476,16 @@ if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
   }
 }
 $operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
-$operationPass = $actualOperations.Count -eq 126 -and $operationDifference.Count -eq 0
+$operationPass = $actualOperations.Count -eq 128 -and $operationDifference.Count -eq 0
 Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Exactly the approved 126 operations with no missing or unexpected operations.' `
+  -Expected 'Exactly the approved 128 operations with no missing or unexpected operations.' `
   -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
   -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, submission, media-upload, audit-log, Admin-management, site-settings, analytics, FAQ, and University-directory surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
   -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 113
+$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 128
 $documentationEvidence = if ($documentationIssues.Count -eq 0) {
-  'All 113 live operations passed documentation metadata checks.'
+  'All 128 live operations passed documentation metadata checks.'
 } else {
   $issueLimit = [Math]::Min(10, $documentationIssues.Count)
   @($documentationIssues.GetRange(0, $issueLimit)) -join '; '

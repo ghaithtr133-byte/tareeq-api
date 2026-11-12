@@ -253,7 +253,7 @@ export class PrismaContentRepository implements ContentRepository {
           universities: () => transaction.university.delete({ where: { id } }),
           scholarships: () => transaction.scholarship.delete({ where: { id } }),
           services: () => transaction.service.delete({ where: { id } }),
-          articles: () => Promise.resolve(undefined),
+          articles: () => this.executeConfirmedDeletion(transaction, 'articles', id),
         })[resource]()
         await transaction.adminAuditLog.create({ data: {
           actorAdminId,
@@ -282,7 +282,7 @@ export class PrismaContentRepository implements ContentRepository {
       universities: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "University" WHERE "id" = ${id} FOR UPDATE`,
       scholarships: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Scholarship" WHERE "id" = ${id} FOR UPDATE`,
       services: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Service" WHERE "id" = ${id} FOR UPDATE`,
-      articles: () => Promise.resolve([] as Array<{ id: string }>),
+      articles: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Article" WHERE "id" = ${id} FOR UPDATE`,
     })[resource]()
     return locked.length > 0
   }
@@ -316,7 +316,9 @@ export class PrismaContentRepository implements ContentRepository {
         await transaction.service.delete({ where: { id } })
         return
       case 'articles':
-        throw new Error('Article hard deletion is not supported.')
+        await transaction.articleScholarship.deleteMany({ where: { articleId: id } })
+        await transaction.article.delete({ where: { id } })
+        return
     }
   }
 
@@ -443,7 +445,20 @@ export class PrismaContentRepository implements ContentRepository {
             this.dependency('ANALYTICS_EVENT', 'PRESERVE', analytics, 'service.analyticsPaths', 'ANALYTICS_HISTORY_PRESERVED'),
           ])
         }
-        case 'articles': return null
+        case 'articles': {
+          const target = await database.article.findUnique({ where: { id }, select: { id: true, slug: true, status: true } })
+          if (!target) return null
+          const [links, audits, analytics] = await Promise.all([
+            countAndSamples(database.articleScholarship.count({ where: { articleId: id } }), database.articleScholarship.findMany({ where: { articleId: id }, select: { scholarshipId: true }, take: 5 }).then((rows) => rows.map(({ scholarshipId }) => ({ id: scholarshipId })))),
+            countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'ARTICLE', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'ARTICLE', resourceId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
+          ])
+          return this.toDeletionImpact(resource, target, [
+            this.dependency('ARTICLE_SCHOLARSHIP', 'DELETE', links, 'article.relatedScholarships', 'ARTICLE_SCHOLARSHIP_LINKS_EXPLICIT_DELETE'),
+            this.dependency('ADMIN_AUDIT_LOG', 'PRESERVE', audits, 'article.auditHistory', 'AUDIT_HISTORY_PRESERVED'),
+            this.dependency('ANALYTICS_EVENT', 'PRESERVE', analytics, 'article.analyticsPaths', 'ANALYTICS_HISTORY_PRESERVED'),
+          ])
+        }
       }
     })()
     return result

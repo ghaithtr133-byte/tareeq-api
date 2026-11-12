@@ -50,7 +50,6 @@ export class InMemoryContentRepository implements ContentRepository {
   }
 
   async deletionImpact(resource: ContentResource, id: string): Promise<DeletionImpact | null> {
-    if (resource === 'articles') return null
     const target = this.records.get(resource)?.find((record) => record.id === id)
     if (!target) return null
     const configured = this.configuredDeletionImpacts.get(`${resource}:${id}`) ?? { items: [], analysisComplete: true }

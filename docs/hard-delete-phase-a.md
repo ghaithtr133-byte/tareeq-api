@@ -1,8 +1,8 @@
 # Guarded hard deletion — Phases A and B
 
-Phase A evaluates and executes a safe initial hard deletion for a DRAFT or ARCHIVED Country, University, Scholarship, or Service when the freshly evaluated impact graph contains no destructive or protected dependency. Phase B adds a `SUPER_ADMIN`-only, database-backed, short-lived, one-time confirmation challenge for a PUBLISHED target or approved editorial effects. The graph is always locked and evaluated again inside the final transaction.
+Phase A evaluates and executes a safe initial hard deletion for a DRAFT or ARCHIVED Country, University, Scholarship, Service, or Article when the freshly evaluated impact graph contains no destructive or protected dependency. Phase B adds a `SUPER_ADMIN`-only, database-backed, short-lived, one-time confirmation challenge for a PUBLISHED target or approved editorial effects. The graph is always locked and evaluated again inside the final transaction.
 
-`DELETE /api/v1/admin/{resource}/{id}` and `POST /api/v1/admin/{resource}/{id}/hard-delete/confirm` are implemented for `countries`, `universities`, `scholarships`, and `services`. They are intentionally absent for Articles.
+`DELETE /api/v1/admin/{resource}/{id}` and `POST /api/v1/admin/{resource}/{id}/hard-delete/confirm` are implemented for `countries`, `universities`, `scholarships`, `services`, and `articles`.
 
 ## Decision outcomes
 
@@ -22,8 +22,9 @@ Every 409 includes `error.details.impact`. Items identify the resource type, rel
 | University | University Programs, Program Languages/Tuition, Admission Requirements, Gallery images, Scholarships, Articles, Student Applications, FAQs | Programs and their Language/Tuition children, Admissions, and Gallery items are explicit `DELETE`; optional Scholarship and Article university links are explicit `UNLINK`; Student Applications and FAQs are `BLOCK`. |
 | Scholarship | Scholarship detail items; legacy Article relation; Article–Scholarship links; Student Applications; FAQs | Detail items are explicit `DELETE`; legacy Article and join-table links are explicit `UNLINK`; Student Applications and FAQs are `BLOCK`. |
 | Service | Service detail items; FAQs | Detail items are explicit `DELETE`; FAQs are `BLOCK`. |
+| Article | Article–Scholarship links | Relation rows are explicit `DELETE`; no Scholarship, audit, analytics, or other shared record is deleted. |
 
-For all four targets, matching immutable Admin audit history and Analytics Events are reported as `PRESERVE` and are not removed. A fixture-like `demo-e2e-` target slug is blocked as a defense-in-depth safeguard. This repository currently has no schema-level fixture ownership field, so a future deletion expansion must use the seed manifest or add authoritative ownership metadata rather than relying solely on a naming convention.
+For all five targets, matching immutable Admin audit history and Analytics Events are reported as `PRESERVE` and are not removed. A fixture-like `demo-e2e-` target slug is blocked as a defense-in-depth safeguard. This repository currently has no schema-level fixture ownership field, so a future deletion expansion must use the seed manifest or add authoritative ownership metadata rather than relying solely on a naming convention.
 
 ## External assets and failure behavior
 
@@ -39,7 +40,7 @@ Hard deletion never calls Cloudinary, Resend, a scheduler, or any external provi
 
 ## Schema safeguards and future policy
 
-The pending migration adds `HardDeleteChallenge` and changes Country Study Guide, Service Detail, Scholarship Detail, University Program Language, and University Program Tuition foreign keys to `RESTRICT`. This removes hidden database cascades; Phase B explicitly deletes each approved child in FK-safe order.
+The pending migrations add `HardDeleteChallenge` and change Country Study Guide, Service Detail, Scholarship Detail, University Program Language, University Program Tuition, and Article–Scholarship foreign keys to `RESTRICT`. This removes hidden database cascades; Phase B explicitly deletes each approved child in FK-safe order.
 
 Future expansion still requires Project Leadership approval for:
 

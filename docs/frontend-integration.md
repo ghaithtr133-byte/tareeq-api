@@ -90,14 +90,14 @@ For real authenticated browser testing, use the shared-site production domains o
 
 `ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, site-settings updates, and analytics reporting are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
 
-The local generated OpenAPI contains exactly 126 operations:
+The local generated OpenAPI contains exactly 128 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
 | System | 1 | Public health check |
 | Authentication | 5 | Login plus cookie-session operations |
 | Public Content | 11 | List and slug detail for five resources plus Scholarship filter options |
-| Admin Content | 48 | Core content CRUD/reorder, guarded hard-delete preflight and SUPER_ADMIN confirmation, plus Country, Service, and Scholarship detail sections |
+| Admin Content | 50 | Core content CRUD/reorder, guarded hard-delete preflight and SUPER_ADMIN confirmation, plus Country, Service, and Scholarship detail sections |
 | Public Submissions | 2 | Create an application or general inquiry |
 | Admin Submissions | 6 | List, UUID detail, and workflow update |
 | Admin Media | 1 | Authenticated Cloudinary image upload |
@@ -135,7 +135,7 @@ GET  /{resource}                 GET   /{resource}/{slug}
 GET  /admin/{resource}           GET   /admin/{resource}/{id}
 POST /admin/{resource}           PATCH /admin/{resource}/{id}
 PATCH /admin/{resource}/order
-DELETE /admin/{resource}/{id}    # Countries, Universities, Scholarships, and Services only
+DELETE /admin/{resource}/{id}    # Countries, Universities, Scholarships, Services, and Articles
 POST /admin/{resource}/{id}/hard-delete/confirm
 
 POST /applications               POST  /inquiries
@@ -282,7 +282,7 @@ Admin detail and update routes use UUIDs, while public detail routes use slugs. 
 
 ### Guarded hard deletion — Phases A and B
 
-`DELETE /admin/{resource}/{id}` is available for Countries, Universities, Scholarships, and Services; Articles deliberately have no hard-delete route. Both `ADMIN` and `SUPER_ADMIN` must use the existing authenticated, trusted-origin request flow. The route deletes only a DRAFT or ARCHIVED record whose current dependency graph has no destructive or protected effect. A successful response is `{ success: true, data: { id, impact } }`, where `impact.outcome` is `SAFE`, and is atomically audited.
+`DELETE /admin/{resource}/{id}` is available for Countries, Universities, Scholarships, Services, and Articles. Both `ADMIN` and `SUPER_ADMIN` must use the existing authenticated, trusted-origin request flow. The route deletes only a DRAFT or ARCHIVED record whose current dependency graph has no destructive or protected effect. A successful response is `{ success: true, data: { id, impact } }`, where `impact.outcome` is `SAFE`, and is atomically audited. For Articles, related `ArticleScholarship` links are explicitly deleted only after confirmed deletion; audit and analytics history remain preserved.
 
 `409 DELETE_REQUIRES_CONFIRMATION` is a non-mutating preflight result. It is returned for a PUBLISHED target or a graph containing an explicit `DELETE`, `SET_NULL`, or `UNLINK` effect. For a `SUPER_ADMIN`, its `error.details.confirmation` contains a short-lived, actor-bound `{ challengeId, expiresAt }`. Submit that exact challenge in `POST /admin/{resource}/{id}/hard-delete/confirm`; the Backend locks and fully revalidates the graph before performing explicit approved operations. A changed, expired, reused, or cross-actor challenge returns `409 DELETE_REQUIRES_CONFIRMATION` with the latest impact and, when still eligible, a replacement challenge. `ADMIN` cannot confirm. Never send a `force` flag.
 
@@ -705,9 +705,9 @@ Self-deactivation and self-demotion return `409`. The Backend also preserves at 
 ## Admin redesign completion handoff
 
 - **TA-47 Country Study Guide:** Country create/PATCH accepts optional `studyGuideSections: [{ section: 'ACADEMIC_SYSTEM'|'ADMISSION_DOCUMENTS'|'COSTS_STUDENT_LIFE', contentAr: string|null }]`. Supplied slots are atomically upserted; omitted slots are untouched and `null` clears a slot to an empty draft. Country Admin/detail responses expose legacy and fixed-slot rows as `studyGuideSections`; the Public detail exposes `studyGuide`.
-- **TA-51 Scholarship content:** `summaryAr?: string|null` is independently stored and returned by Admin/Public Scholarship detail. `descriptionAr` and `requirementsAr` reject executable markup (`script`, event attributes, and javascript URLs). Existing publications with no summary remain readable during the compatibility transition.
+- **TA-51/TA-52 Scholarship content:** `summaryAr?: string|null` is independently stored and returned by Admin/Public Scholarship detail. A non-empty `summaryAr` is mandatory when a new Scholarship is created as `PUBLISHED`, or when a DRAFT/ARCHIVED Scholarship moves to `PUBLISHED`; it remains optional in DRAFT and legacy published records without it remain readable and independently editable. `descriptionAr` and `requirementsAr` reject executable markup (`script`, event attributes, and javascript URLs).
 - **TA-53 Services:** Service create/PATCH accepts optional `detailItems` with `{ id?, kind: 'STEP'|'BENEFIT', titleAr, descriptionAr?, iconKey? }`. Omitted items are never cleared. Public service detail returns `stepsAr` and `benefitsAr`, each deterministically ordered.
-- **TA-55 Universities:** `summaryAr?: string|null` is independent of `overviewAr` and is returned in Admin/Public University payloads. Existing records remain compatible.
+- **TA-55/TA-56 Universities:** `summaryAr?: string|null` is independent of `overviewAr` and is returned in Admin/Public University payloads. A non-empty `summaryAr` is mandatory when a new University is created as `PUBLISHED`, or when a DRAFT/ARCHIVED University moves to `PUBLISHED`; it remains optional in DRAFT and legacy published records without it remain readable and independently editable.
 - **TA-59 Academic Majors:** `PATCH|DELETE /admin/academic-majors/{id}`. PATCH keeps id/slug unless slug is supplied. DELETE returns 409 when any University Program references the major.
 - **TA-62 Cities:** `PATCH|DELETE /admin/cities/{id}`. Country changes are rejected when Universities reference the city; DELETE returns 409 for referenced cities.
 - **TA-63 FAQs:** PATCH accepts `scope` and `parentId` only as a pair and atomically relinks/reorders. `DELETE /admin/faqs/{id}` permits only DRAFT/ARCHIVED records; PUBLISHED returns 409.
@@ -891,7 +891,7 @@ Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 126 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 128 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

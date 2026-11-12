@@ -83,7 +83,7 @@ describe('University Programs and advanced directory filters', () => {
         countryId: COUNTRY_ID, cityId: values.cityId ?? null, universityType: values.universityType ?? null,
         cityAr: values.cityId === clujId ? 'كلوج نابوكا' : values.cityId === bucharestId ? 'بوخارست' : 'مدينة تاريخية',
         cityEn: values.cityId === clujId ? 'Cluj-Napoca' : values.cityId === bucharestId ? 'Bucharest' : 'Legacy City',
-        overviewAr: 'نظرة عامة', status: values.status ?? 'PUBLISHED', featured: slug === 'bucharest-medical',
+        overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: values.status ?? 'PUBLISHED', featured: slug === 'bucharest-medical',
       }, ADMIN_ID)
       directoryRepository.addUniversity({
         id: record.id, slug, status: (values.status ?? 'PUBLISHED'), nameAr: String(record.nameAr), nameEn: String(record.nameEn),
@@ -117,7 +117,7 @@ describe('University Programs and advanced directory filters', () => {
       } = {},
     ) => (await contentService.create('scholarships', {
       titleAr: `منحة ${slug}`, slug, universityId, countryId: values.countryId === undefined ? COUNTRY_ID : values.countryId,
-      studyLevel: values.studyLevel ?? 'BACHELORS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+      studyLevel: values.studyLevel ?? 'BACHELORS', fundingType: 'FULL', summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف',
       applicationStatus: values.applicationStatus ?? 'OPEN', verifiedDeadline: values.verifiedDeadline ?? null,
       officialSourceUrl: values.status === 'DRAFT' || values.status === 'ARCHIVED' ? null : `https://example.edu/scholarships/${slug}`,
       status: values.status ?? 'PUBLISHED',

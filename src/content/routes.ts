@@ -302,6 +302,8 @@ const registerDocumentation = (
     summary: `Create ${names.article} ${names.singular}`,
     description: resource === 'articles'
       ? 'ADMIN or SUPER_ADMIN only. New Articles accept an ordered, duplicate-free scholarshipIds array. If both fields are supplied, legacy scholarshipId must equal the first array item. New records default to DRAFT.'
+      : resource === 'universities' || resource === 'scholarships'
+        ? 'ADMIN or SUPER_ADMIN only. New records default to DRAFT unless a valid PUBLISHED state is explicitly requested. A non-empty Arabic summaryAr is required when creating a PUBLISHED record; it remains optional for DRAFT records.'
       : 'ADMIN or SUPER_ADMIN only. New records default to DRAFT unless a valid PUBLISHED state is explicitly requested.',
     security: [{ accessCookie: [] }],
     request: { body: { required: true, content: { 'application/json': { schema: contentCreateSchemas[resource], example: createExamples[resource] } } } },
@@ -321,6 +323,8 @@ const registerDocumentation = (
     summary: `Update ${names.article} ${names.singular}`,
     description: resource === 'articles'
       ? 'ADMIN or SUPER_ADMIN only. Omitted scholarship association fields preserve links; scholarshipIds replaces them in order, [] clears them, and legacy scholarshipId alone maps to zero or one link. Supports publication transitions while preserving first publication time and published slugs.'
+      : resource === 'universities' || resource === 'scholarships'
+        ? 'ADMIN or SUPER_ADMIN only. Supports publication transitions; the first publication timestamp and any previously published slug are preserved. Moving a DRAFT or ARCHIVED record to PUBLISHED requires a non-empty Arabic summaryAr. Existing PUBLISHED legacy records without one remain editable until a later publication transition.'
       : 'ADMIN or SUPER_ADMIN only. Supports publication transitions; the first publication timestamp and any previously published slug are preserved.',
     security: [{ accessCookie: [] }],
     request: {
@@ -337,10 +341,10 @@ const registerDocumentation = (
       415: contentErrorResponses[415],
     },
   })
-  if (resource !== 'articles') {
+  {
     routes.openAPIRegistry.registerPath({
       method: 'delete', path: `/admin/${resource}/{id}`, tags: [names.adminTag], summary: `Safely hard delete ${names.article} ${names.singular}`,
-      description: 'ADMIN or SUPER_ADMIN only. Initial hard deletion succeeds only for DRAFT or ARCHIVED records with a freshly verified empty destructive-impact graph. PUBLISHED records or CASCADE effects require a future SUPER_ADMIN confirmation flow. Protected, RESTRICT, Demo-fixture, historical-student, or unknown dependencies are blocked without deletion.',
+      description: 'ADMIN or SUPER_ADMIN only. Initial hard deletion succeeds only for DRAFT or ARCHIVED records with a freshly verified empty destructive-impact graph. PUBLISHED records or explicit child deletion/unlink effects require the documented SUPER_ADMIN confirmation flow. Protected, RESTRICT, Demo-fixture, historical-student, or unknown dependencies are blocked without deletion.',
       security: [{ accessCookie: [] }], request: { params: uuidParamSchema },
       responses: {
         200: { description: `${names.singular} safely deleted and audited.`, content: successContent(contentDeleteResponseSchema, { success: true, data: { id: exampleId, impact: { target: { resource: resource, id: exampleId, slug: 'example-record', status: 'DRAFT' }, outcome: 'SAFE', items: [] } } }) },
@@ -424,7 +428,7 @@ export const createContentRoutes = (
       )
     })
 
-    if (resource !== 'articles') {
+    {
       adminRoutes.post(`/${resource}/:id/hard-delete/confirm`, async (c) => {
         const claims = c.get('authClaims')
         if (claims.role !== 'SUPER_ADMIN') throw new ApiError(403, 'FORBIDDEN', 'SUPER_ADMIN permission is required.')
@@ -484,7 +488,7 @@ export const createContentRoutes = (
         200,
       )
     })
-    if (resource !== 'articles') {
+    {
       adminRoutes.delete(`/${resource}/:id`, async (c) => {
         const { id } = parse(uuidParamSchema, { id: c.req.param('id') })
         const claims = c.get('authClaims')

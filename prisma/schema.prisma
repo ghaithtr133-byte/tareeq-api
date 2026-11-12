@@ -727,7 +727,7 @@ model ArticleScholarship {
   scholarshipId String      @db.Uuid
   displayOrder  Int
   createdAt     DateTime    @default(now()) @db.Timestamptz(3)
-  article       Article     @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  article       Article     @relation(fields: [articleId], references: [id], onDelete: Restrict)
   scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
 
   @@id([articleId, scholarshipId])

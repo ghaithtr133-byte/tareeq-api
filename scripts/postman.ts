@@ -781,8 +781,8 @@ const check = async (document: OpenApiDocument) => {
   const expectedKeys = operationEntries(document).map((entry) => `${entry.method.toUpperCase()} ${entry.path}`).sort()
   const missing = expectedKeys.filter((key) => !actualKeys.includes(key))
   const obsolete = actualKeys.filter((key) => !expectedKeys.includes(key))
-  if (requests.length !== 126 || missing.length > 0 || obsolete.length > 0) {
-    throw new Error(`Postman operation mismatch. Expected 126, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
+  if (requests.length !== 128 || missing.length > 0 || obsolete.length > 0) {
+    throw new Error(`Postman operation mismatch. Expected 128, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
   }
 
   for (const [path, expected] of Object.entries(expectedArtifacts)) {
@@ -839,7 +839,7 @@ const main = async () => {
   if (command !== 'generate' && command !== 'check') throw new Error('Usage: tsx scripts/postman.ts <generate|check>')
   const document = await getOpenApiDocument()
   if (document.openapi !== '3.1.0') throw new Error(`Expected OpenAPI 3.1.0, received ${document.openapi}.`)
-  if (operationEntries(document).length !== 126) throw new Error(`Expected 126 OpenAPI operations, received ${operationEntries(document).length}.`)
+  if (operationEntries(document).length !== 128) throw new Error(`Expected 128 OpenAPI operations, received ${operationEntries(document).length}.`)
   if (command === 'generate') await generate(document)
   else await check(document)
 }

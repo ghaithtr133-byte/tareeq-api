@@ -51,7 +51,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(collection.info.schema).toBe(
       'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     )
-    expect(collectRequests(collection.item)).toHaveLength(126)
+    expect(collectRequests(collection.item)).toHaveLength(128)
 
     const zipResponse = await app.request('/postman/download.zip')
     const zip = Buffer.from(await zipResponse.arrayBuffer())
@@ -168,7 +168,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(document.components.schemas.HealthResponse).toBeDefined()
   })
 
-  it('documents the complete 121-operation API with descriptions, examples, and Admin security', async () => {
+  it('documents the complete 128-operation API with descriptions, examples, and Admin security', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
       info?: { description?: string }
@@ -195,7 +195,7 @@ describe('Tareeq Academy API foundation', () => {
         .map(([method, operation]) => ({ path, method, operation })),
     )
 
-    expect(operations).toHaveLength(126)
+    expect(operations).toHaveLength(128)
     const contentResources = '(countries|universities|scholarships|services|articles)'
     const operationGroups = {
       system: operations.filter(({ path }) => path === '/api/v1/health'),
@@ -260,7 +260,7 @@ describe('Tareeq Academy API foundation', () => {
       system: 1,
       authentication: 5,
       publicContent: 10,
-      adminContent: 28,
+      adminContent: 30,
       adminMedia: 1,
       adminAudit: 1,
       adminManagement: 2,

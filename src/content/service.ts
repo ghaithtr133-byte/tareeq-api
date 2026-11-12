@@ -396,6 +396,18 @@ export class ContentService {
         { fields: { officialSourceUrl: ['An official source URL is required before publication.'] } },
       )
     }
+    if (
+      enteringPublication &&
+      (resource === 'scholarships' || resource === 'universities') &&
+      (typeof data.summaryAr !== 'string' || data.summaryAr.trim().length === 0)
+    ) {
+      throw new ApiError(
+        400,
+        'PUBLICATION_REQUIREMENTS_NOT_MET',
+        `${labels[resource]} cannot be published without an Arabic summary.`,
+        { fields: { summaryAr: ['A non-empty Arabic summary is required before publication.'] } },
+      )
+    }
     if (resource === 'countries' && enteringPublication && (!data.imageUrl || !data.imageAltAr)) {
       throw new ApiError(400, 'PUBLICATION_REQUIREMENTS_NOT_MET', 'The Country cannot be published without a hero image and Arabic alternative text.', {
         fields: { imageUrl: ['A hero image is required before publication.'], imageAltAr: ['Meaningful Arabic alternative text is required before publication.'] },

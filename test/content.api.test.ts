@@ -119,7 +119,7 @@ describe('content management APIs', () => {
 
   it('labels recognized published Scholarship facets and leaves unknown values unlabeled', async () => {
     const create = (slug: string, studyLevel: string, fundingType: string, status: 'DRAFT' | 'PUBLISHED' = 'PUBLISHED') => contentService.create('scholarships', {
-      titleAr: slug, slug, studyLevel, fundingType, requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+      titleAr: slug, slug, studyLevel, fundingType, summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف',
       officialSourceUrl: 'https://example.invalid/source', status,
     }, ADMIN_ID)
     await create('government-scholarship', 'ASSOCIATE_BACHELOR_MASTER_PHD', 'GOVERNMENT_FUNDED')
@@ -345,7 +345,7 @@ describe('content management APIs', () => {
     const country = await createCountry({ ...countryInput(), status: 'PUBLISHED' })
     const university = await adminRequest('/api/v1/admin/universities', 'POST', {
       nameAr: 'جامعة برلين', officialName: 'Berlin University', slug: 'berlin-university',
-      countryId: country.body.data.id, cityAr: 'برلين', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+      countryId: country.body.data.id, cityAr: 'برلين', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
     })
     expect(university.status).toBe(201)
     const publicResponse = await app.request('/api/v1/universities/berlin-university')
@@ -353,11 +353,67 @@ describe('content management APIs', () => {
     await expect(publicResponse.json()).resolves.toMatchObject({ data: { countryId: country.body.data.id } })
   })
 
+  it('requires a non-empty summary only when Scholarships and Universities enter publication', async () => {
+    const country = await createCountry({ ...countryInput('summary-policy-country'), status: 'PUBLISHED' })
+    const universityDraft = await adminRequest('/api/v1/admin/universities', 'POST', {
+      nameAr: 'جامعة مسودة الملخص', officialName: 'Summary Draft University', slug: 'summary-draft-university',
+      countryId: country.body.data.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'DRAFT',
+    })
+    expect(universityDraft.status).toBe(201)
+    const universityId = (await universityDraft.json() as { data: { id: string } }).data.id
+    const universityMissingSummary = await adminRequest(`/api/v1/admin/universities/${universityId}`, 'PATCH', { status: 'PUBLISHED' })
+    expect(universityMissingSummary.status).toBe(400)
+    await expect(universityMissingSummary.json()).resolves.toMatchObject({
+      error: { code: 'PUBLICATION_REQUIREMENTS_NOT_MET', details: { fields: { summaryAr: expect.any(Array) } } },
+    })
+    expect((await adminRequest(`/api/v1/admin/universities/${universityId}`, 'PATCH', { summaryAr: 'ملخص الجامعة', status: 'PUBLISHED' })).status).toBe(200)
+
+    const scholarshipDraft = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      titleAr: 'منحة مسودة الملخص', slug: 'summary-draft-scholarship', studyLevel: 'BACHELORS', fundingType: 'FULL',
+      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/summary-draft', status: 'DRAFT',
+    })
+    expect(scholarshipDraft.status).toBe(201)
+    const scholarshipId = (await scholarshipDraft.json() as { data: { id: string } }).data.id
+    expect((await adminRequest(`/api/v1/admin/scholarships/${scholarshipId}`, 'PATCH', { status: 'PUBLISHED' })).status).toBe(400)
+    expect((await adminRequest(`/api/v1/admin/scholarships/${scholarshipId}`, 'PATCH', { summaryAr: 'ملخص المنحة', status: 'PUBLISHED' })).status).toBe(200)
+
+    const directPublishedUniversity = await adminRequest('/api/v1/admin/universities', 'POST', {
+      nameAr: 'جامعة دون ملخص', officialName: 'No Summary University', slug: 'no-summary-university',
+      countryId: country.body.data.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+    })
+    expect(directPublishedUniversity.status).toBe(400)
+    await expect(directPublishedUniversity.json()).resolves.toMatchObject({
+      error: { code: 'PUBLICATION_REQUIREMENTS_NOT_MET', details: { fields: { summaryAr: expect.any(Array) } } },
+    })
+    const directPublishedScholarship = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      titleAr: 'منحة دون ملخص', slug: 'no-summary-scholarship', studyLevel: 'BACHELORS', fundingType: 'FULL',
+      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/no-summary', status: 'PUBLISHED',
+    })
+    expect(directPublishedScholarship.status).toBe(400)
+    await expect(directPublishedScholarship.json()).resolves.toMatchObject({
+      error: { code: 'PUBLICATION_REQUIREMENTS_NOT_MET', details: { fields: { summaryAr: expect.any(Array) } } },
+    })
+    const whitespaceSummary = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      titleAr: 'منحة ملخص فارغ', slug: 'whitespace-summary-scholarship', studyLevel: 'BACHELORS', fundingType: 'FULL',
+      summaryAr: '   ', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/whitespace-summary', status: 'PUBLISHED',
+    })
+    expect(whitespaceSummary.status).toBe(400)
+    await expect(whitespaceSummary.json()).resolves.toMatchObject({
+      error: { code: 'PUBLICATION_REQUIREMENTS_NOT_MET', details: { fields: { summaryAr: expect.any(Array) } } },
+    })
+
+    const legacyPublished = await contentRepository.create('universities', {
+      nameAr: 'جامعة قديمة', officialName: 'Legacy University', slug: 'legacy-summary-university',
+      countryId: country.body.data.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED', publishedAt: FIXED_NOW,
+    }, { actorAdminId: ADMIN_ID, action: 'test.legacy.created', resourceType: 'UNIVERSITY', metadata: {} })
+    expect((await adminRequest(`/api/v1/admin/universities/${legacyPublished.id}`, 'PATCH', { officialWebsite: 'https://example.invalid/legacy' })).status).toBe(200)
+  })
+
   it('supports assigned ISO country codes, independent University logos, and public relationship summaries', async () => {
     const country = await createCountry({ ...countryInput(), countryCode: 'de', status: 'PUBLISHED' })
     const university = await adminRequest('/api/v1/admin/universities', 'POST', {
       nameAr: 'جامعة برلين', officialName: 'Berlin University', slug: 'berlin-logo-university', countryId: country.body.data.id,
-      cityAr: 'برلين', overviewAr: 'نظرة عامة', logoUrl: 'https://example.invalid/logo.webp', logoAltAr: 'شعار الجامعة', status: 'PUBLISHED',
+      cityAr: 'برلين', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', logoUrl: 'https://example.invalid/logo.webp', logoAltAr: 'شعار الجامعة', status: 'PUBLISHED',
     })
     expect(university.status).toBe(201)
     await expect((await app.request('/api/v1/universities/berlin-logo-university')).json()).resolves.toMatchObject({ data: { logoUrl: 'https://example.invalid/logo.webp', country: { countryCode: 'DE' } } })
@@ -369,7 +425,7 @@ describe('content management APIs', () => {
     const secondCountry = await createCountry({ ...countryInput('france'), nameAr: 'فرنسا', status: 'PUBLISHED' })
     const universityResponse = await adminRequest('/api/v1/admin/universities', 'POST', {
       nameAr: 'جامعة برلين', officialName: 'Berlin University', slug: 'berlin-university',
-      countryId: firstCountry.body.data.id, cityAr: 'برلين', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+      countryId: firstCountry.body.data.id, cityAr: 'برلين', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
     })
     const university = await universityResponse.json() as { data: { id: string } }
     const base = {
@@ -405,7 +461,7 @@ describe('content management APIs', () => {
   it('derives a passed scholarship deadline as CLOSED without hiding or archiving it', async () => {
     const response = await adminRequest('/api/v1/admin/scholarships', 'POST', {
       titleAr: 'منحة مغلقة', slug: 'closed-scholarship', studyLevel: 'BACHELORS', fundingType: 'FULL',
-      requirementsAr: 'المتطلبات', descriptionAr: 'الوصف', applicationStatus: 'OPEN',
+      summaryAr: 'ملخص المنحة', requirementsAr: 'المتطلبات', descriptionAr: 'الوصف', applicationStatus: 'OPEN',
       verifiedDeadline: '2026-10-18T23:59:59.000Z', officialSourceUrl: 'https://example.edu/scholarship',
       status: 'PUBLISHED',
     })
@@ -426,13 +482,13 @@ describe('content management APIs', () => {
     const country = await createCountry({ ...countryInput('romania'), status: 'PUBLISHED' })
     const universityResponse = await adminRequest('/api/v1/admin/universities', 'POST', {
       nameAr: 'جامعة بوخارست', officialName: 'Bucharest University', slug: 'bucharest-university',
-      countryId: country.body.data.id, cityAr: 'بوخارست', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+      countryId: country.body.data.id, cityAr: 'بوخارست', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
     })
     const universityId = (await universityResponse.json() as { data: { id: string } }).data.id
     for (let index = 1; index <= 4; index += 1) {
       const response = await adminRequest('/api/v1/admin/scholarships', 'POST', {
         titleAr: `منحة ${index}`, slug: `related-scholarship-${index}`, studyLevel: 'BACHELORS', fundingType: 'FULL',
-        requirementsAr: 'المتطلبات', descriptionAr: 'الوصف', countryId: country.body.data.id, universityId,
+        summaryAr: 'ملخص المنحة', requirementsAr: 'المتطلبات', descriptionAr: 'الوصف', countryId: country.body.data.id, universityId,
         applicationStatus: 'OPEN', ...(index === 1 ? { verifiedDeadline: '2026-10-01T00:00:00.000Z' } : {}),
         officialSourceUrl: `https://example.edu/scholarships/${index}`, status: 'PUBLISHED',
       })
@@ -468,6 +524,7 @@ describe('content management APIs', () => {
     const scholarship = async (slug: string, status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED', deadline?: string) => {
       const response = await adminRequest('/api/v1/admin/scholarships', 'POST', {
         titleAr: `منحة ${slug}`, slug, studyLevel: 'BACHELORS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+        summaryAr: 'ملخص المنحة',
         countryId: country.body.data.id, applicationStatus: 'OPEN', verifiedDeadline: deadline ?? null,
         officialSourceUrl: status === 'PUBLISHED' ? `https://example.edu/${slug}` : null, status,
       })
@@ -579,19 +636,19 @@ describe('content management APIs', () => {
     }, ADMIN_ID)
     const firstUniversity = await contentService.create('universities', {
       nameAr: 'الجامعة الأولى', officialName: 'First University', slug: 'ordered-university-first', countryId: firstCountry.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
     }, ADMIN_ID)
     const secondUniversity = await contentService.create('universities', {
       nameAr: 'الجامعة الثانية', officialName: 'Second University', slug: 'ordered-university-second', countryId: firstCountry.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
     }, ADMIN_ID)
     const firstScholarship = await contentService.create('scholarships', {
       titleAr: 'المنحة الأولى', slug: 'ordered-scholarship-first', studyLevel: 'MASTERS', fundingType: 'FULL',
-      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-first', status: 'PUBLISHED',
+      summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-first', status: 'PUBLISHED',
     }, ADMIN_ID)
     const secondScholarship = await contentService.create('scholarships', {
       titleAr: 'المنحة الثانية', slug: 'ordered-scholarship-second', studyLevel: 'MASTERS', fundingType: 'FULL',
-      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-second', status: 'PUBLISHED',
+      summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-second', status: 'PUBLISHED',
     }, ADMIN_ID)
     const firstService = await contentService.create('services', {
       titleAr: 'الخدمة الأولى', slug: 'ordered-service-first', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
@@ -631,7 +688,7 @@ describe('content management APIs', () => {
     const scholarship = async (slug: string, featured: boolean, fundingType: string, verifiedDeadline: string) =>
       contentService.create('scholarships', {
         titleAr: slug, slug, studyLevel: 'MASTERS', fundingType, requirementsAr: 'متطلبات', descriptionAr: 'وصف',
-        officialSourceUrl: `https://example.edu/${slug}`, verifiedDeadline, featured, status: 'PUBLISHED',
+        summaryAr: 'ملخص المنحة', officialSourceUrl: `https://example.edu/${slug}`, verifiedDeadline, featured, status: 'PUBLISHED',
       }, ADMIN_ID)
     const nonFeaturedFirst = await scholarship('non-featured-first', false, 'FULL', '2027-01-01T00:00:00.000Z')
     const featuredLate = await scholarship('featured-late', true, 'FULL', '2030-01-01T00:00:00.000Z')
@@ -673,15 +730,15 @@ describe('content management APIs', () => {
     }, ADMIN_ID)
     const legacyFirst = await contentService.create('universities', {
       nameAr: 'جامعة قديمة أولى', officialName: 'Legacy First', slug: 'legacy-order-first', countryId: country.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', displayOrder: 10, status: 'PUBLISHED',
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', displayOrder: 10, status: 'PUBLISHED',
     }, ADMIN_ID)
     const legacySecond = await contentService.create('universities', {
       nameAr: 'جامعة قديمة ثانية', officialName: 'Legacy Second', slug: 'legacy-order-second', countryId: country.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', displayOrder: 10, status: 'PUBLISHED',
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', displayOrder: 10, status: 'PUBLISHED',
     }, ADMIN_ID)
     const newlyCreated = await contentService.create('universities', {
       nameAr: 'جامعة جديدة', officialName: 'New University', slug: 'new-default-order-university', countryId: country.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
     }, ADMIN_ID)
 
     const firstRead = await (await app.request('/api/v1/universities?limit=50')).json() as { data: { items: Array<{ id: string; displayOrder: number }> } }
@@ -703,6 +760,11 @@ describe('content management APIs', () => {
     expect(contentRepository.audit.events).toEqual(expect.arrayContaining([
       expect.objectContaining({ action: 'content.services.hard_deleted', resourceId: safe.id }),
     ]))
+    const safeArticle = await contentService.create('articles', {
+      titleAr: 'مقال مستقل', slug: 'independent-article', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'DRAFT',
+    }, ADMIN_ID)
+    expect((await adminRequest(`/api/v1/admin/articles/${safeArticle.id}`, 'DELETE')).status).toBe(200)
+    expect((await adminRequest(`/api/v1/admin/articles/${safeArticle.id}`)).status).toBe(404)
     const superAdminSafe = await contentService.create('services', {
       titleAr: 'خدمة مؤرشفة مستقلة', slug: 'independent-archived-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'ARCHIVED',
     }, ADMIN_ID)
@@ -767,6 +829,10 @@ describe('content management APIs', () => {
       titleAr: 'خدمة تجريبية', slug: 'demo-e2e-protected-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'ARCHIVED',
     }, ADMIN_ID)
     await expect((await adminRequest(`/api/v1/admin/services/${demo.id}`, 'DELETE')).json()).resolves.toMatchObject({ error: { code: 'DELETE_BLOCKED', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ code: 'DEMO_FIXTURE_PROTECTED' })]) } } } })
+    const demoArticle = await contentService.create('articles', {
+      titleAr: 'مقال تجريبي', slug: 'demo-e2e-protected-article', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'ARCHIVED',
+    }, ADMIN_ID)
+    await expect((await adminRequest(`/api/v1/admin/articles/${demoArticle.id}`, 'DELETE')).json()).resolves.toMatchObject({ error: { code: 'DELETE_BLOCKED', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ code: 'DEMO_FIXTURE_PROTECTED' })]) } } } })
 
     const rollback = await contentService.create('services', {
       titleAr: 'خدمة تدقيق', slug: 'audit-rollback-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
@@ -837,7 +903,7 @@ describe('content management APIs', () => {
       nameAr: 'بلد الجامعة', slug: 'university-delete-country', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.invalid/university-country.webp', imageAltAr: 'صورة بلد الجامعة', status: 'PUBLISHED',
     }, ADMIN_ID)
     const university = await contentService.create('universities', {
-      nameAr: 'جامعة للحذف', officialName: 'Delete University', slug: 'confirmed-university-delete', countryId: universityParent.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+      nameAr: 'جامعة للحذف', officialName: 'Delete University', slug: 'confirmed-university-delete', countryId: universityParent.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
     }, ADMIN_ID)
     contentRepository.setDeletionImpact('universities', university.id, [
       impactItem('UNIVERSITY_PROGRAM', 'DELETE', 1, 'university.programs', 'UNIVERSITY_PROGRAMS_EXPLICIT_DELETE'),
@@ -848,7 +914,7 @@ describe('content management APIs', () => {
     expect((await adminRequest(`/api/v1/admin/universities/${university.id}/hard-delete/confirm`, 'POST', { challengeId: universityChallenge }, 'SUPER_ADMIN')).status).toBe(200)
 
     const scholarship = await contentService.create('scholarships', {
-      titleAr: 'منحة للحذف', slug: 'confirmed-scholarship-delete', studyLevel: 'MASTERS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/confirmed-delete', status: 'PUBLISHED',
+      titleAr: 'منحة للحذف', slug: 'confirmed-scholarship-delete', studyLevel: 'MASTERS', fundingType: 'FULL', summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/confirmed-delete', status: 'PUBLISHED',
     }, ADMIN_ID)
     contentRepository.setDeletionImpact('scholarships', scholarship.id, [
       impactItem('SCHOLARSHIP_DETAIL_ITEM', 'DELETE', 1, 'scholarship.detailItems', 'SCHOLARSHIP_DETAILS_EXPLICIT_DELETE'),
@@ -857,6 +923,21 @@ describe('content management APIs', () => {
     const scholarshipPreflight = await adminRequest(`/api/v1/admin/scholarships/${scholarship.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
     const scholarshipChallenge = (await scholarshipPreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
     expect((await adminRequest(`/api/v1/admin/scholarships/${scholarship.id}/hard-delete/confirm`, 'POST', { challengeId: scholarshipChallenge }, 'SUPER_ADMIN')).status).toBe(200)
+
+    const article = await contentService.create('articles', {
+      titleAr: 'مقال للحذف', slug: 'confirmed-article-delete', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('articles', article.id, [
+      impactItem('ARTICLE_SCHOLARSHIP', 'DELETE', 1, 'article.relatedScholarships', 'ARTICLE_SCHOLARSHIP_LINKS_EXPLICIT_DELETE'),
+    ])
+    const articlePreflight = await adminRequest(`/api/v1/admin/articles/${article.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    expect(articlePreflight.status).toBe(409)
+    const articleChallenge = (await articlePreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    expect((await adminRequest(`/api/v1/admin/articles/${article.id}/hard-delete/confirm`, 'POST', { challengeId: articleChallenge }, 'SUPER_ADMIN')).status).toBe(200)
+    expect((await adminRequest(`/api/v1/admin/articles/${article.id}`)).status).toBe(404)
+    expect(contentRepository.audit.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ actorAdminId: SUPER_ADMIN_ID, action: 'content.articles.hard_deleted', resourceId: article.id }),
+    ]))
 
     const stale = await contentService.create('services', {
       titleAr: 'خدمة متغيرة', slug: 'stale-confirmed-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
@@ -916,7 +997,7 @@ describe('content management APIs', () => {
     log.mockRestore()
   })
 
-  it('documents all 43 content operations and exposes the four hard-delete confirmation routes', async () => {
+  it('documents all 45 content operations and exposes five hard-delete confirmation routes', async () => {
     const response = await app.request('/openapi.json')
     const document = await response.json() as {
       paths: Record<string, Record<string, { tags?: string[] }>>
@@ -928,13 +1009,8 @@ describe('content management APIs', () => {
       expect(document.paths[`/api/v1/admin/${resource}`]?.post).toBeDefined()
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.get).toBeDefined()
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.patch).toBeDefined()
-      if (resource === 'articles') {
-        expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeUndefined()
-        expect(document.paths[`/api/v1/admin/${resource}/{id}/hard-delete/confirm`]?.post).toBeUndefined()
-      } else {
-        expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeDefined()
-        expect(document.paths[`/api/v1/admin/${resource}/{id}/hard-delete/confirm`]?.post).toBeDefined()
-      }
+      expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeDefined()
+      expect(document.paths[`/api/v1/admin/${resource}/{id}/hard-delete/confirm`]?.post).toBeDefined()
       const label = resource[0]?.toUpperCase() + resource.slice(1)
       expect(document.paths[`/api/v1/${resource}`]?.get?.tags).toEqual([`Public — ${label}`])
       expect(document.paths[`/api/v1/admin/${resource}`]?.post?.tags).toEqual([`Admin — ${label}`])
