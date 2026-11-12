@@ -15,9 +15,14 @@ import {
   contentCreateSchemas,
   contentErrorResponses,
   contentPatchSchemas,
+  contentDeleteResponseSchema,
+  hardDeleteConfirmationSchema,
+  deletionImpactSchema,
   entityResponseSchema,
   listResponseSchema,
   publicQuerySchemas,
+  contentReorderSchema,
+  contentReorderResponseSchema,
   slugParamSchema,
   uuidParamSchema,
 } from './schemas.js'
@@ -93,7 +98,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     officialName: 'Example University', slug: 'example-university', countryId: exampleCountryId,
     cityId: null, universityType: null, cityAr: 'مدينة تجريبية', cityEn: 'Example City', overviewAr: 'نظرة عامة أكاديمية',
     overviewEn: null, officialWebsite: 'https://example.edu', imageUrl: null,
-    imageAltAr: null, imageAltEn: null, logoUrl: null, logoAltAr: null, logoAltEn: null, featured: false,
+    imageAltAr: null, imageAltEn: null, logoUrl: null, logoAltAr: null, logoAltEn: null, featured: false, displayOrder: 0,
     seoTitleAr: null, seoDescriptionAr: null,
     country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', nameEn: 'Germany', countryCode: 'DE' },
     ...exampleDates,
@@ -105,7 +110,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     requirementsEn: null, descriptionAr: 'تفاصيل المنحة', descriptionEn: null,
     imageUrl: null, imageAltAr: null, imageAltEn: null,
     verifiedDeadline: '2027-01-31T23:59:59.000Z', officialSourceUrl: 'https://example.edu/scholarship',
-    applicationStatus: 'OPEN', effectiveApplicationStatus: 'OPEN', featured: true,
+    applicationStatus: 'OPEN', effectiveApplicationStatus: 'OPEN', featured: true, displayOrder: 0,
     seoTitleAr: null, seoDescriptionAr: null,
     country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', countryCode: 'DE' },
     university: { id: exampleUniversityId, slug: 'example-university', nameAr: 'جامعة تجريبية' },
@@ -130,7 +135,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
       imageUrl: null, country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا' },
       effectiveApplicationStatus: 'OPEN',
     }],
-    featured: true, seoTitleAr: null, seoDescriptionAr: null,
+    featured: true, displayOrder: 0, seoTitleAr: null, seoDescriptionAr: null,
     country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', countryCode: 'DE' },
     ...exampleDates,
   },
@@ -183,6 +188,43 @@ const successContent = (schema: z.ZodType, example: unknown) => ({
   'application/json': { schema, example },
 })
 
+const deletionConflictSchema = z.object({
+  success: z.literal(false),
+  error: z.object({
+    code: z.enum(['DELETE_REQUIRES_CONFIRMATION', 'DELETE_BLOCKED']),
+    message: z.string(),
+    details: z.object({
+      impact: deletionImpactSchema,
+      confirmation: z.object({ challengeId: z.uuid(), expiresAt: z.iso.datetime({ offset: true }) }).optional(),
+    }),
+  }),
+})
+const deletionConflictExample = (code: 'DELETE_REQUIRES_CONFIRMATION' | 'DELETE_BLOCKED', outcome: 'REQUIRES_CONFIRMATION' | 'BLOCKED') => ({
+  success: false,
+  error: {
+    code,
+    message: outcome === 'BLOCKED' ? 'Deletion is blocked by protected or unverifiable dependencies.' : 'Deletion would affect related records or published content.',
+    details: {
+      impact: {
+      target: { resource: 'scholarships', id: exampleScholarshipId, slug: 'example-scholarship', status: 'DRAFT' },
+      outcome,
+      items: [{ resourceType: outcome === 'BLOCKED' ? 'STUDENT_APPLICATION' : 'SCHOLARSHIP_DETAIL_ITEM', effect: outcome === 'BLOCKED' ? 'BLOCK' : 'DELETE', count: 1, relationshipPath: outcome === 'BLOCKED' ? 'scholarship.studentApplications' : 'scholarship.detailItems', sampleIds: ['20000000-0000-4000-8000-000000000001'], code: outcome === 'BLOCKED' ? 'STUDENT_APPLICATION_HISTORY_PROTECTED' : 'SCHOLARSHIP_DETAILS_EXPLICIT_DELETE', canConfirm: outcome !== 'BLOCKED', blocked: outcome === 'BLOCKED' }],
+      },
+      ...(outcome === 'REQUIRES_CONFIRMATION' ? { confirmation: { challengeId: exampleId, expiresAt: '2026-11-11T12:05:00.000Z' } } : {}),
+    },
+  },
+})
+const deletionConflictContent = () => ({
+  'application/json': {
+    schema: deletionConflictSchema,
+    example: deletionConflictExample('DELETE_REQUIRES_CONFIRMATION', 'REQUIRES_CONFIRMATION'),
+    examples: {
+      confirmation: { value: deletionConflictExample('DELETE_REQUIRES_CONFIRMATION', 'REQUIRES_CONFIRMATION') },
+      blocked: { value: deletionConflictExample('DELETE_BLOCKED', 'BLOCKED') },
+    },
+  },
+})
+
 const registerDocumentation = (
   routes: OpenAPIHono<AuthEnv>,
   resource: ContentResource,
@@ -198,10 +240,12 @@ const registerDocumentation = (
     tags: [names.publicTag],
     summary: `List published ${resource}`,
     description: resource === 'universities'
-      ? 'Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.'
+      ? 'Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.'
       : resource === 'scholarships'
-        ? 'Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.'
-      : 'Public collection. Returns PUBLISHED records only with validated pagination and documented filters.',
+        ? 'Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.'
+        : resource === 'articles'
+          ? 'Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.'
+          : 'Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.',
     request: { query: publicQuerySchemas[resource] },
     responses: {
       200: { description: `Published ${resource}.`, content: successContent(listResponseSchema(resource), listExample) },
@@ -293,6 +337,30 @@ const registerDocumentation = (
       415: contentErrorResponses[415],
     },
   })
+  if (resource !== 'articles') {
+    routes.openAPIRegistry.registerPath({
+      method: 'delete', path: `/admin/${resource}/{id}`, tags: [names.adminTag], summary: `Safely hard delete ${names.article} ${names.singular}`,
+      description: 'ADMIN or SUPER_ADMIN only. Initial hard deletion succeeds only for DRAFT or ARCHIVED records with a freshly verified empty destructive-impact graph. PUBLISHED records or CASCADE effects require a future SUPER_ADMIN confirmation flow. Protected, RESTRICT, Demo-fixture, historical-student, or unknown dependencies are blocked without deletion.',
+      security: [{ accessCookie: [] }], request: { params: uuidParamSchema },
+      responses: {
+        200: { description: `${names.singular} safely deleted and audited.`, content: successContent(contentDeleteResponseSchema, { success: true, data: { id: exampleId, impact: { target: { resource: resource, id: exampleId, slug: 'example-record', status: 'DRAFT' }, outcome: 'SAFE', items: [] } } }) },
+        401: contentErrorResponses[401], 403: contentErrorResponses[403], 404: contentErrorResponses[404],
+        409: { description: 'Deletion requires confirmation or is blocked; the impact graph is returned in error.details.impact.', content: deletionConflictContent() },
+      },
+    })
+    routes.openAPIRegistry.registerPath({
+      method: 'post', path: `/admin/${resource}/{id}/hard-delete/confirm`, tags: [names.adminTag], summary: `Confirm hard deletion of ${names.article} ${names.singular}`,
+      description: 'SUPER_ADMIN only. Submits the short-lived, actor-bound confirmation challenge returned by a prior DELETE preflight. The complete impact graph is locked and revalidated before explicit child deletion or unlinking. A stale or changed graph returns 409 with an updated impact; protected dependencies remain blocked.',
+      security: [{ accessCookie: [] }],
+      request: { params: uuidParamSchema, body: { required: true, content: { 'application/json': { schema: hardDeleteConfirmationSchema, example: { challengeId: exampleId } } } } },
+      responses: {
+        200: { description: `${names.singular} and approved editorial effects were deleted atomically.`, content: successContent(contentDeleteResponseSchema, { success: true, data: { id: exampleId, impact: { target: { resource, id: exampleId, slug: 'example-record', status: 'PUBLISHED' }, outcome: 'REQUIRES_CONFIRMATION', items: [{ resourceType: 'SERVICE_DETAIL_ITEM', effect: 'DELETE', count: 2, relationshipPath: 'service.detailItems', sampleIds: [], code: 'SERVICE_DETAILS_EXPLICIT_DELETE', canConfirm: true, blocked: false }] } } }) },
+        400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403], 404: contentErrorResponses[404],
+        409: { description: 'The challenge is stale, the graph changed, or deletion is blocked; the latest impact is returned.', content: deletionConflictContent() },
+        415: contentErrorResponses[415],
+      },
+    })
+  }
 }
 
 export const createContentRoutes = (
@@ -308,6 +376,20 @@ export const createContentRoutes = (
   adminRoutes.use('*', requireTrustedOrigin(authRuntime))
   adminRoutes.use('*', requireAuthentication(authRuntime))
   adminRoutes.use('*', requireRole('ADMIN', 'SUPER_ADMIN'))
+
+  for (const resource of contentResources) {
+    const names = metadata[resource]
+    routes.openAPIRegistry.registerPath({
+      method: 'patch', path: `/admin/${resource}/order`, tags: [names.adminTag], summary: `Atomically reorder ${resource}`,
+      description: 'ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.',
+      security: [{ accessCookie: [] }], request: { body: { required: true, content: { 'application/json': { schema: contentReorderSchema, example: { orderedIds: ['b2b21ee5-f955-46ca-972f-6b6b81aa4a3d'] } } } } },
+      responses: { 200: { description: 'Persisted editorial order.', content: successContent(contentReorderResponseSchema, { success: true, data: { items: [{ id: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d', displayOrder: 0 }] } }) }, 400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403], 409: contentErrorResponses[409], 415: contentErrorResponses[415] },
+    })
+    adminRoutes.patch(`/${resource}/order`, async (c) => {
+      const { orderedIds } = parse(contentReorderSchema, await readJson(c.req.raw))
+      return c.json(successResponse(await contentRuntime.getService().reorder(resource, orderedIds, c.get('authClaims').userId)), 200)
+    })
+  }
 
   const scholarshipFilterOptionsSchema = z.object({
     studyLevels: z.array(z.object({ value: z.string(), labelAr: z.string().nullable(), count: z.number().int() })),
@@ -341,6 +423,16 @@ export const createContentRoutes = (
         200,
       )
     })
+
+    if (resource !== 'articles') {
+      adminRoutes.post(`/${resource}/:id/hard-delete/confirm`, async (c) => {
+        const claims = c.get('authClaims')
+        if (claims.role !== 'SUPER_ADMIN') throw new ApiError(403, 'FORBIDDEN', 'SUPER_ADMIN permission is required.')
+        const { id } = parse(uuidParamSchema, { id: c.req.param('id') })
+        const { challengeId } = parse(hardDeleteConfirmationSchema, await readJson(c.req.raw))
+        return c.json(successResponse(await contentRuntime.getService().confirmHardDelete(resource, id, challengeId, claims.userId)), 200)
+      })
+    }
 
     adminRoutes.get(`/${resource}`, async (c) => {
       const query = parse(
@@ -392,6 +484,13 @@ export const createContentRoutes = (
         200,
       )
     })
+    if (resource !== 'articles') {
+      adminRoutes.delete(`/${resource}/:id`, async (c) => {
+        const { id } = parse(uuidParamSchema, { id: c.req.param('id') })
+        const claims = c.get('authClaims')
+        return c.json(successResponse(await contentRuntime.getService().delete(resource, id, claims.userId, claims.role)), 200)
+      })
+    }
   }
 
   routes.route('/', publicRoutes)

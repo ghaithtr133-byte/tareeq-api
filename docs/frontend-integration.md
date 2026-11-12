@@ -71,7 +71,7 @@ For real authenticated browser testing, use the shared-site production domains o
 | Health and published-content reads | Yes | Yes | Yes |
 | Start an Admin session | Authorized Admin credentials required | Yes | Yes |
 | Use `/auth/me`, refresh, logout, or change password | No | Yes | Yes |
-| List, create, update, publish, unpublish, or archive content | No | Yes | Yes |
+| List, create, update, publish, unpublish, archive, or reorder top-level content | No | Yes | Yes |
 | Submit an application or inquiry | Yes | Yes | Yes |
 | Review applications/inquiries and update workflow status or internal notes | No | Yes | Yes |
 | Upload an image for an existing content workflow | No | Yes | Yes |
@@ -90,14 +90,14 @@ For real authenticated browser testing, use the shared-site production domains o
 
 `ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, site-settings updates, and analytics reporting are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
 
-The approved API contains exactly 87 operations:
+The local generated OpenAPI contains exactly 121 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
 | System | 1 | Public health check |
 | Authentication | 5 | Login plus cookie-session operations |
-| Public Content | 10 | List and slug detail for five resources |
-| Admin Content | 20 | List, UUID detail, create, and update for five resources |
+| Public Content | 11 | List and slug detail for five resources plus Scholarship filter options |
+| Admin Content | 48 | Core content CRUD/reorder, guarded hard-delete preflight and SUPER_ADMIN confirmation, plus Country, Service, and Scholarship detail sections |
 | Public Submissions | 2 | Create an application or general inquiry |
 | Admin Submissions | 6 | List, UUID detail, and workflow update |
 | Admin Media | 1 | Authenticated Cloudinary image upload |
@@ -109,6 +109,9 @@ The approved API contains exactly 87 operations:
 | Admin About Us | 2 | ADMIN/SUPER_ADMIN singleton read and update |
 | Public Marketing Images | 1 | HOME/DESTINATIONS Hero and CTA image read |
 | Admin Marketing Images | 2 | ADMIN/SUPER_ADMIN image read and update |
+| Public Statistics | 1 | Published-content statistics |
+| Public Student Journey | 1 | Active journey slots |
+| Admin Student Journey | 3 | SUPER_ADMIN list, update, and reorder |
 | Public Analytics | 1 | Anonymous event ingestion |
 | Admin Analytics | 2 | SUPER_ADMIN-only reports |
 | Public FAQs | 5 | Homepage plus four published-resource collections |
@@ -131,6 +134,9 @@ POST /auth/change-password
 GET  /{resource}                 GET   /{resource}/{slug}
 GET  /admin/{resource}           GET   /admin/{resource}/{id}
 POST /admin/{resource}           PATCH /admin/{resource}/{id}
+PATCH /admin/{resource}/order
+DELETE /admin/{resource}/{id}    # Countries, Universities, Scholarships, and Services only
+POST /admin/{resource}/{id}/hard-delete/confirm
 
 POST /applications               POST  /inquiries
 GET  /admin/applications         GET   /admin/inquiries
@@ -191,6 +197,12 @@ const scholarships = await publicApi.get('/scholarships', {
 ```
 
 Scholarship `status` controls editorial publication. `effectiveApplicationStatus` reports whether applications are effectively `OPEN` or `CLOSED`; a passed `verifiedDeadline` makes it `CLOSED` without hiding the published record.
+
+### Public editorial ordering
+
+Countries and Services retain their existing `sort=manual` default. Universities, Scholarships, and Articles now use persisted `displayOrder` when `sort` is omitted; this intentionally replaces their previous chronological default. Existing explicit sorts remain available: University `newest`/`name`, Scholarship `newest`/`deadline`, Article `newest`, and Country/Service `newest`.
+
+Scholarship results always rank matching `featured=true` records ahead of matching non-featured records before pagination. With no explicit sort, `displayOrder` applies within each Featured tier. With `sort=newest` or `sort=deadline`, that requested sort applies only within each tier. Filters are applied first, so a Featured Scholarship that does not match the request is never inserted into the result.
 
 Services and Articles currently contain only DRAFT seed records, so their public collections may correctly return an empty `items` array.
 
@@ -259,6 +271,20 @@ await adminApi.patch(`/admin/countries/${id}`, { status: 'PUBLISHED' })
 ```
 
 Admin detail and update routes use UUIDs, while public detail routes use slugs. The first publication sets `publishedAt`; later unpublish/archive transitions preserve it. Published slugs are immutable.
+
+### Top-level editorial ordering
+
+`ADMIN` and `SUPER_ADMIN` reorder Countries, Universities, Scholarships, Services, and Articles through `PATCH /admin/{resource}/order`. Send `{ "orderedIds": ["uuid", "..."] }` containing the complete, unfiltered set of all non-archived records exactly once. The response is `{ success: true, data: { items: [{ id, displayOrder }] } }` in the persisted order. Fetch every page of the unfiltered Admin collection (maximum 50 per page), discard archived records locally, then submit the remaining complete set. `409 ORDER_SET_MISMATCH` means a record was added, archived, or otherwise changed while the editor was preparing the full set; refresh every page and retry. An empty array is valid only for a collection with no non-archived records. Never send only the current page or a filtered subset.
+
+### Guarded hard deletion — Phases A and B
+
+`DELETE /admin/{resource}/{id}` is available for Countries, Universities, Scholarships, and Services; Articles deliberately have no hard-delete route. Both `ADMIN` and `SUPER_ADMIN` must use the existing authenticated, trusted-origin request flow. The route deletes only a DRAFT or ARCHIVED record whose current dependency graph has no destructive or protected effect. A successful response is `{ success: true, data: { id, impact } }`, where `impact.outcome` is `SAFE`, and is atomically audited.
+
+`409 DELETE_REQUIRES_CONFIRMATION` is a non-mutating preflight result. It is returned for a PUBLISHED target or a graph containing an explicit `DELETE`, `SET_NULL`, or `UNLINK` effect. For a `SUPER_ADMIN`, its `error.details.confirmation` contains a short-lived, actor-bound `{ challengeId, expiresAt }`. Submit that exact challenge in `POST /admin/{resource}/{id}/hard-delete/confirm`; the Backend locks and fully revalidates the graph before performing explicit approved operations. A changed, expired, reused, or cross-actor challenge returns `409 DELETE_REQUIRES_CONFIRMATION` with the latest impact and, when still eligible, a replacement challenge. `ADMIN` cannot confirm. Never send a `force` flag.
+
+`409 DELETE_BLOCKED` is final for the request and is returned for protected student history, scope-bound FAQs, required foreign keys, protected demo fixtures, or incomplete/unknown analysis. Audit and analytics history is reported as `PRESERVE` and is never deleted. The API never deletes Cloudinary or other external assets.
+
+Each impact item includes `resourceType`, `effect` (`DELETE`, `SET_NULL`, `UNLINK`, `PRESERVE`, `BLOCK`, or `UNKNOWN`), `count`, `relationshipPath`, up to five safe `sampleIds`, a stable `code`, `canConfirm`, and `blocked`. Render this as a review dialog before confirming; do not derive deletion effects in the browser. The full matrix is in [`hard-delete-phase-a.md`](./hard-delete-phase-a.md).
 
 Use Scalar for each resource's required fields and relationship rules. In particular, Universities require a Country, Scholarship relationships must be consistent, and publishing a Scholarship requires an HTTP(S) `officialSourceUrl`.
 
@@ -850,7 +876,7 @@ Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 87 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 121 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

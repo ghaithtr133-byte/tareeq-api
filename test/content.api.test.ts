@@ -9,6 +9,7 @@ import type { AdminRole } from '../src/auth/types.js'
 import type { AuthConfig } from '../src/config/env.js'
 import type { ContentRuntime } from '../src/content/runtime.js'
 import { ContentService } from '../src/content/service.js'
+import { impactItem } from '../src/content/deletion-impact.js'
 import { InMemoryAuthRepository } from './helpers/in-memory-auth-repository.js'
 import { InMemoryContentRepository } from './helpers/in-memory-content-repository.js'
 
@@ -149,6 +150,60 @@ describe('content management APIs', () => {
 
     expect((await adminRequest('/api/v1/admin/countries')).status).toBe(200)
     expect((await adminRequest('/api/v1/admin/countries', 'GET', undefined, 'SUPER_ADMIN')).status).toBe(200)
+  })
+
+  it('exposes the complete-set Country reorder route before the dynamic ID route', async () => {
+    const first = await createCountry(countryInput('first-country'))
+    const second = await createCountry(countryInput('second-country'))
+    const orderedIds = [second.body.data.id, first.body.data.id]
+
+    const unauthenticated = await app.request('/api/v1/admin/countries/order', {
+      method: 'PATCH',
+      headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderedIds }),
+    })
+    expect(unauthenticated.status).toBe(401)
+
+    const reordered = await adminRequest('/api/v1/admin/countries/order', 'PATCH', { orderedIds })
+    expect(reordered.status).toBe(200)
+    await expect(reordered.json()).resolves.toMatchObject({
+      success: true,
+      data: { items: [
+        { id: second.body.data.id, displayOrder: 0 },
+        { id: first.body.data.id, displayOrder: 1 },
+      ] },
+    })
+    expect(contentRepository.audit.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        actorAdminId: ADMIN_ID,
+        action: 'content.countries.reordered',
+        resourceType: 'COUNTRY',
+        resourceId: second.body.data.id,
+        metadata: { count: 2 },
+      }),
+    ]))
+
+    const incomplete = await adminRequest('/api/v1/admin/countries/order', 'PATCH', {
+      orderedIds: [first.body.data.id],
+    })
+    expect(incomplete.status).toBe(409)
+    await expect(incomplete.json()).resolves.toMatchObject({ error: { code: 'ORDER_SET_MISMATCH' } })
+
+    const duplicate = await adminRequest('/api/v1/admin/countries/order', 'PATCH', {
+      orderedIds: [first.body.data.id, first.body.data.id],
+    })
+    expect(duplicate.status).toBe(400)
+    await expect(duplicate.json()).resolves.toMatchObject({ error: { code: 'VALIDATION_ERROR' } })
+
+    const openApi = await (await app.request('/openapi.json')).json() as {
+      paths: Record<string, { patch?: { security?: unknown[]; responses?: Record<string, unknown> } }>
+    }
+    for (const resource of ['countries', 'universities', 'scholarships', 'services', 'articles']) {
+      const operation = openApi.paths[`/api/v1/admin/${resource}/order`]?.patch
+      expect(operation?.security).toEqual([{ accessCookie: [] }])
+      expect(operation?.responses).toHaveProperty('200')
+      expect(operation?.responses).toHaveProperty('409')
+    }
   })
 
   it('separates public read CORS from credentialed Admin CORS and CSRF trust', async () => {
@@ -513,7 +568,355 @@ describe('content management APIs', () => {
     expect((await app.request('/api/v1/services?page=0')).status).toBe(400)
   })
 
-  it('documents all 30 content operations and exposes no DELETE content operation', async () => {
+  it('uses persisted Admin order for every published public directory and keeps drafts private', async () => {
+    await expect((await app.request('/api/v1/articles')).json()).resolves.toMatchObject({ data: { items: [] } })
+
+    const firstCountry = await contentService.create('countries', {
+      nameAr: 'البلد الأول', slug: 'ordered-country-first', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.edu/country-first.webp', imageAltAr: 'صورة البلد الأول', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const secondCountry = await contentService.create('countries', {
+      nameAr: 'البلد الثاني', slug: 'ordered-country-second', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.edu/country-second.webp', imageAltAr: 'صورة البلد الثاني', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const firstUniversity = await contentService.create('universities', {
+      nameAr: 'الجامعة الأولى', officialName: 'First University', slug: 'ordered-university-first', countryId: firstCountry.id,
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const secondUniversity = await contentService.create('universities', {
+      nameAr: 'الجامعة الثانية', officialName: 'Second University', slug: 'ordered-university-second', countryId: firstCountry.id,
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const firstScholarship = await contentService.create('scholarships', {
+      titleAr: 'المنحة الأولى', slug: 'ordered-scholarship-first', studyLevel: 'MASTERS', fundingType: 'FULL',
+      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-first', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const secondScholarship = await contentService.create('scholarships', {
+      titleAr: 'المنحة الثانية', slug: 'ordered-scholarship-second', studyLevel: 'MASTERS', fundingType: 'FULL',
+      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-second', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const firstService = await contentService.create('services', {
+      titleAr: 'الخدمة الأولى', slug: 'ordered-service-first', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const secondService = await contentService.create('services', {
+      titleAr: 'الخدمة الثانية', slug: 'ordered-service-second', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const firstArticle = await contentService.create('articles', {
+      titleAr: 'المقال الأول', slug: 'ordered-article-first', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const secondArticle = await contentService.create('articles', {
+      titleAr: 'المقال الثاني', slug: 'ordered-article-second', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const draftArticle = await contentService.create('articles', {
+      titleAr: 'مسودة', slug: 'ordered-article-draft', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'DRAFT',
+    }, ADMIN_ID)
+    await contentService.update('articles', draftArticle.id, { status: 'ARCHIVED' }, ADMIN_ID)
+
+    const collections = [
+      ['countries', firstCountry, secondCountry],
+      ['universities', firstUniversity, secondUniversity],
+      ['scholarships', firstScholarship, secondScholarship],
+      ['services', firstService, secondService],
+      ['articles', firstArticle, secondArticle],
+    ] as const
+    for (const [resource, first, second] of collections) {
+      expect((await adminRequest(`/api/v1/admin/${resource}/order`, 'PATCH', { orderedIds: [second.id, first.id] })).status).toBe(200)
+      const response = await app.request(`/api/v1/${resource}?page=1&limit=50`)
+      const body = await response.json() as { data: { items: Array<{ id: string }> } }
+      expect(body.data.items.map(({ id }) => id)).toEqual([second.id, first.id])
+    }
+    const articles = await (await app.request('/api/v1/articles?limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(articles.data.items).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: draftArticle.id })]))
+  })
+
+  it('keeps matching Featured Scholarships first before manual and explicit sorting across pages', async () => {
+    const scholarship = async (slug: string, featured: boolean, fundingType: string, verifiedDeadline: string) =>
+      contentService.create('scholarships', {
+        titleAr: slug, slug, studyLevel: 'MASTERS', fundingType, requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+        officialSourceUrl: `https://example.edu/${slug}`, verifiedDeadline, featured, status: 'PUBLISHED',
+      }, ADMIN_ID)
+    const nonFeaturedFirst = await scholarship('non-featured-first', false, 'FULL', '2027-01-01T00:00:00.000Z')
+    const featuredLate = await scholarship('featured-late', true, 'FULL', '2030-01-01T00:00:00.000Z')
+    const featuredEarly = await scholarship('featured-early', true, 'FULL', '2028-01-01T00:00:00.000Z')
+    const nonFeaturedSecond = await scholarship('non-featured-second', false, 'FULL', '2026-12-01T00:00:00.000Z')
+    const filteredFeatured = await scholarship('filtered-featured', true, 'PARTIAL', '2027-01-01T00:00:00.000Z')
+    const orderedIds = [nonFeaturedFirst.id, featuredLate.id, featuredEarly.id, nonFeaturedSecond.id, filteredFeatured.id]
+    expect((await adminRequest('/api/v1/admin/scholarships/order', 'PATCH', { orderedIds })).status).toBe(200)
+
+    const firstPage = await (await app.request('/api/v1/scholarships?page=1&limit=2')).json() as { data: { items: Array<{ id: string }>; pagination: { total: number; totalPages: number } } }
+    const secondPage = await (await app.request('/api/v1/scholarships?page=2&limit=2')).json() as { data: { items: Array<{ id: string }> } }
+    expect(firstPage.data.items.map(({ id }) => id)).toEqual([featuredLate.id, featuredEarly.id])
+    expect(secondPage.data.items.map(({ id }) => id)).toEqual([filteredFeatured.id, nonFeaturedFirst.id])
+    expect(firstPage.data.pagination).toMatchObject({ total: 5, totalPages: 3 })
+
+    const deadlineOrder = await (await app.request('/api/v1/scholarships?sort=deadline&limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(deadlineOrder.data.items.map(({ id }) => id)).toEqual([
+      filteredFeatured.id, featuredEarly.id, featuredLate.id, nonFeaturedSecond.id, nonFeaturedFirst.id,
+    ])
+
+    const newestOrder = await (await app.request('/api/v1/scholarships?sort=newest&limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(newestOrder.data.items.slice(0, 3).map(({ id }) => id)).toEqual(expect.arrayContaining([
+      featuredLate.id, featuredEarly.id, filteredFeatured.id,
+    ]))
+    expect(newestOrder.data.items.slice(3).map(({ id }) => id)).toEqual(expect.arrayContaining([
+      nonFeaturedFirst.id, nonFeaturedSecond.id,
+    ]))
+
+    const fullOnly = await (await app.request('/api/v1/scholarships?fundingType=FULL&limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(fullOnly.data.items.map(({ id }) => id)).toEqual([
+      featuredLate.id, featuredEarly.id, nonFeaturedFirst.id, nonFeaturedSecond.id,
+    ])
+  })
+
+  it('places new default-order records predictably ahead of simulated legacy backfills and keeps ties stable', async () => {
+    const country = await contentService.create('countries', {
+      nameAr: 'بلد الترتيب', slug: 'ordering-country', introductionAr: 'مقدمة', detailsAr: 'تفاصيل',
+      imageUrl: 'https://example.edu/ordering-country.webp', imageAltAr: 'صورة بلد الترتيب', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const legacyFirst = await contentService.create('universities', {
+      nameAr: 'جامعة قديمة أولى', officialName: 'Legacy First', slug: 'legacy-order-first', countryId: country.id,
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', displayOrder: 10, status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const legacySecond = await contentService.create('universities', {
+      nameAr: 'جامعة قديمة ثانية', officialName: 'Legacy Second', slug: 'legacy-order-second', countryId: country.id,
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', displayOrder: 10, status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const newlyCreated = await contentService.create('universities', {
+      nameAr: 'جامعة جديدة', officialName: 'New University', slug: 'new-default-order-university', countryId: country.id,
+      cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+    }, ADMIN_ID)
+
+    const firstRead = await (await app.request('/api/v1/universities?limit=50')).json() as { data: { items: Array<{ id: string; displayOrder: number }> } }
+    const secondRead = await (await app.request('/api/v1/universities?limit=50')).json() as { data: { items: Array<{ id: string; displayOrder: number }> } }
+    expect(firstRead.data.items[0]).toMatchObject({ id: newlyCreated.id, displayOrder: 0 })
+    expect(firstRead.data.items.map(({ id }) => id)).toEqual(secondRead.data.items.map(({ id }) => id))
+    expect(firstRead.data.items.map(({ id }) => id)).toEqual(expect.arrayContaining([legacyFirst.id, legacySecond.id]))
+  })
+
+  it('safely hard deletes only independent non-published records and reports relationship impacts', async () => {
+    const safe = await contentService.create('services', {
+      titleAr: 'خدمة مستقلة', slug: 'independent-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
+    }, ADMIN_ID)
+    expect((await app.request(`/api/v1/admin/services/${safe.id}`, { method: 'DELETE', headers: { Origin: ORIGIN } })).status).toBe(401)
+    const deleted = await adminRequest(`/api/v1/admin/services/${safe.id}`, 'DELETE')
+    expect(deleted.status).toBe(200)
+    await expect(deleted.json()).resolves.toMatchObject({ success: true, data: { id: safe.id, impact: { outcome: 'SAFE', target: { id: safe.id, status: 'DRAFT' } } } })
+    expect((await adminRequest(`/api/v1/admin/services/${safe.id}`)).status).toBe(404)
+    expect(contentRepository.audit.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ action: 'content.services.hard_deleted', resourceId: safe.id }),
+    ]))
+    const superAdminSafe = await contentService.create('services', {
+      titleAr: 'خدمة مؤرشفة مستقلة', slug: 'independent-archived-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'ARCHIVED',
+    }, ADMIN_ID)
+    expect((await adminRequest(`/api/v1/admin/services/${superAdminSafe.id}`, 'DELETE', undefined, 'SUPER_ADMIN')).status).toBe(200)
+    expect((await adminRequest('/api/v1/admin/services/not-a-uuid', 'DELETE')).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/services/22222222-2222-4222-8222-222222222222', 'DELETE')).status).toBe(404)
+
+    const published = await contentService.create('services', {
+      titleAr: 'خدمة منشورة', slug: 'published-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const publishedDelete = await adminRequest(`/api/v1/admin/services/${published.id}`, 'DELETE')
+    expect(publishedDelete.status).toBe(409)
+    await expect(publishedDelete.json()).resolves.toMatchObject({ error: { code: 'DELETE_REQUIRES_CONFIRMATION', details: { impact: { outcome: 'REQUIRES_CONFIRMATION', target: { id: published.id, status: 'PUBLISHED' } } } } })
+    expect((await adminRequest(`/api/v1/admin/services/${published.id}`)).status).toBe(200)
+
+    const nestedService = await contentService.create('services', {
+      titleAr: 'خدمة تفاصيل', slug: 'service-with-details', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('services', nestedService.id, [
+      impactItem('SERVICE_DETAIL_ITEM', 'DELETE', 2, 'service.detailItems', 'SERVICE_DETAILS_CASCADE', { sampleIds: ['20000000-0000-4000-8000-000000000001'] }),
+    ])
+    const nestedDelete = await adminRequest(`/api/v1/admin/services/${nestedService.id}`, 'DELETE')
+    expect(nestedDelete.status).toBe(409)
+    await expect(nestedDelete.json()).resolves.toMatchObject({ error: { code: 'DELETE_REQUIRES_CONFIRMATION', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ effect: 'DELETE', relationshipPath: 'service.detailItems' })]) } } } })
+
+    const country = await contentService.create('countries', {
+      nameAr: 'بلد مرتبط', slug: 'country-with-university', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', status: 'DRAFT',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('countries', country.id, [
+      impactItem('UNIVERSITY', 'BLOCK', 1, 'country.universities', 'COUNTRY_UNIVERSITIES_RESTRICT', { sampleIds: ['20000000-0000-4000-8000-000000000002'] }),
+      impactItem('UNIVERSITY_PROGRAM', 'BLOCK', 1, 'country.universities.programs', 'TRANSITIVE_UNIVERSITY_PROGRAM_RESTRICT'),
+    ])
+    const countryDelete = await adminRequest(`/api/v1/admin/countries/${country.id}`, 'DELETE')
+    expect(countryDelete.status).toBe(409)
+    await expect(countryDelete.json()).resolves.toMatchObject({ error: { code: 'DELETE_BLOCKED', details: { impact: { outcome: 'BLOCKED', items: expect.arrayContaining([expect.objectContaining({ relationshipPath: 'country.universities' }), expect.objectContaining({ relationshipPath: 'country.universities.programs' })]) } } } })
+
+    const university = await contentService.create('universities', {
+      nameAr: 'جامعة مرتبطة', officialName: 'Related University', slug: 'university-with-program', countryId: country.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'DRAFT',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('universities', university.id, [
+      impactItem('UNIVERSITY_PROGRAM', 'BLOCK', 1, 'university.programs', 'UNIVERSITY_PROGRAMS_RESTRICT'),
+      impactItem('UNIVERSITY_GALLERY_IMAGE', 'BLOCK', 1, 'university.galleryImages', 'UNIVERSITY_GALLERY_RESTRICT'),
+    ])
+    await expect((await adminRequest(`/api/v1/admin/universities/${university.id}`, 'DELETE')).json()).resolves.toMatchObject({ error: { code: 'DELETE_BLOCKED', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ resourceType: 'UNIVERSITY_PROGRAM' }), expect.objectContaining({ resourceType: 'UNIVERSITY_GALLERY_IMAGE' })]) } } } })
+
+    const scholarship = await contentService.create('scholarships', {
+      titleAr: 'منحة تفاصيل', slug: 'scholarship-with-details', studyLevel: 'MASTERS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('scholarships', scholarship.id, [
+      impactItem('SCHOLARSHIP_DETAIL_ITEM', 'DELETE', 1, 'scholarship.detailItems', 'SCHOLARSHIP_DETAILS_CASCADE'),
+      impactItem('STUDENT_APPLICATION', 'BLOCK', 1, 'scholarship.studentApplications', 'STUDENT_APPLICATION_HISTORY_PROTECTED'),
+    ])
+    await expect((await adminRequest(`/api/v1/admin/scholarships/${scholarship.id}`, 'DELETE')).json()).resolves.toMatchObject({ error: { code: 'DELETE_BLOCKED', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ resourceType: 'SCHOLARSHIP_DETAIL_ITEM' }), expect.objectContaining({ code: 'STUDENT_APPLICATION_HISTORY_PROTECTED' })]) } } } })
+
+    const uncertain = await contentService.create('services', {
+      titleAr: 'خدمة غير مؤكدة', slug: 'unknown-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'ARCHIVED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('services', uncertain.id, [], false)
+    await expect((await adminRequest(`/api/v1/admin/services/${uncertain.id}`, 'DELETE')).json()).resolves.toMatchObject({ error: { code: 'DELETE_BLOCKED', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ effect: 'UNKNOWN', code: 'RELATIONSHIP_ANALYSIS_INCOMPLETE' })]) } } } })
+
+    const demo = await contentService.create('services', {
+      titleAr: 'خدمة تجريبية', slug: 'demo-e2e-protected-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'ARCHIVED',
+    }, ADMIN_ID)
+    await expect((await adminRequest(`/api/v1/admin/services/${demo.id}`, 'DELETE')).json()).resolves.toMatchObject({ error: { code: 'DELETE_BLOCKED', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ code: 'DEMO_FIXTURE_PROTECTED' })]) } } } })
+
+    const rollback = await contentService.create('services', {
+      titleAr: 'خدمة تدقيق', slug: 'audit-rollback-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
+    }, ADMIN_ID)
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    contentRepository.audit.failNextWrite = true
+    expect((await adminRequest(`/api/v1/admin/services/${rollback.id}`, 'DELETE')).status).toBe(500)
+    expect((await adminRequest(`/api/v1/admin/services/${rollback.id}`)).status).toBe(200)
+    log.mockRestore()
+  })
+
+  it('requires a fresh SUPER_ADMIN challenge before explicitly confirmed hard deletion', async () => {
+    const confirmable = await contentService.create('services', {
+      titleAr: 'خدمة مؤكدة', slug: 'confirmed-service-delete', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('services', confirmable.id, [
+      impactItem('SERVICE_DETAIL_ITEM', 'DELETE', 2, 'service.detailItems', 'SERVICE_DETAILS_EXPLICIT_DELETE'),
+    ])
+
+    const adminPreflight = await adminRequest(`/api/v1/admin/services/${confirmable.id}`, 'DELETE')
+    expect(adminPreflight.status).toBe(409)
+    await expect(adminPreflight.json()).resolves.toMatchObject({ error: { code: 'DELETE_REQUIRES_CONFIRMATION', details: { impact: { outcome: 'REQUIRES_CONFIRMATION' } } } })
+
+    const superPreflight = await adminRequest(`/api/v1/admin/services/${confirmable.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    expect(superPreflight.status).toBe(409)
+    const superPreflightBody = await superPreflight.json() as { error: { details: { confirmation: { challengeId: string; expiresAt: string } } } }
+    expect(superPreflightBody.error.details.confirmation.challengeId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(superPreflightBody.error.details.confirmation.expiresAt).toBe('2026-10-19T12:05:00.000Z')
+
+    const forbidden = await adminRequest(
+      `/api/v1/admin/services/${confirmable.id}/hard-delete/confirm`,
+      'POST',
+      { challengeId: superPreflightBody.error.details.confirmation.challengeId },
+    )
+    expect(forbidden.status).toBe(403)
+    expect((await adminRequest(
+      `/api/v1/admin/services/${confirmable.id}/hard-delete/confirm`,
+      'POST',
+      { challengeId: 'not-a-uuid' },
+      'SUPER_ADMIN',
+    )).status).toBe(400)
+
+    const confirmed = await adminRequest(
+      `/api/v1/admin/services/${confirmable.id}/hard-delete/confirm`,
+      'POST',
+      { challengeId: superPreflightBody.error.details.confirmation.challengeId },
+      'SUPER_ADMIN',
+    )
+    expect(confirmed.status).toBe(200)
+    await expect(confirmed.json()).resolves.toMatchObject({ success: true, data: { id: confirmable.id, impact: { outcome: 'REQUIRES_CONFIRMATION' } } })
+    expect((await adminRequest(`/api/v1/admin/services/${confirmable.id}`)).status).toBe(404)
+    expect(contentRepository.audit.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ actorAdminId: SUPER_ADMIN_ID, action: 'content.services.hard_deleted', resourceId: confirmable.id, metadata: expect.objectContaining({ deletionMode: 'CONFIRMED' }) }),
+    ]))
+
+    const country = await contentService.create('countries', {
+      nameAr: 'بلد للحذف', slug: 'confirmed-country-delete', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.invalid/confirmed-country.webp', imageAltAr: 'صورة بلد للحذف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('countries', country.id, [
+      impactItem('COUNTRY_STUDY_GUIDE_SECTION', 'DELETE', 1, 'country.studyGuideSections', 'COUNTRY_GUIDES_EXPLICIT_DELETE'),
+      impactItem('ARTICLE', 'UNLINK', 1, 'country.articles', 'COUNTRY_ARTICLES_UNLINK'),
+    ])
+    const countryPreflight = await adminRequest(`/api/v1/admin/countries/${country.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    const countryChallenge = (await countryPreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    expect((await adminRequest(`/api/v1/admin/countries/${country.id}/hard-delete/confirm`, 'POST', { challengeId: countryChallenge }, 'SUPER_ADMIN')).status).toBe(200)
+
+    const universityParent = await contentService.create('countries', {
+      nameAr: 'بلد الجامعة', slug: 'university-delete-country', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.invalid/university-country.webp', imageAltAr: 'صورة بلد الجامعة', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const university = await contentService.create('universities', {
+      nameAr: 'جامعة للحذف', officialName: 'Delete University', slug: 'confirmed-university-delete', countryId: universityParent.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('universities', university.id, [
+      impactItem('UNIVERSITY_PROGRAM', 'DELETE', 1, 'university.programs', 'UNIVERSITY_PROGRAMS_EXPLICIT_DELETE'),
+      impactItem('SCHOLARSHIP', 'UNLINK', 1, 'university.scholarships', 'UNIVERSITY_SCHOLARSHIPS_UNLINK'),
+    ])
+    const universityPreflight = await adminRequest(`/api/v1/admin/universities/${university.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    const universityChallenge = (await universityPreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    expect((await adminRequest(`/api/v1/admin/universities/${university.id}/hard-delete/confirm`, 'POST', { challengeId: universityChallenge }, 'SUPER_ADMIN')).status).toBe(200)
+
+    const scholarship = await contentService.create('scholarships', {
+      titleAr: 'منحة للحذف', slug: 'confirmed-scholarship-delete', studyLevel: 'MASTERS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/confirmed-delete', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('scholarships', scholarship.id, [
+      impactItem('SCHOLARSHIP_DETAIL_ITEM', 'DELETE', 1, 'scholarship.detailItems', 'SCHOLARSHIP_DETAILS_EXPLICIT_DELETE'),
+      impactItem('ARTICLE_SCHOLARSHIP', 'UNLINK', 1, 'scholarship.relatedArticles', 'SCHOLARSHIP_ARTICLE_LINKS_UNLINK'),
+    ])
+    const scholarshipPreflight = await adminRequest(`/api/v1/admin/scholarships/${scholarship.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    const scholarshipChallenge = (await scholarshipPreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    expect((await adminRequest(`/api/v1/admin/scholarships/${scholarship.id}/hard-delete/confirm`, 'POST', { challengeId: scholarshipChallenge }, 'SUPER_ADMIN')).status).toBe(200)
+
+    const stale = await contentService.create('services', {
+      titleAr: 'خدمة متغيرة', slug: 'stale-confirmed-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('services', stale.id, [
+      impactItem('SERVICE_DETAIL_ITEM', 'DELETE', 1, 'service.detailItems', 'SERVICE_DETAILS_EXPLICIT_DELETE'),
+    ])
+    const stalePreflight = await adminRequest(`/api/v1/admin/services/${stale.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    const staleChallenge = (await stalePreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    contentRepository.setDeletionImpact('services', stale.id, [
+      impactItem('SERVICE_DETAIL_ITEM', 'DELETE', 2, 'service.detailItems', 'SERVICE_DETAILS_EXPLICIT_DELETE'),
+    ])
+    const staleConfirm = await adminRequest(`/api/v1/admin/services/${stale.id}/hard-delete/confirm`, 'POST', { challengeId: staleChallenge }, 'SUPER_ADMIN')
+    expect(staleConfirm.status).toBe(409)
+    await expect(staleConfirm.json()).resolves.toMatchObject({ error: { code: 'DELETE_REQUIRES_CONFIRMATION', details: { impact: { items: expect.arrayContaining([expect.objectContaining({ count: 2 })]) }, confirmation: { challengeId: expect.any(String) } } } })
+    expect((await adminRequest(`/api/v1/admin/services/${stale.id}`)).status).toBe(200)
+
+    const expired = await contentService.create('services', {
+      titleAr: 'خدمة منتهية', slug: 'expired-confirmed-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'ARCHIVED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('services', expired.id, [
+      impactItem('SERVICE_DETAIL_ITEM', 'DELETE', 1, 'service.detailItems', 'SERVICE_DETAILS_EXPLICIT_DELETE'),
+    ])
+    const expiredPreflight = await adminRequest(`/api/v1/admin/services/${expired.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    const expiredChallenge = (await expiredPreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    contentRepository.expireDeletionChallenge(expiredChallenge)
+    expect((await adminRequest(`/api/v1/admin/services/${expired.id}/hard-delete/confirm`, 'POST', { challengeId: expiredChallenge }, 'SUPER_ADMIN')).status).toBe(409)
+    expect((await adminRequest(`/api/v1/admin/services/${expired.id}`)).status).toBe(200)
+
+    const concurrent = await contentService.create('services', {
+      titleAr: 'خدمة متزامنة', slug: 'concurrent-confirmed-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('services', concurrent.id, [
+      impactItem('SERVICE_DETAIL_ITEM', 'DELETE', 1, 'service.detailItems', 'SERVICE_DETAILS_EXPLICIT_DELETE'),
+    ])
+    const concurrentPreflight = await adminRequest(`/api/v1/admin/services/${concurrent.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    const concurrentChallenge = (await concurrentPreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    const concurrentResults = await Promise.all([
+      adminRequest(`/api/v1/admin/services/${concurrent.id}/hard-delete/confirm`, 'POST', { challengeId: concurrentChallenge }, 'SUPER_ADMIN'),
+      adminRequest(`/api/v1/admin/services/${concurrent.id}/hard-delete/confirm`, 'POST', { challengeId: concurrentChallenge }, 'SUPER_ADMIN'),
+    ])
+    expect(concurrentResults.map(({ status }) => status).sort()).toEqual([200, 404])
+    expect((await adminRequest(`/api/v1/admin/services/${concurrent.id}`)).status).toBe(404)
+
+    const rollback = await contentService.create('services', {
+      titleAr: 'خدمة تراجع', slug: 'confirmed-rollback-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('services', rollback.id, [
+      impactItem('SERVICE_DETAIL_ITEM', 'DELETE', 1, 'service.detailItems', 'SERVICE_DETAILS_EXPLICIT_DELETE'),
+    ])
+    const rollbackPreflight = await adminRequest(`/api/v1/admin/services/${rollback.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
+    const rollbackChallenge = (await rollbackPreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    contentRepository.audit.failNextWrite = true
+    expect((await adminRequest(`/api/v1/admin/services/${rollback.id}/hard-delete/confirm`, 'POST', { challengeId: rollbackChallenge }, 'SUPER_ADMIN')).status).toBe(500)
+    expect((await adminRequest(`/api/v1/admin/services/${rollback.id}`)).status).toBe(200)
+    log.mockRestore()
+  })
+
+  it('documents all 43 content operations and exposes the four hard-delete confirmation routes', async () => {
     const response = await app.request('/openapi.json')
     const document = await response.json() as {
       paths: Record<string, Record<string, { tags?: string[] }>>
@@ -525,7 +928,13 @@ describe('content management APIs', () => {
       expect(document.paths[`/api/v1/admin/${resource}`]?.post).toBeDefined()
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.get).toBeDefined()
       expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.patch).toBeDefined()
-      expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeUndefined()
+      if (resource === 'articles') {
+        expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeUndefined()
+        expect(document.paths[`/api/v1/admin/${resource}/{id}/hard-delete/confirm`]?.post).toBeUndefined()
+      } else {
+        expect(document.paths[`/api/v1/admin/${resource}/{id}`]?.delete).toBeDefined()
+        expect(document.paths[`/api/v1/admin/${resource}/{id}/hard-delete/confirm`]?.post).toBeDefined()
+      }
       const label = resource[0]?.toUpperCase() + resource.slice(1)
       expect(document.paths[`/api/v1/${resource}`]?.get?.tags).toEqual([`Public — ${label}`])
       expect(document.paths[`/api/v1/admin/${resource}`]?.post?.tags).toEqual([`Admin — ${label}`])

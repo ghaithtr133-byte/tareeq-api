@@ -33,7 +33,9 @@ const actionPrefix: Record<DetailParent, string> = {
 }
 
 const output = (parent: DetailParent, value: Record<string, unknown>) => ({
-  id: value.id, titleAr: value.titleAr, descriptionAr: parent === 'COUNTRY_GUIDE' ? value.bodyAr : value.descriptionAr,
+  id: value.id,
+  ...(parent === 'COUNTRY_GUIDE' ? { countryId: value.countryId, kind: 'STEP' } : parent === 'SERVICE' ? { serviceId: value.serviceId, kind: value.kind } : { scholarshipId: value.scholarshipId, kind: value.kind }),
+  titleAr: value.titleAr, descriptionAr: parent === 'COUNTRY_GUIDE' ? value.bodyAr : value.descriptionAr,
   displayOrder: value.displayOrder,
   ...(parent === 'SCHOLARSHIP' ? {
     kind: value.kind, category: value.category, amount: value.amount === null || value.amount === undefined ? null : String(value.amount),
@@ -54,6 +56,7 @@ export class ContentDetailsService {
   }
 
   async list(parent: DetailParent, parentId: string, kind?: DetailKind) {
+    this.validate(parent, kind === undefined ? {} : { kind })
     if (!await this.parentExists(parent, parentId)) throw parentNotFound()
     const prisma = getPrisma()
     const rows = await ({

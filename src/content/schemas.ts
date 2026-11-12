@@ -239,6 +239,7 @@ export const universitySchema = z.object({
   overviewAr: z.string(), overviewEn: z.string().nullable(), officialWebsite: z.string().nullable(),
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   logoUrl: z.string().nullable(), logoAltAr: z.string().nullable(), logoAltEn: z.string().nullable(),
+  displayOrder: z.number().int(),
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).optional(),
   city: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string() }).nullable().optional(),
   ...adminFields,
@@ -251,6 +252,7 @@ export const scholarshipSchema = z.object({
   descriptionAr: z.string(), descriptionEn: z.string().nullable(), verifiedDeadline: nullableDateSchema,
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   officialSourceUrl: z.string().nullable(), applicationStatus: applicationStatusSchema,
+  displayOrder: z.number().int(),
   effectiveApplicationStatus: applicationStatusSchema.optional(),
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).nullable().optional(),
   university: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
@@ -274,6 +276,7 @@ export const articleSchema = z.object({
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).nullable().optional(),
   university: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
   scholarship: z.object({ id: z.uuid(), slug: z.string(), titleAr: z.string() }).nullable().optional(),
+  displayOrder: z.number().int(),
   ...adminFields,
 }).openapi('Article')
 
@@ -346,7 +349,7 @@ const queryFor = (resource: ContentResource) => {
       city: slugSchema.optional().openapi({ description: 'Normalized City slug.' }),
       universityType: universityTypeSchema.optional(),
       featured: featuredQuery,
-      sort: z.enum(['newest', 'name']).optional().default('newest').openapi({ description: 'Sort newest first or by Arabic name.' }),
+        sort: z.enum(['newest', 'name']).optional().openapi({ description: 'When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.' }),
     },
     scholarships: {
       search: searchQuery,
@@ -364,7 +367,7 @@ const queryFor = (resource: ContentResource) => {
       universityCity: slugSchema.optional().openapi({ description: 'Normalized City slug of the associated published University.', example: 'bucharest' }),
       universityType: universityTypeSchema.optional().openapi({ description: 'Type of the associated published University.' }),
       universityFeatured: featuredQuery.openapi({ description: 'Filter by the associated published University featured state.', example: 'true' }),
-      sort: z.enum(['newest', 'deadline']).optional().default('newest').openapi({ description: 'Sort newest first or by earliest non-null deadline.' }),
+        sort: z.enum(['newest', 'deadline']).optional().openapi({ description: 'When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.' }),
     },
     services: {
       featured: featuredQuery,
@@ -374,7 +377,7 @@ const queryFor = (resource: ContentResource) => {
       search: searchQuery,
       country: slugSchema.optional().openapi({ description: 'Related Country slug.' }),
       featured: featuredQuery,
-      sort: z.literal('newest').optional().default('newest').openapi({ description: 'Sort newest first.' }),
+        sort: z.literal('newest').optional().openapi({ description: 'When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.' }),
     },
   }[resource]
   return z.object({ ...pageQuery, ...resourceFields }).strict()
@@ -402,6 +405,31 @@ export const uuidParamSchema = z.object({
     example: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d',
   }),
 })
+export const contentReorderSchema = z.object({
+  orderedIds: z.array(z.uuid()).max(500).superRefine((ids, context) => {
+    if (new Set(ids).size !== ids.length) context.addIssue({ code: 'custom', message: 'Duplicate IDs are not allowed.' })
+  }),
+}).strict().openapi('ContentReorderRequest')
+export const contentReorderResponseSchema = successEnvelopeSchema(z.object({
+  items: z.array(z.object({ id: z.uuid(), displayOrder: z.number().int() })),
+})).openapi('ContentReorderResponse')
+export const deletionImpactItemSchema = z.object({
+  resourceType: z.string(), effect: z.enum(['DELETE', 'SET_NULL', 'UNLINK', 'PRESERVE', 'BLOCK', 'UNKNOWN']),
+  count: z.number().int().nonnegative(), relationshipPath: z.string(), sampleIds: z.array(z.uuid()),
+  code: z.string(), canConfirm: z.boolean(), blocked: z.boolean(),
+}).openapi('DeletionImpactItem')
+export const deletionImpactSchema = z.object({
+  target: z.object({ resource: z.enum(['countries', 'universities', 'scholarships', 'services']), id: z.uuid(), slug: z.string(), status: publicationStatusSchema }),
+  outcome: z.enum(['SAFE', 'REQUIRES_CONFIRMATION', 'BLOCKED']),
+  items: z.array(deletionImpactItemSchema),
+}).openapi('DeletionImpact')
+export const contentDeleteResponseSchema = successEnvelopeSchema(z.object({
+  id: z.uuid(),
+  impact: deletionImpactSchema,
+})).openapi('ContentDeleteResponse')
+export const hardDeleteConfirmationSchema = z.object({
+  challengeId: z.uuid(),
+}).strict().openapi('HardDeleteConfirmationRequest')
 export const slugParamSchema = z.object({
   slug: slugSchema.openapi({ description: 'Stable public content slug.' }),
 })

@@ -45,7 +45,7 @@ export type DetailsListQuery = { page: number; limit: number; status?: Publicati
 
 export type DetailsMutationResult<T> =
   | { outcome: 'UPDATED'; record: T }
-  | { outcome: 'NOT_FOUND' | 'UNIVERSITY_NOT_FOUND' | 'PROGRAM_NOT_FOUND' | 'PROGRAM_UNIVERSITY_MISMATCH' | 'PUBLICATION_REQUIREMENTS' }
+  | { outcome: 'NOT_FOUND' | 'UNIVERSITY_NOT_FOUND' | 'PROGRAM_NOT_FOUND' | 'PROGRAM_UNIVERSITY_MISMATCH' | 'PUBLICATION_REQUIREMENTS' | 'GALLERY_LIMIT_REACHED' }
 
 export type GalleryReorderResult =
   | { outcome: 'UPDATED'; records: GalleryImageRecord[] }

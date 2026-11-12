@@ -20,6 +20,8 @@ import type {
 } from './types.js'
 
 const programSelect = { id: true, nameAr: true, nameEn: true, studyLevel: true } as const
+const GALLERY_MUTATION_LOCK = 9_000_020
+const MAX_ACTIVE_GALLERY_IMAGES = 10
 const auditMetadata = (value: Record<string, unknown>) => value as Prisma.InputJsonValue
 type AdmissionWithProgram = UniversityAdmissionRequirement & {
   program: Pick<UniversityProgram, 'id' | 'nameAr' | 'nameEn' | 'studyLevel'> | null
@@ -122,7 +124,10 @@ export class PrismaUniversityDetailsRepository implements UniversityDetailsRepos
 
   async createGalleryImage(universityId: string, input: GalleryImageInput, actorAdminId: string, now: Date) {
     return getPrisma().$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${GALLERY_MUTATION_LOCK})`
       if (await transaction.university.count({ where: { id: universityId } }) !== 1) return { outcome: 'UNIVERSITY_NOT_FOUND' as const }
+      const activeCount = await transaction.universityGalleryImage.count({ where: { universityId, status: { not: 'ARCHIVED' } } })
+      if (input.status !== 'ARCHIVED' && activeCount >= MAX_ACTIVE_GALLERY_IMAGES) return { outcome: 'GALLERY_LIMIT_REACHED' as const }
       const maximum = await transaction.universityGalleryImage.aggregate({ where: { universityId, status: { not: 'ARCHIVED' } }, _max: { displayOrder: true } })
       const record = await transaction.universityGalleryImage.create({ data: { ...input, universityId, displayOrder: (maximum._max.displayOrder ?? -1) + 1, publishedAt: input.status === 'PUBLISHED' ? now : null } })
       await transaction.adminAuditLog.create({ data: {
@@ -135,9 +140,14 @@ export class PrismaUniversityDetailsRepository implements UniversityDetailsRepos
 
   async updateGalleryImage(id: string, input: GalleryImageUpdate, actorAdminId: string, now: Date) {
     return getPrisma().$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${GALLERY_MUTATION_LOCK})`
       const current = await transaction.universityGalleryImage.findUnique({ where: { id } })
       if (!current) return { outcome: 'NOT_FOUND' as const }
       const nextStatus = input.status ?? current.status
+      if (current.status === 'ARCHIVED' && nextStatus !== 'ARCHIVED') {
+        const activeCount = await transaction.universityGalleryImage.count({ where: { universityId: current.universityId, status: { not: 'ARCHIVED' } } })
+        if (activeCount >= MAX_ACTIVE_GALLERY_IMAGES) return { outcome: 'GALLERY_LIMIT_REACHED' as const }
+      }
       const record = await transaction.universityGalleryImage.update({ where: { id }, data: { ...input, ...(nextStatus === 'PUBLISHED' && !current.publishedAt ? { publishedAt: now } : {}) } })
       await transaction.adminAuditLog.create({ data: {
         actorAdminId, action: nextStatus === 'PUBLISHED' && current.status !== 'PUBLISHED' ? 'university_gallery_image.published' : 'university_gallery_image.updated',

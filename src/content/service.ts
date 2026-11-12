@@ -11,6 +11,7 @@ import type {
   ContentWriteData,
   PublicationStatus,
 } from './types.js'
+import type { DeletionImpact } from './deletion-impact.js'
 
 const labels: Record<ContentResource, string> = {
   countries: 'Country',
@@ -19,6 +20,8 @@ const labels: Record<ContentResource, string> = {
   services: 'Service',
   articles: 'Article',
 }
+
+const HARD_DELETE_CHALLENGE_TTL_MS = 5 * 60 * 1000
 
 const relationError = (field: string, message: string) =>
   new ApiError(400, 'RELATIONSHIP_INVALID', 'A related content selection is invalid.', {
@@ -171,6 +174,83 @@ export class ContentService {
     }
     const map = (items: Array<{ value: string; count: number }>, labels: Record<string, string>) => items.map((item) => ({ ...item, labelAr: labels[item.value] ?? null }))
     return { studyLevels: map(options.studyLevels, studyLevelLabels), fundingTypes: map(options.fundingTypes, fundingTypeLabels) }
+  }
+
+  async reorder(resource: ContentResource, orderedIds: string[], actorAdminId: string) {
+    const result = await this.repository.reorder(resource, orderedIds, actorAdminId)
+    if (result.outcome === 'ORDER_SET_MISMATCH') throw new ApiError(409, 'ORDER_SET_MISMATCH', 'Submit every reorderable record exactly once.', { fields: { orderedIds: ['Refresh the complete administrative collection and retry.'] } })
+    return { items: result.records.map((item) => ({ id: item.id, displayOrder: Number(item.displayOrder) })) }
+  }
+
+  async delete(
+    resource: ContentResource,
+    id: string,
+    actorAdminId: string,
+    actorRole: 'ADMIN' | 'SUPER_ADMIN',
+  ): Promise<{ id: string; impact: DeletionImpact }> {
+    const result = await this.repository.deleteIfSafe(resource, id, actorAdminId)
+    if (result.outcome === 'NOT_FOUND') {
+      throw new ApiError(404, 'CONTENT_NOT_FOUND', `${labels[resource]} not found.`)
+    }
+    if (result.outcome === 'BLOCKED') {
+      throw new ApiError(409, 'DELETE_BLOCKED', 'Deletion is blocked by protected or unverifiable dependencies.', {
+        impact: result.impact,
+      })
+    }
+    if (result.outcome === 'REQUIRES_CONFIRMATION') {
+      if (actorRole === 'SUPER_ADMIN') {
+        const issued = await this.repository.issueDeletionChallenge(
+          resource,
+          id,
+          actorAdminId,
+          new Date(this.now().getTime() + HARD_DELETE_CHALLENGE_TTL_MS),
+        )
+        if (issued.outcome === 'NOT_FOUND') {
+          throw new ApiError(404, 'CONTENT_NOT_FOUND', `${labels[resource]} not found.`)
+        }
+        if (issued.outcome === 'BLOCKED') {
+          throw new ApiError(409, 'DELETE_BLOCKED', 'Deletion is blocked by protected or unverifiable dependencies.', { impact: issued.impact })
+        }
+        if (issued.outcome === 'SAFE') {
+          return this.delete(resource, id, actorAdminId, 'ADMIN')
+        }
+        throw new ApiError(409, 'DELETE_REQUIRES_CONFIRMATION', 'Deletion requires a short-lived SUPER_ADMIN confirmation challenge.', {
+          impact: issued.impact,
+          confirmation: { challengeId: issued.challenge.id, expiresAt: issued.challenge.expiresAt },
+        })
+      }
+      throw new ApiError(409, 'DELETE_REQUIRES_CONFIRMATION', 'Deletion would affect related records or published content.', {
+        impact: result.impact,
+      })
+    }
+    return { id: result.id, impact: result.impact }
+  }
+
+  async confirmHardDelete(resource: ContentResource, id: string, challengeId: string, actorAdminId: string) {
+    const result = await this.repository.confirmHardDelete(resource, id, challengeId, actorAdminId, this.now())
+    if (result.outcome === 'NOT_FOUND') {
+      throw new ApiError(404, 'CONTENT_NOT_FOUND', `${labels[resource]} not found.`)
+    }
+    if (result.outcome === 'BLOCKED') {
+      throw new ApiError(409, 'DELETE_BLOCKED', 'Deletion is blocked by protected or unverifiable dependencies.', { impact: result.impact })
+    }
+    if (result.outcome === 'STALE') {
+      let confirmation: { challengeId: string; expiresAt: Date } | undefined
+      if (result.impact.outcome === 'REQUIRES_CONFIRMATION') {
+        const issued = await this.repository.issueDeletionChallenge(
+          resource,
+          id,
+          actorAdminId,
+          new Date(this.now().getTime() + HARD_DELETE_CHALLENGE_TTL_MS),
+        )
+        if (issued.outcome === 'ISSUED') confirmation = { challengeId: issued.challenge.id, expiresAt: issued.challenge.expiresAt }
+      }
+      throw new ApiError(409, 'DELETE_REQUIRES_CONFIRMATION', 'The confirmation challenge is stale; review the updated deletion impact.', {
+        impact: result.impact,
+        ...(confirmation ? { confirmation } : {}),
+      })
+    }
+    return { id: result.id, impact: result.impact }
   }
 
   async create(

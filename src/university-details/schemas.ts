@@ -54,7 +54,7 @@ export const galleryCreateSchema = z.object({
   status: publicationStatusSchema.optional().default('DRAFT'),
 }).strict().openapi('UniversityGalleryImageCreateRequest')
 export const galleryUpdateSchema = galleryCreateSchema.partial().strict().refine((value) => Object.keys(value).length > 0, 'At least one field must be provided.').openapi('UniversityGalleryImageUpdateRequest')
-export const galleryReorderSchema = z.object({ orderedIds: z.array(uuid).max(100).superRefine((items, context) => {
+export const galleryReorderSchema = z.object({ orderedIds: z.array(uuid).max(500).superRefine((items, context) => {
   if (new Set(items).size !== items.length) context.addIssue({ code: 'custom', message: 'Duplicate image IDs are not allowed.' })
 }) }).strict().openapi('UniversityGalleryReorderRequest')
 

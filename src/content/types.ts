@@ -1,4 +1,5 @@
 import type { AuditIntent } from '../audit/types.js'
+import type { ConfirmedDeletionExecution, DeletionChallengeIssue, DeletionExecution, DeletionImpact } from './deletion-impact.js'
 
 export const contentResources = [
   'countries',
@@ -76,6 +77,11 @@ export interface ContentRepository {
   findCityById(id: string): Promise<CityReference | null>
   countScholarshipsByIds(ids: string[]): Promise<number>
   scholarshipFilterOptions(): Promise<{ studyLevels: Array<{ value: string; count: number }>; fundingTypes: Array<{ value: string; count: number }> }>
+  reorder(resource: ContentResource, orderedIds: string[], actorAdminId: string): Promise<{ outcome: 'UPDATED'; records: ContentEntity[] } | { outcome: 'ORDER_SET_MISMATCH' }>
+  deletionImpact(resource: ContentResource, id: string): Promise<DeletionImpact | null>
+  deleteIfSafe(resource: ContentResource, id: string, actorAdminId: string): Promise<DeletionExecution>
+  issueDeletionChallenge(resource: ContentResource, id: string, actorAdminId: string, expiresAt: Date): Promise<DeletionChallengeIssue>
+  confirmHardDelete(resource: ContentResource, id: string, challengeId: string, actorAdminId: string, now: Date): Promise<ConfirmedDeletionExecution>
   create(
     resource: ContentResource,
     data: ContentWriteData,

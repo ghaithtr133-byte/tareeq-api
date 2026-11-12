@@ -6,6 +6,16 @@ import type {
   ContentWriteData,
 } from '../../src/content/types.js'
 import type { AuditIntent } from '../../src/audit/types.js'
+import {
+  analyzeDeletionImpact,
+  deletionImpactDigest,
+  impactItem,
+  type ConfirmedDeletionExecution,
+  type DeletionChallengeIssue,
+  type DeletionExecution,
+  type DeletionImpact,
+  type DeletionImpactItem,
+} from '../../src/content/deletion-impact.js'
 import { InMemoryAuditRepository } from './in-memory-audit-repository.js'
 import type { InMemoryUniversityDirectoryRepository } from './in-memory-university-directory-repository.js'
 import type { UniversityDirectoryFilters } from '../../src/university-directory/types.js'
@@ -14,6 +24,138 @@ const textIncludes = (value: unknown, search: string) =>
   typeof value === 'string' && value.toLocaleLowerCase().includes(search.toLocaleLowerCase())
 
 export class InMemoryContentRepository implements ContentRepository {
+  private readonly configuredDeletionImpacts = new Map<string, { items: DeletionImpactItem[]; analysisComplete: boolean }>()
+  private readonly deletionChallenges = new Map<string, {
+    actorAdminId: string
+    resource: ContentResource
+    resourceId: string
+    impactHash: string
+    expiresAt: Date
+    consumedAt: Date | null
+  }>()
+  private readonly confirmingChallenges = new Set<string>()
+
+  setDeletionImpact(
+    resource: ContentResource,
+    id: string,
+    items: DeletionImpactItem[],
+    analysisComplete = true,
+  ) {
+    this.configuredDeletionImpacts.set(`${resource}:${id}`, { items, analysisComplete })
+  }
+
+  expireDeletionChallenge(id: string) {
+    const challenge = this.deletionChallenges.get(id)
+    if (challenge) challenge.expiresAt = new Date(0)
+  }
+
+  async deletionImpact(resource: ContentResource, id: string): Promise<DeletionImpact | null> {
+    if (resource === 'articles') return null
+    const target = this.records.get(resource)?.find((record) => record.id === id)
+    if (!target) return null
+    const configured = this.configuredDeletionImpacts.get(`${resource}:${id}`) ?? { items: [], analysisComplete: true }
+    const auditCount = this.audit.events.filter((event) => event.resourceId === id).length
+    const items = [
+      ...configured.items,
+      impactItem('ADMIN_AUDIT_LOG', 'PRESERVE', auditCount, `${resource}.auditHistory`, 'AUDIT_HISTORY_PRESERVED'),
+    ]
+    if (target.slug.startsWith('demo-e2e-')) {
+      items.push(impactItem('DEMO_FIXTURE', 'BLOCK', 1, `${resource}.demoFixture`, 'DEMO_FIXTURE_PROTECTED', { sampleIds: [id], canConfirm: false, blocked: true }))
+    }
+    return analyzeDeletionImpact({
+      target: { resource, id, slug: target.slug, status: target.status },
+      items,
+      analysisComplete: configured.analysisComplete,
+    })
+  }
+
+  async deleteIfSafe(resource: ContentResource, id: string, actorAdminId: string): Promise<DeletionExecution> {
+    const impact = await this.deletionImpact(resource, id)
+    if (!impact) return { outcome: 'NOT_FOUND' }
+    if (impact.outcome === 'BLOCKED') return { outcome: 'BLOCKED', impact }
+    if (impact.outcome === 'REQUIRES_CONFIRMATION') return { outcome: 'REQUIRES_CONFIRMATION', impact }
+    await this.audit.append({
+      actorAdminId,
+      action: `content.${resource}.hard_deleted`,
+      resourceType: ({ countries: 'COUNTRY', universities: 'UNIVERSITY', scholarships: 'SCHOLARSHIP', services: 'SERVICE', articles: 'ARTICLE' } as const)[resource],
+      metadata: { deletionMode: 'SAFE_INITIAL', previousStatus: impact.target.status },
+    }, id)
+    const records = this.records.get(resource) ?? []
+    const index = records.findIndex((record) => record.id === id)
+    if (index >= 0) records.splice(index, 1)
+    return { outcome: 'DELETED', id, impact }
+  }
+
+  async issueDeletionChallenge(
+    resource: ContentResource,
+    id: string,
+    actorAdminId: string,
+    expiresAt: Date,
+  ): Promise<DeletionChallengeIssue> {
+    const impact = await this.deletionImpact(resource, id)
+    if (!impact) return { outcome: 'NOT_FOUND' }
+    if (impact.outcome === 'BLOCKED') return { outcome: 'BLOCKED', impact }
+    if (impact.outcome === 'SAFE') return { outcome: 'SAFE', impact }
+    const challenge = { id: crypto.randomUUID(), expiresAt }
+    this.deletionChallenges.set(challenge.id, {
+      actorAdminId,
+      resource,
+      resourceId: id,
+      impactHash: deletionImpactDigest(impact),
+      expiresAt,
+      consumedAt: null,
+    })
+    return { outcome: 'ISSUED', impact, challenge }
+  }
+
+  async confirmHardDelete(
+    resource: ContentResource,
+    id: string,
+    challengeId: string,
+    actorAdminId: string,
+    now: Date,
+  ): Promise<ConfirmedDeletionExecution> {
+    const impact = await this.deletionImpact(resource, id)
+    if (!impact) return { outcome: 'NOT_FOUND' }
+    if (impact.outcome === 'BLOCKED') return { outcome: 'BLOCKED', impact }
+    const challenge = this.deletionChallenges.get(challengeId)
+    if (
+      !challenge ||
+      challenge.actorAdminId !== actorAdminId ||
+      challenge.resource !== resource ||
+      challenge.resourceId !== id ||
+      challenge.consumedAt !== null ||
+      challenge.expiresAt <= now ||
+      challenge.impactHash !== deletionImpactDigest(impact) ||
+      impact.outcome !== 'REQUIRES_CONFIRMATION'
+    ) return { outcome: 'STALE', impact }
+    if (this.confirmingChallenges.has(challengeId)) return { outcome: 'STALE', impact }
+    this.confirmingChallenges.add(challengeId)
+    try {
+      await this.audit.append({
+        actorAdminId,
+        action: `content.${resource}.hard_deleted`,
+        resourceType: ({ countries: 'COUNTRY', universities: 'UNIVERSITY', scholarships: 'SCHOLARSHIP', services: 'SERVICE', articles: 'ARTICLE' } as const)[resource],
+        metadata: { deletionMode: 'CONFIRMED', challengeId },
+      }, id)
+      challenge.consumedAt = now
+      const records = this.records.get(resource) ?? []
+      const index = records.findIndex((record) => record.id === id)
+      if (index >= 0) records.splice(index, 1)
+      return { outcome: 'DELETED', id, impact }
+    } finally {
+      this.confirmingChallenges.delete(challengeId)
+    }
+  }
+
+  async reorder(resource: ContentResource, orderedIds: string[], audit: AuditIntent['actorAdminId']) {
+    const records = (this.records.get(resource) ?? []).filter((item) => item.status !== 'ARCHIVED')
+    if (records.length !== orderedIds.length || new Set(orderedIds).size !== orderedIds.length || records.some((item) => !orderedIds.includes(item.id))) return { outcome: 'ORDER_SET_MISMATCH' as const }
+    orderedIds.forEach((id, displayOrder) => { const item = records.find((record) => record.id === id)!; item.displayOrder = displayOrder })
+    const auditResourceId = orderedIds[0]
+    if (auditResourceId) await this.audit.append({ actorAdminId: audit, action: `content.${resource}.reordered`, resourceType: ({ countries: 'COUNTRY', universities: 'UNIVERSITY', scholarships: 'SCHOLARSHIP', services: 'SERVICE', articles: 'ARTICLE' } as const)[resource], metadata: { count: orderedIds.length } }, auditResourceId)
+    return { outcome: 'UPDATED' as const, records: orderedIds.map((id) => records.find((item) => item.id === id)!) }
+  }
   private readonly records = new Map<ContentResource, ContentEntity[]>([
     ['countries', []],
     ['universities', []],
@@ -104,8 +246,14 @@ export class InMemoryContentRepository implements ContentRepository {
       })
     }
     records.sort((left, right) => {
-      if (query.sort === 'manual') {
-        return Number(left.displayOrder ?? 0) - Number(right.displayOrder ?? 0) || left.id.localeCompare(right.id)
+      if (publicOnly && resource === 'scholarships' && left.featured !== right.featured) {
+        return left.featured ? -1 : 1
+      }
+      const manualByDefault = publicOnly && query.sort === undefined && (
+        resource === 'universities' || resource === 'scholarships' || resource === 'articles'
+      )
+      if (query.sort === 'manual' || manualByDefault) {
+        return Number(left.displayOrder ?? 0) - Number(right.displayOrder ?? 0) || right.createdAt.getTime() - left.createdAt.getTime() || left.id.localeCompare(right.id)
       }
       if (query.sort === 'name') {
         return String(left.nameAr).localeCompare(String(right.nameAr), 'ar') || left.id.localeCompare(right.id)
@@ -166,6 +314,7 @@ export class InMemoryContentRepository implements ContentRepository {
     const record = {
       id: crypto.randomUUID(),
       featured: false,
+      displayOrder: 0,
       status: 'DRAFT',
       publishedAt: null,
       createdAt: now,

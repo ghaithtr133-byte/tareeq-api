@@ -3,6 +3,16 @@ import type { Prisma } from '../generated/prisma/client.js'
 import { ApiError } from '../shared/http.js'
 import type { AuditIntent } from '../audit/types.js'
 import type { UniversityDirectoryFilters } from '../university-directory/types.js'
+import {
+  analyzeDeletionImpact,
+  deletionImpactDigest,
+  impactItem,
+  type ConfirmedDeletionExecution,
+  type DeletionChallengeIssue,
+  type DeletionExecution,
+  type DeletionImpact,
+  type DeletionImpactItem,
+} from './deletion-impact.js'
 import type {
   ContentEntity,
   ContentListQuery,
@@ -133,7 +143,355 @@ const handleWriteError = (error: unknown): never => {
   throw error
 }
 
+type DatabaseClient = ReturnType<typeof getPrisma> | Prisma.TransactionClient
+type CountAndSamples = { count: number; sampleIds: string[] }
+
+const countAndSamples = async (
+  count: Promise<number>,
+  samples: Promise<Array<{ id: string }>>,
+): Promise<CountAndSamples> => {
+  const [total, records] = await Promise.all([count, samples])
+  return { count: total, sampleIds: records.map(({ id }) => id) }
+}
+
+const targetAuditResourceType = (resource: ContentResource) => ({
+  countries: 'COUNTRY', universities: 'UNIVERSITY', scholarships: 'SCHOLARSHIP', services: 'SERVICE', articles: 'ARTICLE',
+} as const)[resource]
+
 export class PrismaContentRepository implements ContentRepository {
+  async deletionImpact(resource: ContentResource, id: string): Promise<DeletionImpact | null> {
+    return this.buildDeletionImpact(getPrisma(), resource, id)
+  }
+
+  async issueDeletionChallenge(
+    resource: ContentResource,
+    id: string,
+    actorAdminId: string,
+    expiresAt: Date,
+  ): Promise<DeletionChallengeIssue> {
+    return getPrisma().$transaction(async (transaction) => {
+      if (!(await this.lockTarget(transaction, resource, id))) return { outcome: 'NOT_FOUND' }
+      const impact = await this.buildDeletionImpact(transaction, resource, id)
+      if (!impact) return { outcome: 'NOT_FOUND' }
+      if (impact.outcome === 'BLOCKED') return { outcome: 'BLOCKED', impact }
+      if (impact.outcome === 'SAFE') return { outcome: 'SAFE', impact }
+      const challenge = await transaction.hardDeleteChallenge.create({ data: {
+        actorAdminId,
+        resourceType: targetAuditResourceType(resource),
+        resourceId: id,
+        impactHash: deletionImpactDigest(impact),
+        expiresAt,
+      } })
+      return { outcome: 'ISSUED', impact, challenge: { id: challenge.id, expiresAt: challenge.expiresAt } }
+    })
+  }
+
+  async confirmHardDelete(
+    resource: ContentResource,
+    id: string,
+    challengeId: string,
+    actorAdminId: string,
+    now: Date,
+  ): Promise<ConfirmedDeletionExecution> {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        if (!(await this.lockTarget(transaction, resource, id))) return { outcome: 'NOT_FOUND' as const }
+        const impact = await this.buildDeletionImpact(transaction, resource, id)
+        if (!impact) return { outcome: 'NOT_FOUND' as const }
+        if (impact.outcome === 'BLOCKED') return { outcome: 'BLOCKED' as const, impact }
+
+        const challenge = await transaction.hardDeleteChallenge.findUnique({ where: { id: challengeId } })
+        if (
+          !challenge ||
+          challenge.actorAdminId !== actorAdminId ||
+          challenge.resourceType !== targetAuditResourceType(resource) ||
+          challenge.resourceId !== id ||
+          challenge.consumedAt !== null ||
+          challenge.expiresAt <= now ||
+          challenge.impactHash !== deletionImpactDigest(impact) ||
+          impact.outcome !== 'REQUIRES_CONFIRMATION'
+        ) return { outcome: 'STALE' as const, impact }
+
+        await this.executeConfirmedDeletion(transaction, resource, id)
+        await transaction.hardDeleteChallenge.update({ where: { id: challenge.id }, data: { consumedAt: now } })
+        await transaction.adminAuditLog.create({ data: {
+          actorAdminId,
+          action: `content.${resource}.hard_deleted`,
+          resourceType: targetAuditResourceType(resource),
+          resourceId: id,
+          metadata: {
+            deletionMode: 'CONFIRMED',
+            previousStatus: impact.target.status,
+            challengeId: challenge.id,
+            effects: impact.items
+              .filter((item) => item.effect === 'DELETE' || item.effect === 'UNLINK' || item.effect === 'SET_NULL')
+              .map(({ resourceType, effect, count, relationshipPath }) => ({ resourceType, effect, count, relationshipPath })),
+          },
+        } })
+        return { outcome: 'DELETED' as const, id, impact }
+      })
+    } catch (error) {
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined
+      if (code === 'P2003') {
+        const impact = await this.deletionImpact(resource, id)
+        if (impact) return { outcome: 'BLOCKED', impact: { ...impact, outcome: 'BLOCKED', items: [...impact.items, impactItem('UNKNOWN_REFERENCE', 'UNKNOWN', 0, `${resource}.confirm`, 'FOREIGN_KEY_REVALIDATION_FAILED', { canConfirm: false, blocked: true })] } }
+      }
+      throw error
+    }
+  }
+
+  async deleteIfSafe(resource: ContentResource, id: string, actorAdminId: string): Promise<DeletionExecution> {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        if (!(await this.lockTarget(transaction, resource, id))) return { outcome: 'NOT_FOUND' as const }
+        const impact = await this.buildDeletionImpact(transaction, resource, id)
+        if (!impact) return { outcome: 'NOT_FOUND' as const }
+        if (impact.outcome === 'BLOCKED') return { outcome: 'BLOCKED' as const, impact }
+        if (impact.outcome === 'REQUIRES_CONFIRMATION') return { outcome: 'REQUIRES_CONFIRMATION' as const, impact }
+        await ({
+          countries: () => transaction.country.delete({ where: { id } }),
+          universities: () => transaction.university.delete({ where: { id } }),
+          scholarships: () => transaction.scholarship.delete({ where: { id } }),
+          services: () => transaction.service.delete({ where: { id } }),
+          articles: () => Promise.resolve(undefined),
+        })[resource]()
+        await transaction.adminAuditLog.create({ data: {
+          actorAdminId,
+          action: `content.${resource}.hard_deleted`,
+          resourceType: targetAuditResourceType(resource),
+          resourceId: id,
+          metadata: { deletionMode: 'SAFE_INITIAL', previousStatus: impact.target.status },
+        } })
+        return { outcome: 'DELETED' as const, id, impact }
+      })
+    } catch (error) {
+      const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined
+      if (code === 'P2003') {
+        const impact = await this.deletionImpact(resource, id)
+        if (impact) return impact.outcome === 'REQUIRES_CONFIRMATION'
+          ? { outcome: 'REQUIRES_CONFIRMATION', impact }
+          : { outcome: 'BLOCKED', impact: { ...impact, outcome: 'BLOCKED', items: [...impact.items, impactItem('UNKNOWN_REFERENCE', 'UNKNOWN', 0, `${resource}.delete`, 'FOREIGN_KEY_REVALIDATION_FAILED', { canConfirm: false, blocked: true })] } }
+      }
+      throw error
+    }
+  }
+
+  private async lockTarget(transaction: Prisma.TransactionClient, resource: ContentResource, id: string) {
+    const locked = await ({
+      countries: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Country" WHERE "id" = ${id} FOR UPDATE`,
+      universities: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "University" WHERE "id" = ${id} FOR UPDATE`,
+      scholarships: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Scholarship" WHERE "id" = ${id} FOR UPDATE`,
+      services: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Service" WHERE "id" = ${id} FOR UPDATE`,
+      articles: () => Promise.resolve([] as Array<{ id: string }>),
+    })[resource]()
+    return locked.length > 0
+  }
+
+  private async executeConfirmedDeletion(transaction: Prisma.TransactionClient, resource: ContentResource, id: string) {
+    switch (resource) {
+      case 'countries':
+        await transaction.countryStudyGuideSection.deleteMany({ where: { countryId: id } })
+        await transaction.scholarship.updateMany({ where: { countryId: id }, data: { countryId: null } })
+        await transaction.article.updateMany({ where: { countryId: id }, data: { countryId: null } })
+        await transaction.country.delete({ where: { id } })
+        return
+      case 'universities':
+        await transaction.universityGalleryImage.deleteMany({ where: { universityId: id } })
+        await transaction.universityAdmissionRequirement.deleteMany({ where: { universityId: id } })
+        await transaction.universityProgramLanguage.deleteMany({ where: { program: { universityId: id } } })
+        await transaction.universityProgramTuition.deleteMany({ where: { program: { universityId: id } } })
+        await transaction.universityProgram.deleteMany({ where: { universityId: id } })
+        await transaction.scholarship.updateMany({ where: { universityId: id }, data: { universityId: null } })
+        await transaction.article.updateMany({ where: { universityId: id }, data: { universityId: null } })
+        await transaction.university.delete({ where: { id } })
+        return
+      case 'scholarships':
+        await transaction.scholarshipDetailItem.deleteMany({ where: { scholarshipId: id } })
+        await transaction.articleScholarship.deleteMany({ where: { scholarshipId: id } })
+        await transaction.article.updateMany({ where: { scholarshipId: id }, data: { scholarshipId: null } })
+        await transaction.scholarship.delete({ where: { id } })
+        return
+      case 'services':
+        await transaction.serviceDetailItem.deleteMany({ where: { serviceId: id } })
+        await transaction.service.delete({ where: { id } })
+        return
+      case 'articles':
+        throw new Error('Article hard deletion is not supported.')
+    }
+  }
+
+  private async buildDeletionImpact(database: DatabaseClient, resource: ContentResource, id: string): Promise<DeletionImpact | null> {
+    const result = await (async () => {
+      switch (resource) {
+        case 'countries': {
+          const target = await database.country.findUnique({ where: { id }, select: { id: true, slug: true, status: true } })
+          if (!target) return null
+          const [universities, cities, scholarships, articles, applications, faqs, guides, programs, programLanguages, tuitionFees, admissions, galleries, universityScholarships, universityArticles, universityApplications, universityFaqs, scholarshipDetails, scholarshipLinks, audits, analytics] = await Promise.all([
+            countAndSamples(database.university.count({ where: { countryId: id } }), database.university.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.city.count({ where: { countryId: id } }), database.city.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.scholarship.count({ where: { countryId: id } }), database.scholarship.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.article.count({ where: { countryId: id } }), database.article.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.studentApplication.count({ where: { countryId: id } }), database.studentApplication.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.faqEntry.count({ where: { countryId: id } }), database.faqEntry.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.countryStudyGuideSection.count({ where: { countryId: id } }), database.countryStudyGuideSection.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.universityProgram.count({ where: { university: { countryId: id } } }), database.universityProgram.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.universityProgramLanguage.count({ where: { program: { university: { countryId: id } } } }), database.universityProgramLanguage.findMany({ where: { program: { university: { countryId: id } } }, select: { programId: true }, take: 5 }).then((rows) => rows.map(({ programId }) => ({ id: programId })))),
+            countAndSamples(database.universityProgramTuition.count({ where: { program: { university: { countryId: id } } } }), database.universityProgramTuition.findMany({ where: { program: { university: { countryId: id } } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.universityAdmissionRequirement.count({ where: { university: { countryId: id } } }), database.universityAdmissionRequirement.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.universityGalleryImage.count({ where: { university: { countryId: id } } }), database.universityGalleryImage.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.scholarship.count({ where: { university: { countryId: id } } }), database.scholarship.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.article.count({ where: { university: { countryId: id } } }), database.article.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.studentApplication.count({ where: { university: { countryId: id } } }), database.studentApplication.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.faqEntry.count({ where: { university: { countryId: id } } }), database.faqEntry.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.scholarshipDetailItem.count({ where: { scholarship: { countryId: id } } }), database.scholarshipDetailItem.findMany({ where: { scholarship: { countryId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.articleScholarship.count({ where: { scholarship: { countryId: id } } }), database.articleScholarship.findMany({ where: { scholarship: { countryId: id } }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
+            countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'COUNTRY', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'COUNTRY', resourceId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
+          ])
+          return this.toDeletionImpact(resource, target, [
+            this.dependency('UNIVERSITY', 'BLOCK', universities, 'country.universities', 'COUNTRY_UNIVERSITIES_RESTRICT'),
+            this.dependency('CITY', 'BLOCK', cities, 'country.cities', 'COUNTRY_CITIES_RESTRICT'),
+            this.dependency('SCHOLARSHIP', 'UNLINK', scholarships, 'country.scholarships', 'COUNTRY_SCHOLARSHIPS_UNLINK'),
+            this.dependency('ARTICLE', 'UNLINK', articles, 'country.articles', 'COUNTRY_ARTICLES_UNLINK'),
+            this.dependency('STUDENT_APPLICATION', 'BLOCK', applications, 'country.studentApplications', 'STUDENT_APPLICATION_HISTORY_PROTECTED'),
+            this.dependency('FAQ_ENTRY', 'BLOCK', faqs, 'country.faqEntries', 'COUNTRY_FAQS_RESTRICT'),
+            this.dependency('COUNTRY_STUDY_GUIDE_SECTION', 'DELETE', guides, 'country.studyGuideSections', 'COUNTRY_GUIDES_EXPLICIT_DELETE'),
+            this.dependency('UNIVERSITY_PROGRAM', 'BLOCK', programs, 'country.universities.programs', 'TRANSITIVE_UNIVERSITY_PROGRAM_RESTRICT'),
+            this.dependency('UNIVERSITY_PROGRAM_LANGUAGE', 'BLOCK', programLanguages, 'country.universities.programs.languages', 'TRANSITIVE_PROGRAM_LANGUAGE_NOT_REACHED'),
+            this.dependency('UNIVERSITY_PROGRAM_TUITION', 'BLOCK', tuitionFees, 'country.universities.programs.tuitionFees', 'TRANSITIVE_PROGRAM_TUITION_NOT_REACHED'),
+            this.dependency('UNIVERSITY_ADMISSION_REQUIREMENT', 'BLOCK', admissions, 'country.universities.admissionRequirements', 'TRANSITIVE_ADMISSION_RESTRICT'),
+            this.dependency('UNIVERSITY_GALLERY_IMAGE', 'BLOCK', galleries, 'country.universities.galleryImages', 'TRANSITIVE_GALLERY_RESTRICT'),
+            this.dependency('SCHOLARSHIP', 'BLOCK', universityScholarships, 'country.universities.scholarships', 'TRANSITIVE_SCHOLARSHIP_RESTRICT'),
+            this.dependency('ARTICLE', 'BLOCK', universityArticles, 'country.universities.articles', 'TRANSITIVE_ARTICLE_RESTRICT'),
+            this.dependency('STUDENT_APPLICATION', 'BLOCK', universityApplications, 'country.universities.studentApplications', 'TRANSITIVE_STUDENT_APPLICATION_PROTECTED'),
+            this.dependency('FAQ_ENTRY', 'BLOCK', universityFaqs, 'country.universities.faqEntries', 'TRANSITIVE_FAQ_RESTRICT'),
+            this.dependency('SCHOLARSHIP_DETAIL_ITEM', 'PRESERVE', scholarshipDetails, 'country.scholarships.detailItems', 'TRANSITIVE_SCHOLARSHIP_DETAILS_PRESERVED'),
+            this.dependency('ARTICLE_SCHOLARSHIP', 'PRESERVE', scholarshipLinks, 'country.scholarships.relatedArticles', 'TRANSITIVE_ARTICLE_LINKS_PRESERVED'),
+            this.dependency('ADMIN_AUDIT_LOG', 'PRESERVE', audits, 'country.auditHistory', 'AUDIT_HISTORY_PRESERVED'),
+            this.dependency('ANALYTICS_EVENT', 'PRESERVE', analytics, 'country.analyticsPaths', 'ANALYTICS_HISTORY_PRESERVED'),
+          ])
+        }
+        case 'universities': {
+          const target = await database.university.findUnique({ where: { id }, select: { id: true, slug: true, status: true } })
+          if (!target) return null
+          const [programs, languages, tuitionFees, admissions, galleries, scholarships, articles, applications, faqs, scholarshipDetails, scholarshipLinks, audits, analytics] = await Promise.all([
+            countAndSamples(database.universityProgram.count({ where: { universityId: id } }), database.universityProgram.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.universityProgramLanguage.count({ where: { program: { universityId: id } } }), database.universityProgramLanguage.findMany({ where: { program: { universityId: id } }, select: { programId: true }, take: 5 }).then((rows) => rows.map(({ programId }) => ({ id: programId })))),
+            countAndSamples(database.universityProgramTuition.count({ where: { program: { universityId: id } } }), database.universityProgramTuition.findMany({ where: { program: { universityId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.universityAdmissionRequirement.count({ where: { universityId: id } }), database.universityAdmissionRequirement.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.universityGalleryImage.count({ where: { universityId: id } }), database.universityGalleryImage.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.scholarship.count({ where: { universityId: id } }), database.scholarship.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.article.count({ where: { universityId: id } }), database.article.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.studentApplication.count({ where: { universityId: id } }), database.studentApplication.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.faqEntry.count({ where: { universityId: id } }), database.faqEntry.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.scholarshipDetailItem.count({ where: { scholarship: { universityId: id } } }), database.scholarshipDetailItem.findMany({ where: { scholarship: { universityId: id } }, select: { id: true }, take: 5 })),
+            countAndSamples(database.articleScholarship.count({ where: { scholarship: { universityId: id } } }), database.articleScholarship.findMany({ where: { scholarship: { universityId: id } }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
+            countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'UNIVERSITY', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'UNIVERSITY', resourceId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
+          ])
+          return this.toDeletionImpact(resource, target, [
+            this.dependency('UNIVERSITY_PROGRAM', 'DELETE', programs, 'university.programs', 'UNIVERSITY_PROGRAMS_EXPLICIT_DELETE'),
+            this.dependency('UNIVERSITY_PROGRAM_LANGUAGE', 'DELETE', languages, 'university.programs.languages', 'UNIVERSITY_PROGRAM_LANGUAGES_EXPLICIT_DELETE'),
+            this.dependency('UNIVERSITY_PROGRAM_TUITION', 'DELETE', tuitionFees, 'university.programs.tuitionFees', 'UNIVERSITY_PROGRAM_TUITION_EXPLICIT_DELETE'),
+            this.dependency('UNIVERSITY_ADMISSION_REQUIREMENT', 'DELETE', admissions, 'university.admissionRequirements', 'UNIVERSITY_ADMISSIONS_EXPLICIT_DELETE'),
+            this.dependency('UNIVERSITY_GALLERY_IMAGE', 'DELETE', galleries, 'university.galleryImages', 'UNIVERSITY_GALLERY_EXPLICIT_DELETE'),
+            this.dependency('SCHOLARSHIP', 'UNLINK', scholarships, 'university.scholarships', 'UNIVERSITY_SCHOLARSHIPS_UNLINK'),
+            this.dependency('ARTICLE', 'UNLINK', articles, 'university.articles', 'UNIVERSITY_ARTICLES_UNLINK'),
+            this.dependency('STUDENT_APPLICATION', 'BLOCK', applications, 'university.studentApplications', 'STUDENT_APPLICATION_HISTORY_PROTECTED'),
+            this.dependency('FAQ_ENTRY', 'BLOCK', faqs, 'university.faqEntries', 'UNIVERSITY_FAQS_RESTRICT'),
+            this.dependency('SCHOLARSHIP_DETAIL_ITEM', 'PRESERVE', scholarshipDetails, 'university.scholarships.detailItems', 'TRANSITIVE_SCHOLARSHIP_DETAILS_PRESERVED'),
+            this.dependency('ARTICLE_SCHOLARSHIP', 'PRESERVE', scholarshipLinks, 'university.scholarships.relatedArticles', 'TRANSITIVE_ARTICLE_LINKS_PRESERVED'),
+            this.dependency('ADMIN_AUDIT_LOG', 'PRESERVE', audits, 'university.auditHistory', 'AUDIT_HISTORY_PRESERVED'),
+            this.dependency('ANALYTICS_EVENT', 'PRESERVE', analytics, 'university.analyticsPaths', 'ANALYTICS_HISTORY_PRESERVED'),
+          ])
+        }
+        case 'scholarships': {
+          const target = await database.scholarship.findUnique({ where: { id }, select: { id: true, slug: true, status: true } })
+          if (!target) return null
+          const [details, legacyArticles, articleLinks, applications, faqs, audits, analytics] = await Promise.all([
+            countAndSamples(database.scholarshipDetailItem.count({ where: { scholarshipId: id } }), database.scholarshipDetailItem.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.article.count({ where: { scholarshipId: id } }), database.article.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.articleScholarship.count({ where: { scholarshipId: id } }), database.articleScholarship.findMany({ where: { scholarshipId: id }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
+            countAndSamples(database.studentApplication.count({ where: { scholarshipId: id } }), database.studentApplication.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.faqEntry.count({ where: { scholarshipId: id } }), database.faqEntry.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'SCHOLARSHIP', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'SCHOLARSHIP', resourceId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
+          ])
+          return this.toDeletionImpact(resource, target, [
+            this.dependency('SCHOLARSHIP_DETAIL_ITEM', 'DELETE', details, 'scholarship.detailItems', 'SCHOLARSHIP_DETAILS_EXPLICIT_DELETE'),
+            this.dependency('ARTICLE', 'UNLINK', legacyArticles, 'scholarship.legacyArticles', 'SCHOLARSHIP_LEGACY_ARTICLES_UNLINK'),
+            this.dependency('ARTICLE_SCHOLARSHIP', 'UNLINK', articleLinks, 'scholarship.relatedArticles', 'SCHOLARSHIP_ARTICLE_LINKS_UNLINK'),
+            this.dependency('STUDENT_APPLICATION', 'BLOCK', applications, 'scholarship.studentApplications', 'STUDENT_APPLICATION_HISTORY_PROTECTED'),
+            this.dependency('FAQ_ENTRY', 'BLOCK', faqs, 'scholarship.faqEntries', 'SCHOLARSHIP_FAQS_RESTRICT'),
+            this.dependency('ADMIN_AUDIT_LOG', 'PRESERVE', audits, 'scholarship.auditHistory', 'AUDIT_HISTORY_PRESERVED'),
+            this.dependency('ANALYTICS_EVENT', 'PRESERVE', analytics, 'scholarship.analyticsPaths', 'ANALYTICS_HISTORY_PRESERVED'),
+          ])
+        }
+        case 'services': {
+          const target = await database.service.findUnique({ where: { id }, select: { id: true, slug: true, status: true } })
+          if (!target) return null
+          const [details, faqs, audits, analytics] = await Promise.all([
+            countAndSamples(database.serviceDetailItem.count({ where: { serviceId: id } }), database.serviceDetailItem.findMany({ where: { serviceId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.faqEntry.count({ where: { serviceId: id } }), database.faqEntry.findMany({ where: { serviceId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'SERVICE', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'SERVICE', resourceId: id }, select: { id: true }, take: 5 })),
+            countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
+          ])
+          return this.toDeletionImpact(resource, target, [
+            this.dependency('SERVICE_DETAIL_ITEM', 'DELETE', details, 'service.detailItems', 'SERVICE_DETAILS_EXPLICIT_DELETE'),
+            this.dependency('FAQ_ENTRY', 'BLOCK', faqs, 'service.faqEntries', 'SERVICE_FAQS_RESTRICT'),
+            this.dependency('ADMIN_AUDIT_LOG', 'PRESERVE', audits, 'service.auditHistory', 'AUDIT_HISTORY_PRESERVED'),
+            this.dependency('ANALYTICS_EVENT', 'PRESERVE', analytics, 'service.analyticsPaths', 'ANALYTICS_HISTORY_PRESERVED'),
+          ])
+        }
+        case 'articles': return null
+      }
+    })()
+    return result
+  }
+
+  private dependency(
+    resourceType: DeletionImpactItem['resourceType'],
+    effect: DeletionImpactItem['effect'],
+    result: CountAndSamples,
+    relationshipPath: string,
+    code: string,
+  ) {
+    return impactItem(resourceType, effect, result.count, relationshipPath, code, { sampleIds: result.sampleIds })
+  }
+
+  private toDeletionImpact(
+    resource: ContentResource,
+    target: { id: string; slug: string; status: string },
+    items: DeletionImpactItem[],
+  ): DeletionImpact {
+    if (target.slug.startsWith('demo-e2e-')) {
+      items.push(impactItem('DEMO_FIXTURE', 'BLOCK', 1, `${resource}.demoFixture`, 'DEMO_FIXTURE_PROTECTED', { sampleIds: [target.id], canConfirm: false, blocked: true }))
+    }
+    return analyzeDeletionImpact({
+      target: { resource, id: target.id, slug: target.slug, status: target.status as DeletionImpact['target']['status'] },
+      items,
+      analysisComplete: true,
+    })
+  }
+
+  async reorder(resource: ContentResource, orderedIds: string[], actorAdminId: string) {
+    return getPrisma().$transaction(async (transaction) => {
+      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${9_000_040})`
+      const records = await ({
+        countries: () => transaction.country.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),
+        universities: () => transaction.university.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),
+        scholarships: () => transaction.scholarship.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),
+        services: () => transaction.service.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),
+        articles: () => transaction.article.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),
+      })[resource]()
+      if (records.length !== orderedIds.length || new Set(orderedIds).size !== orderedIds.length || records.some((record) => !orderedIds.includes(record.id))) return { outcome: 'ORDER_SET_MISMATCH' as const }
+      for (const [displayOrder, id] of orderedIds.entries()) await ({ countries: () => transaction.country.update({ where: { id }, data: { displayOrder } }), universities: () => transaction.university.update({ where: { id }, data: { displayOrder } }), scholarships: () => transaction.scholarship.update({ where: { id }, data: { displayOrder } }), services: () => transaction.service.update({ where: { id }, data: { displayOrder } }), articles: () => transaction.article.update({ where: { id }, data: { displayOrder } }) })[resource]()
+      const auditResourceId = orderedIds[0]
+      if (auditResourceId) await transaction.adminAuditLog.create({ data: { actorAdminId, action: `content.${resource}.reordered`, resourceType: ({ countries: 'COUNTRY', universities: 'UNIVERSITY', scholarships: 'SCHOLARSHIP', services: 'SERVICE', articles: 'ARTICLE' } as const)[resource], resourceId: auditResourceId, metadata: { count: orderedIds.length } } })
+      const recordsById = new Map(records.map((record) => [record.id, record]))
+      return { outcome: 'UPDATED' as const, records: orderedIds.map((id, displayOrder) => asEntity({ ...recordsById.get(id)!, displayOrder })) }
+    })
+  }
   async list(
     resource: ContentResource,
     query: ContentListQuery,
@@ -179,7 +537,9 @@ export class PrismaContentRepository implements ContentRepository {
         const orderBy: Prisma.UniversityOrderByWithRelationInput[] =
           query.sort === 'name'
             ? [{ nameAr: 'asc' }, { id: 'asc' }]
-            : [{ createdAt: 'desc' }, { id: 'asc' }]
+            : publicOnly && query.sort === undefined
+              ? [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+              : [{ createdAt: 'desc' }, { id: 'asc' }]
         const [items, total] = await Promise.all([
           prisma.university.findMany({
             where, orderBy, ...pagination,
@@ -234,8 +594,13 @@ export class PrismaContentRepository implements ContentRepository {
               : {}
           ),
         }
-        const orderBy: Prisma.ScholarshipOrderByWithRelationInput[] =
-          query.sort === 'deadline'
+        const orderBy: Prisma.ScholarshipOrderByWithRelationInput[] = publicOnly
+          ? query.sort === 'deadline'
+            ? [{ featured: 'desc' }, { verifiedDeadline: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]
+            : query.sort === 'newest'
+              ? [{ featured: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }]
+              : [{ featured: 'desc' }, { displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+          : query.sort === 'deadline'
             ? [{ verifiedDeadline: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]
             : [{ createdAt: 'desc' }, { id: 'asc' }]
         const [items, total] = await Promise.all([
@@ -278,10 +643,13 @@ export class PrismaContentRepository implements ContentRepository {
               ] }
             : {}),
         }
+        const orderBy: Prisma.ArticleOrderByWithRelationInput[] = publicOnly && query.sort === undefined
+          ? [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+          : [{ createdAt: 'desc' }, { id: 'asc' }]
         const [items, total] = await Promise.all([
           prisma.article.findMany({
             where,
-            orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+            orderBy,
             ...pagination,
             include: {
               country: relationSelections.country,

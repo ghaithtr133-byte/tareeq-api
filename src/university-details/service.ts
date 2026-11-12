@@ -9,12 +9,13 @@ import type {
   UniversityDetailsRepository,
 } from './types.js'
 
-const errorFor = (outcome: 'NOT_FOUND' | 'UNIVERSITY_NOT_FOUND' | 'PROGRAM_NOT_FOUND' | 'PROGRAM_UNIVERSITY_MISMATCH' | 'PUBLICATION_REQUIREMENTS') => ({
+const errorFor = (outcome: 'NOT_FOUND' | 'UNIVERSITY_NOT_FOUND' | 'PROGRAM_NOT_FOUND' | 'PROGRAM_UNIVERSITY_MISMATCH' | 'PUBLICATION_REQUIREMENTS' | 'GALLERY_LIMIT_REACHED') => ({
   NOT_FOUND: new ApiError(404, 'UNIVERSITY_DETAIL_NOT_FOUND', 'University detail entry not found.'),
   UNIVERSITY_NOT_FOUND: new ApiError(404, 'CONTENT_NOT_FOUND', 'University not found.'),
   PROGRAM_NOT_FOUND: new ApiError(400, 'UNIVERSITY_PROGRAM_NOT_FOUND', 'Select an existing University program.', { fields: { programId: ['Select an existing University program.'] } }),
   PROGRAM_UNIVERSITY_MISMATCH: new ApiError(400, 'PROGRAM_UNIVERSITY_MISMATCH', 'The selected program does not belong to this University.', { fields: { programId: ['Select a program belonging to this University.'] } }),
   PUBLICATION_REQUIREMENTS: new ApiError(400, 'PUBLICATION_REQUIREMENTS_NOT_MET', 'An official HTTPS source and verification time are required before publishing admission requirements.'),
+  GALLERY_LIMIT_REACHED: new ApiError(409, 'GALLERY_ACTIVE_IMAGE_LIMIT_REACHED', 'A University can have at most 10 active gallery images.', { fields: { status: ['Archive an active image before adding or restoring another.'] } }),
 })[outcome]
 
 const publicRequirement = ({ id, scope, studyLevel, programId, contentAr, contentEn, officialSourceUrl, verifiedAt, publishedAt, program }: AdmissionRequirementRecord) => ({

@@ -280,7 +280,7 @@
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -337,7 +337,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -405,7 +405,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -519,12 +519,12 @@
                 {
                   "key": "sort",
                   "value": "newest",
-                  "description": "Sort newest first or by Arabic name.",
+                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -612,12 +612,12 @@
                     {
                       "key": "sort",
                       "value": "newest",
-                      "description": "Sort newest first or by Arabic name.",
+                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -716,12 +716,12 @@
                     {
                       "key": "sort",
                       "value": "newest",
-                      "description": "Sort newest first or by Arabic name.",
+                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Universities only. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -877,12 +877,12 @@
                 {
                   "key": "sort",
                   "value": "newest",
-                  "description": "Sort newest first or by earliest non-null deadline.",
+                  "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1012,12 +1012,12 @@
                     {
                       "key": "sort",
                       "value": "newest",
-                      "description": "Sort newest first or by earliest non-null deadline.",
+                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1158,12 +1158,12 @@
                     {
                       "key": "sort",
                       "value": "newest",
-                      "description": "Sort newest first or by earliest non-null deadline.",
+                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -1240,7 +1240,7 @@
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1291,7 +1291,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1353,7 +1353,7 @@
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -1437,12 +1437,12 @@
                 {
                   "key": "sort",
                   "value": "newest",
-                  "description": "Sort newest first.",
+                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1500,12 +1500,12 @@
                     {
                       "key": "sort",
                       "value": "newest",
-                      "description": "Sort newest first.",
+                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1574,12 +1574,12 @@
                     {
                       "key": "sort",
                       "value": "newest",
-                      "description": "Sort newest first.",
+                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,

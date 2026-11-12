@@ -51,7 +51,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(collection.info.schema).toBe(
       'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     )
-    expect(collectRequests(collection.item)).toHaveLength(108)
+    expect(collectRequests(collection.item)).toHaveLength(121)
 
     const zipResponse = await app.request('/postman/download.zip')
     const zip = Buffer.from(await zipResponse.arrayBuffer())
@@ -168,7 +168,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(document.components.schemas.HealthResponse).toBeDefined()
   })
 
-  it('documents the complete 108-operation API with descriptions, examples, and Admin security', async () => {
+  it('documents the complete 121-operation API with descriptions, examples, and Admin security', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
       info?: { description?: string }
@@ -195,7 +195,7 @@ describe('Tareeq Academy API foundation', () => {
         .map(([method, operation]) => ({ path, method, operation })),
     )
 
-    expect(operations).toHaveLength(108)
+    expect(operations).toHaveLength(121)
     const contentResources = '(countries|universities|scholarships|services|articles)'
     const operationGroups = {
       system: operations.filter(({ path }) => path === '/api/v1/health'),
@@ -204,7 +204,7 @@ describe('Tareeq Academy API foundation', () => {
         new RegExp(`^/api/v1/${contentResources}(/\\{slug\\})?$`).test(path),
       ),
       adminContent: operations.filter(({ path }) =>
-        new RegExp(`^/api/v1/admin/${contentResources}(/\\{id\\})?$`).test(path),
+        new RegExp(`^/api/v1/admin/${contentResources}(/\\{id\\}(/hard-delete/confirm)?)?$`).test(path),
       ),
       adminMedia: operations.filter(({ path }) =>
         path === '/api/v1/admin/uploads/images',
@@ -259,7 +259,7 @@ describe('Tareeq Academy API foundation', () => {
       system: 1,
       authentication: 5,
       publicContent: 10,
-      adminContent: 20,
+      adminContent: 28,
       adminMedia: 1,
       adminAudit: 1,
       adminManagement: 2,
@@ -428,7 +428,7 @@ describe('Tareeq Academy API foundation', () => {
             '/api/v1/admin/users',
             '/api/v1/admin/users/{id}',
             '/api/v1/admin/site-settings',
-          ].includes(path) || path.startsWith('/api/v1/admin/analytics/')
+          ].includes(path) || path.startsWith('/api/v1/admin/analytics/') || path.endsWith('/hard-delete/confirm')
             ? 'SUPER_ADMIN only'
             : 'ADMIN or SUPER_ADMIN',
         )

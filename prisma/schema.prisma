@@ -171,6 +171,7 @@ model AdminUser {
   refreshSessions    RefreshSession[]
   emailNotifications EmailNotification[]
   auditLogs          AdminAuditLog[]
+  hardDeleteChallenges HardDeleteChallenge[]
 }
 
 model AdminAuditLog {
@@ -187,6 +188,21 @@ model AdminAuditLog {
   @@index([actorAdminId, createdAt(sort: Desc), id(sort: Desc)])
   @@index([action, createdAt(sort: Desc), id(sort: Desc)])
   @@index([resourceType, createdAt(sort: Desc), id(sort: Desc)])
+}
+
+model HardDeleteChallenge {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorAdminId String            @db.Uuid
+  resourceType AuditResourceType
+  resourceId   String            @db.Uuid
+  impactHash   String            @db.Char(64)
+  expiresAt    DateTime          @db.Timestamptz(3)
+  consumedAt   DateTime?         @db.Timestamptz(3)
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  actor        AdminUser         @relation(fields: [actorAdminId], references: [id], onDelete: Restrict)
+
+  @@index([actorAdminId, resourceType, resourceId, expiresAt])
+  @@index([expiresAt])
 }
 
 model SiteSettings {
@@ -360,7 +376,7 @@ model CountryStudyGuideSection {
   displayOrder Int
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
-  country      Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  country      Country  @relation(fields: [countryId], references: [id], onDelete: Restrict)
 
   @@index([countryId, displayOrder, id])
 }
@@ -386,6 +402,7 @@ model University {
   logoAltAr             String?
   logoAltEn             String?
   featured              Boolean                          @default(false)
+  displayOrder          Int                              @default(0)
   status                PublicationStatus                @default(DRAFT)
   publishedAt           DateTime?                        @db.Timestamptz(3)
   seoTitleAr            String?
@@ -470,7 +487,7 @@ model UniversityProgramLanguage {
   programId String            @db.Uuid
   language  TeachingLanguage
   createdAt DateTime          @default(now()) @db.Timestamptz(3)
-  program   UniversityProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  program   UniversityProgram @relation(fields: [programId], references: [id], onDelete: Restrict)
 
   @@id([programId, language])
   @@index([language, programId])
@@ -485,7 +502,7 @@ model UniversityProgramTuition {
   academicYear  String               @db.VarChar(9)
   createdAt     DateTime             @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
-  program       UniversityProgram    @relation(fields: [programId], references: [id], onDelete: Cascade)
+  program       UniversityProgram    @relation(fields: [programId], references: [id], onDelete: Restrict)
 
   @@unique([programId, academicYear])
   @@index([programId, academicYear(sort: Desc), id])
@@ -550,6 +567,7 @@ model Scholarship {
   applicationStatus   ScholarshipApplicationStatus @default(OPEN)
   status              PublicationStatus            @default(DRAFT)
   featured            Boolean                      @default(false)
+  displayOrder        Int                          @default(0)
   publishedAt         DateTime?                    @db.Timestamptz(3)
   seoTitleAr          String?
   seoDescriptionAr    String?
@@ -584,7 +602,7 @@ model ScholarshipDetailItem {
   verifiedAt        DateTime?                  @db.Timestamptz(3)
   createdAt         DateTime                   @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime                   @updatedAt @db.Timestamptz(3)
-  scholarship       Scholarship                @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  scholarship       Scholarship                @relation(fields: [scholarshipId], references: [id], onDelete: Restrict)
 
   @@index([scholarshipId, kind, displayOrder, id])
 }
@@ -625,7 +643,7 @@ model ServiceDetailItem {
   displayOrder Int
   createdAt    DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime              @updatedAt @db.Timestamptz(3)
-  service      Service               @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  service      Service               @relation(fields: [serviceId], references: [id], onDelete: Restrict)
 
   @@index([serviceId, kind, displayOrder, id])
 }
@@ -674,6 +692,7 @@ model Article {
   universityId        String?              @db.Uuid
   scholarshipId       String?              @db.Uuid
   featured            Boolean              @default(false)
+  displayOrder        Int                  @default(0)
   status              PublicationStatus    @default(DRAFT)
   publishedAt         DateTime?            @db.Timestamptz(3)
   seoTitleAr          String?
