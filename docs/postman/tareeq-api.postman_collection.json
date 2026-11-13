@@ -2117,6 +2117,129 @@
       "name": "Public — Scholarships",
       "item": [
         {
+          "name": "List active Scholarship options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/scholarship-options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "scholarship-options"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "replace-type",
+                  "description": "",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Lists active Study Level or Funding Type options in persisted editorial order. Scholarship payloads continue to use code strings.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Active Scholarship options.\n400: Validation, publication prerequisite, or relationship error."
+          },
+          "response": [
+            {
+              "name": "200 Active Scholarship options.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "scholarship-options"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "replace-type",
+                      "description": "",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists active Study Level or Funding Type options in persisted editorial order. Scholarship payloads continue to use code strings.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Active Scholarship options.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": []\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "scholarship-options"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "replace-type",
+                      "description": "",
+                      "disabled": false
+                    }
+                  ]
+                },
+                "description": "Lists active Study Level or Funding Type options in persisted editorial order. Scholarship payloads continue to use code strings.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Active Scholarship options.\n400: Validation, publication prerequisite, or relationship error."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "Get published Scholarship filter options",
           "request": {
             "method": "GET",
@@ -6156,6 +6279,69 @@
       "name": "Public — University Directory",
       "item": [
         {
+          "name": "List active study languages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/study-languages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "study-languages"
+              ]
+            },
+            "description": "Returns active persisted language choices in editorial sort order. Program payloads continue to expose stable language codes.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Active study languages."
+          },
+          "response": [
+            {
+              "name": "200 Active study languages.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "study-languages"
+                  ]
+                },
+                "description": "Returns active persisted language choices in editorial sort order. Program payloads continue to expose stable language codes.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Active study languages."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"10000000-0000-4000-8000-000000000001\",\n        \"code\": \"ENGLISH\",\n        \"nameAr\": \"الإنجليزية\",\n        \"isActive\": true,\n        \"sortOrder\": 20,\n        \"createdAt\": \"2026-11-02T11:00:00.000Z\",\n        \"updatedAt\": \"2026-11-02T11:00:00.000Z\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "Get dynamic university filter options",
           "request": {
             "method": "GET",
@@ -7083,6 +7269,252 @@
       "name": "Admin — Content Management",
       "item": [
         {
+          "name": "List Scholarship options",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "scholarship-options"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "replace-type",
+                  "description": "",
+                  "disabled": false
+                },
+                {
+                  "key": "activeOnly",
+                  "value": "true",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Includes inactive options unless activeOnly=true.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Scholarship options.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted."
+          },
+          "response": [
+            {
+              "name": "200 Scholarship options.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "replace-type",
+                      "description": "",
+                      "disabled": false
+                    },
+                    {
+                      "key": "activeOnly",
+                      "value": "true",
+                      "description": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Includes inactive options unless activeOnly=true.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Scholarship options.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": []\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "replace-type",
+                      "description": "",
+                      "disabled": false
+                    },
+                    {
+                      "key": "activeOnly",
+                      "value": "true",
+                      "description": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Includes inactive options unless activeOnly=true.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Scholarship options.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "replace-type",
+                      "description": "",
+                      "disabled": false
+                    },
+                    {
+                      "key": "activeOnly",
+                      "value": "true",
+                      "description": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Includes inactive options unless activeOnly=true.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Scholarship options.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The administrator lacks permission or the request origin is not trusted.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "replace-type",
+                      "description": "",
+                      "disabled": false
+                    },
+                    {
+                      "key": "activeOnly",
+                      "value": "true",
+                      "description": "",
+                      "disabled": true
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Includes inactive options unless activeOnly=true.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Scholarship options.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted."
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "List countries for administration",
           "request": {
             "method": "GET",
@@ -7805,6 +8237,396 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": []\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Create Scholarship option",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "scholarship-options"
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Scholarship option created.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"STUDY_LEVEL\",\n  \"nameAr\": \"سنة تحضيرية\",\n  \"sortOrder\": 70\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Scholarship option created.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Scholarship option created.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"STUDY_LEVEL\",\n  \"nameAr\": \"سنة تحضيرية\",\n  \"sortOrder\": 70\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"type\": \"STUDY_LEVEL\",\n    \"code\": \"CUSTOM_EXAMPLE\",\n    \"nameAr\": \"سنة تحضيرية\",\n    \"isActive\": true,\n    \"sortOrder\": 70,\n    \"createdAt\": \"2026-11-14T00:00:00.000Z\",\n    \"updatedAt\": \"2026-11-14T00:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Scholarship option created.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"STUDY_LEVEL\",\n  \"nameAr\": \"سنة تحضيرية\",\n  \"sortOrder\": 70\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Scholarship option created.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"STUDY_LEVEL\",\n  \"nameAr\": \"سنة تحضيرية\",\n  \"sortOrder\": 70\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The administrator lacks permission or the request origin is not trusted.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Scholarship option created.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"STUDY_LEVEL\",\n  \"nameAr\": \"سنة تحضيرية\",\n  \"sortOrder\": 70\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug conflicts with an existing record or a published slug is immutable.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Scholarship option created.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"STUDY_LEVEL\",\n  \"nameAr\": \"سنة تحضيرية\",\n  \"sortOrder\": 70\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"SLUG_CONFLICT\",\n    \"message\": \"The slug is already in use.\",\n    \"details\": {\n      \"fields\": {\n        \"slug\": [\n          \"Choose a unique slug.\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not application/json.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Scholarship option created.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"STUDY_LEVEL\",\n  \"nameAr\": \"سنة تحضيرية\",\n  \"sortOrder\": 70\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         },
@@ -9224,6 +10046,517 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Update Scholarship option",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "scholarship-options",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": "Administrative content UUID."
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Scholarship option updated.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {}\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The administrator lacks permission or the request origin is not trusted.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The content record was not found or is not publicly available.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CONTENT_NOT_FOUND\",\n    \"message\": \"Content not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug conflicts with an existing record or a published slug is immutable.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"SLUG_CONFLICT\",\n    \"message\": \"The slug is already in use.\",\n    \"details\": {\n      \"fields\": {\n        \"slug\": [\n          \"Choose a unique slug.\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not application/json.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/scholarship-options/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "scholarship-options",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Scholarship option updated.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -32150,6 +33483,145 @@
       "name": "Admin — Directory Catalogs",
       "item": [
         {
+          "name": "List study language catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "study-languages"
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Includes inactive codes so existing Program data remains understandable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Study language catalog.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required."
+          },
+          "response": [
+            {
+              "name": "200 Study language catalog.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Includes inactive codes so existing Program data remains understandable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Study language catalog.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": []\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Includes inactive codes so existing Program data remains understandable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Study language catalog.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and trusted origin are required.",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Includes inactive codes so existing Program data remains understandable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Study language catalog.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required."
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "List normalized academic majors",
           "request": {
             "method": "GET",
@@ -32794,6 +34266,396 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"slug\": \"medicine\",\n  \"nameAr\": \"الطب\",\n  \"nameEn\": \"Medicine\",\n  \"category\": \"Health Sciences\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Create study language",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "study-languages"
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Study language created.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"POLISH\",\n  \"nameAr\": \"البولندية\",\n  \"sortOrder\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "201 Study language created.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Study language created.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"POLISH\",\n  \"nameAr\": \"البولندية\",\n  \"sortOrder\": 100\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"10000000-0000-4000-8000-000000000001\",\n    \"code\": \"POLISH\",\n    \"nameAr\": \"البولندية\",\n    \"isActive\": true,\n    \"sortOrder\": 100,\n    \"createdAt\": \"2026-11-02T11:00:00.000Z\",\n    \"updatedAt\": \"2026-11-02T11:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation, relationship, or publication prerequisite error.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Study language created.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"POLISH\",\n  \"nameAr\": \"البولندية\",\n  \"sortOrder\": 100\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Study language created.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"POLISH\",\n  \"nameAr\": \"البولندية\",\n  \"sortOrder\": 100\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and trusted origin are required.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Study language created.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"POLISH\",\n  \"nameAr\": \"البولندية\",\n  \"sortOrder\": 100\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug or normalized program already exists.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Study language created.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"POLISH\",\n  \"nameAr\": \"البولندية\",\n  \"sortOrder\": 100\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DIRECTORY_SLUG_OR_PROGRAM_CONFLICT\",\n    \"message\": \"The slug or university program already exists.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 Content-Type must be JSON.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages"
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n201: Study language created.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"POLISH\",\n  \"nameAr\": \"البولندية\",\n  \"sortOrder\": 100\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -33629,6 +35491,517 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Update study language",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "study-languages",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Study language updated.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"10000000-0000-4000-8000-000000000001\",\n    \"code\": \"POLISH\",\n    \"nameAr\": \"البولندية\",\n    \"isActive\": false,\n    \"sortOrder\": 100,\n    \"createdAt\": \"2026-11-02T11:00:00.000Z\",\n    \"updatedAt\": \"2026-11-02T11:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation, relationship, or publication prerequisite error.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 ADMIN or SUPER_ADMIN permission and trusted origin are required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 University or program not found.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNIVERSITY_PROGRAM_NOT_FOUND\",\n    \"message\": \"University program not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "409 The slug or normalized program already exists.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"DIRECTORY_SLUG_OR_PROGRAM_CONFLICT\",\n    \"message\": \"The slug or university program already exists.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 Content-Type must be JSON.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/study-languages/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "study-languages",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Study language updated.\n400: Validation, relationship, or publication prerequisite error.\n401: Authentication is required.\n403: ADMIN or SUPER_ADMIN permission and trusted origin are required.\n404: University or program not found.\n409: The slug or normalized program already exists.\n415: Content-Type must be JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"isActive\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         },

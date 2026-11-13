@@ -10,6 +10,8 @@ import type {
   ContentResource,
   ContentWriteData,
   PublicationStatus,
+  ScholarshipOption,
+  ScholarshipOptionType,
 } from './types.js'
 import type { DeletionImpact } from './deletion-impact.js'
 
@@ -176,6 +178,24 @@ export class ContentService {
     return { studyLevels: map(options.studyLevels, studyLevelLabels), fundingTypes: map(options.fundingTypes, fundingTypeLabels) }
   }
 
+  async listScholarshipOptions(type: ScholarshipOptionType, includeInactive: boolean) {
+    return { items: await this.repository.listScholarshipOptions(type, includeInactive) }
+  }
+
+  async createScholarshipOption(input: Pick<ScholarshipOption, 'type' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string) {
+    const result = await this.repository.createScholarshipOption(input, actorAdminId)
+    if (result.outcome === 'CONFLICT') throw new ApiError(409, 'SCHOLARSHIP_OPTION_CONFLICT', 'Arabic option names must be unique within their type.', { fields: { nameAr: ['Choose a unique Arabic option name.'] } })
+    return result.record
+  }
+
+  async updateScholarshipOption(id: string, input: Partial<Pick<ScholarshipOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string) {
+    const result = await this.repository.updateScholarshipOption(id, input, actorAdminId)
+    if (result.outcome === 'NOT_FOUND') throw new ApiError(404, 'SCHOLARSHIP_OPTION_NOT_FOUND', 'Scholarship option not found.')
+    if (result.outcome === 'CONFLICT') throw new ApiError(409, 'SCHOLARSHIP_OPTION_CONFLICT', 'Arabic option names must be unique within their type.', { fields: { nameAr: ['Choose a unique Arabic option name.'] } })
+    if (result.outcome === 'UPDATED') return result.record
+    throw new ApiError(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred.')
+  }
+
   async reorder(resource: ContentResource, orderedIds: string[], actorAdminId: string) {
     const result = await this.repository.reorder(resource, orderedIds, actorAdminId)
     if (result.outcome === 'ORDER_SET_MISMATCH') throw new ApiError(409, 'ORDER_SET_MISMATCH', 'Submit every reorderable record exactly once.', { fields: { orderedIds: ['Refresh the complete administrative collection and retry.'] } })
@@ -309,7 +329,7 @@ export class ContentService {
 
     const next = { ...current, ...input } as ContentWriteData
     this.normalizeDates(next)
-    await this.validateWrite(resource, next, input.status === 'PUBLISHED' && current.status !== 'PUBLISHED')
+    await this.validateWrite(resource, next, input.status === 'PUBLISHED' && current.status !== 'PUBLISHED', resource === 'scholarships' && (input.studyLevel !== undefined || input.fundingType !== undefined))
     if (typeof input.slug === 'string' && input.slug !== current.slug) {
       await this.ensureUniqueSlug(resource, input.slug, id)
     }
@@ -382,7 +402,11 @@ export class ContentService {
     }
   }
 
-  private async validateWrite(resource: ContentResource, data: ContentWriteData, enteringPublication = false) {
+  private async validateWrite(resource: ContentResource, data: ContentWriteData, enteringPublication = false, validateScholarshipOptions = true) {
+    if (resource === 'scholarships' && validateScholarshipOptions) {
+      if (typeof data.studyLevel === 'string' && !await this.repository.activeScholarshipOptionExists('STUDY_LEVEL', data.studyLevel)) throw relationError('studyLevel', 'Select an active study-level option.')
+      if (typeof data.fundingType === 'string' && !await this.repository.activeScholarshipOptionExists('FUNDING_TYPE', data.fundingType)) throw relationError('fundingType', 'Select an active funding-type option.')
+    }
     const status = data.status as PublicationStatus | undefined
     if (
       resource === 'scholarships' &&

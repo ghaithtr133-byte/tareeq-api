@@ -4,7 +4,7 @@ export const programStudyLevels = ['FOUNDATION', 'DIPLOMA', 'BACHELORS', 'MASTER
 export type ProgramStudyLevel = (typeof programStudyLevels)[number]
 
 export const teachingLanguages = ['ARABIC', 'ENGLISH', 'FRENCH', 'GERMAN', 'TURKISH', 'ROMANIAN', 'RUSSIAN', 'SPANISH', 'ITALIAN'] as const
-export type TeachingLanguage = (typeof teachingLanguages)[number]
+export type TeachingLanguage = string
 
 export const universityTypes = ['PUBLIC', 'PRIVATE'] as const
 export type UniversityType = (typeof universityTypes)[number]
@@ -68,6 +68,16 @@ export type UniversityProgramRecord = {
   updatedAt: Date
   tuitionFees: ProgramTuitionRecord[]
   academicMajor: Pick<AcademicMajorRecord, 'id' | 'slug' | 'nameAr' | 'nameEn' | 'category'>
+}
+
+export type CatalogOption = {
+  id: string
+  code: string
+  nameAr: string
+  isActive: boolean
+  sortOrder: number
+  createdAt: Date
+  updatedAt: Date
 }
 
 export type UniversityDirectoryFilters = {
@@ -148,4 +158,7 @@ export interface UniversityDirectoryRepository {
   createCity(input: Pick<CityRecord, 'countryId' | 'slug' | 'nameAr' | 'nameEn'>, actorAdminId: string): Promise<MutationResult<CityRecord>>
   updateCity(id: string, input: CityUpdateInput, actorAdminId: string): Promise<MutationResult<CityRecord>>
   deleteCity(id: string, actorAdminId: string): Promise<{ outcome: 'DELETED' | 'NOT_FOUND' | 'IN_USE' }>
+  listStudyLanguages(includeInactive: boolean): Promise<CatalogOption[]>
+  createStudyLanguage(input: Pick<CatalogOption, 'code' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string): Promise<{ outcome: 'UPDATED'; record: CatalogOption } | { outcome: 'CONFLICT' }>
+  updateStudyLanguage(id: string, input: Partial<Pick<CatalogOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string): Promise<{ outcome: 'UPDATED'; record: CatalogOption } | { outcome: 'NOT_FOUND' | 'CONFLICT' }>
 }

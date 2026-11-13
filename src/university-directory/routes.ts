@@ -28,6 +28,10 @@ import {
   programListQuerySchema,
   programUpdateSchema,
   publicProgramListResponseSchema,
+  studyLanguageCreateSchema,
+  studyLanguageListResponseSchema,
+  studyLanguageResponseSchema,
+  studyLanguageUpdateSchema,
   universityIdParamSchema,
   universitySlugParamSchema,
 } from './schemas.js'
@@ -75,6 +79,25 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
   const publicRoutes = new OpenAPIHono<AuthEnv>()
   const adminRoutes = new OpenAPIHono<AuthEnv>()
 
+  routes.openAPIRegistry.registerPath({
+    method: 'get', path: '/study-languages', tags: ['Public — University Directory'], summary: 'List active study languages',
+    description: 'Returns active persisted language choices in editorial sort order. Program payloads continue to expose stable language codes.',
+    responses: { 200: success(studyLanguageListResponseSchema, { success: true, data: { items: [{ id: majorExample.id, code: 'ENGLISH', nameAr: 'الإنجليزية', isActive: true, sortOrder: 20, createdAt: cityExample.createdAt, updatedAt: cityExample.updatedAt }] } }, 'Active study languages.') },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'get', path: '/admin/study-languages', tags: ['Admin — Directory Catalogs'], summary: 'List study language catalog', description: 'ADMIN or SUPER_ADMIN only. Includes inactive codes so existing Program data remains understandable.', security: [{ accessCookie: [] }],
+    responses: { 200: success(studyLanguageListResponseSchema, { success: true, data: { items: [] } }, 'Study language catalog.'), 401: directoryErrorResponses[401], 403: directoryErrorResponses[403] },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'post', path: '/admin/study-languages', tags: ['Admin — Directory Catalogs'], summary: 'Create study language', description: 'ADMIN or SUPER_ADMIN only. Adds a stable code and Arabic display label without changing existing Programs.', security: [{ accessCookie: [] }],
+    request: { body: { required: true, content: { 'application/json': { schema: studyLanguageCreateSchema, example: { code: 'POLISH', nameAr: 'البولندية', sortOrder: 100 } } } } },
+    responses: { 201: success(studyLanguageResponseSchema, { success: true, data: { id: majorExample.id, code: 'POLISH', nameAr: 'البولندية', isActive: true, sortOrder: 100, createdAt: cityExample.createdAt, updatedAt: cityExample.updatedAt } }, 'Study language created.'), 400: directoryErrorResponses[400], 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 409: directoryErrorResponses[409], 415: directoryErrorResponses[415] },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'patch', path: '/admin/study-languages/{id}', tags: ['Admin — Directory Catalogs'], summary: 'Update study language', description: 'ADMIN or SUPER_ADMIN only. Code is immutable; labels, activation, and ordering are editable.', security: [{ accessCookie: [] }],
+    request: { params: directoryIdParamSchema, body: { required: true, content: { 'application/json': { schema: studyLanguageUpdateSchema, example: { isActive: false } } } } },
+    responses: { 200: success(studyLanguageResponseSchema, { success: true, data: { id: majorExample.id, code: 'POLISH', nameAr: 'البولندية', isActive: false, sortOrder: 100, createdAt: cityExample.createdAt, updatedAt: cityExample.updatedAt } }, 'Study language updated.'), 400: directoryErrorResponses[400], 401: directoryErrorResponses[401], 403: directoryErrorResponses[403], 404: directoryErrorResponses[404], 409: directoryErrorResponses[409], 415: directoryErrorResponses[415] },
+  })
   routes.openAPIRegistry.registerPath({
     method: 'get', path: '/universities/filter-options', tags: ['Public — University Directory'], summary: 'Get dynamic university filter options',
     description: 'Returns supported P1/P2 facet options with distinct matching-University counts. Each facet excludes its own current value while respecting all other filters; combined major, study-level, and language conditions must match one published program.',
@@ -149,6 +172,7 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
   })
 
   publicRoutes.use('/universities/filter-options', publicReadCors(authRuntime))
+  publicRoutes.use('/study-languages', publicReadCors(authRuntime))
   publicRoutes.use('/universities/:slug/programs', publicReadCors(authRuntime))
   adminRoutes.use('*', authCors(authRuntime))
   adminRoutes.use('*', requireTrustedOrigin(authRuntime))
@@ -159,6 +183,7 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
     const query = parse(filterOptionsQuerySchema, queryObject(c.req.url))
     return c.json(successResponse(await runtime.getService().filterOptions(query as UniversityDirectoryFilters)), 200)
   })
+  publicRoutes.get('/study-languages', async (c) => c.json(successResponse(await runtime.getService().listStudyLanguages(false)), 200))
   publicRoutes.get('/universities/:slug/programs', async (c) => {
     const { slug } = parse(universitySlugParamSchema, { slug: c.req.param('slug') })
     const query = parse(programListQuerySchema, queryObject(c.req.url))
@@ -185,6 +210,17 @@ export const createUniversityDirectoryRoutes = (runtime: UniversityDirectoryRunt
   adminRoutes.get('/academic-majors', async (c) => {
     const query = parse(majorListQuerySchema, queryObject(c.req.url))
     return c.json(successResponse(await runtime.getService().listMajors(query as CatalogListQuery)), 200)
+  })
+  adminRoutes.get('/study-languages', async (c) => c.json(successResponse(await runtime.getService().listStudyLanguages(true)), 200))
+  adminRoutes.post('/study-languages', async (c) => {
+    const body = parse(studyLanguageCreateSchema, await readJson(c.req.raw))
+    return c.json(successResponse(await runtime.getService().createStudyLanguage(body, c.get('authClaims').userId)), 201)
+  })
+  adminRoutes.patch('/study-languages/:id', async (c) => {
+    const { id } = parse(directoryIdParamSchema, { id: c.req.param('id') })
+    const body = parse(studyLanguageUpdateSchema, await readJson(c.req.raw))
+    const input = Object.fromEntries(Object.entries(body).filter(([, value]) => value !== undefined))
+    return c.json(successResponse(await runtime.getService().updateStudyLanguage(id, input, c.get('authClaims').userId)), 200)
   })
   adminRoutes.post('/academic-majors', async (c) => {
     const body = parse(academicMajorCreateSchema, await readJson(c.req.raw))

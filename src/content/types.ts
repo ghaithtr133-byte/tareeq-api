@@ -12,6 +12,8 @@ export const contentResources = [
 export type ContentResource = (typeof contentResources)[number]
 export type PublicationStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 export type ScholarshipApplicationStatus = 'OPEN' | 'CLOSED'
+export type ScholarshipOptionType = 'STUDY_LEVEL' | 'FUNDING_TYPE'
+export type ScholarshipOption = { id: string; type: ScholarshipOptionType; code: string; nameAr: string; isActive: boolean; sortOrder: number; createdAt: Date; updatedAt: Date }
 
 export type ContentEntity = {
   id: string
@@ -77,6 +79,10 @@ export interface ContentRepository {
   findCityById(id: string): Promise<CityReference | null>
   countScholarshipsByIds(ids: string[]): Promise<number>
   scholarshipFilterOptions(): Promise<{ studyLevels: Array<{ value: string; count: number }>; fundingTypes: Array<{ value: string; count: number }> }>
+  listScholarshipOptions(type: ScholarshipOptionType, includeInactive: boolean): Promise<ScholarshipOption[]>
+  createScholarshipOption(input: Pick<ScholarshipOption, 'type' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string): Promise<{ outcome: 'UPDATED'; record: ScholarshipOption } | { outcome: 'CONFLICT' }>
+  updateScholarshipOption(id: string, input: Partial<Pick<ScholarshipOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string): Promise<{ outcome: 'UPDATED'; record: ScholarshipOption } | { outcome: 'NOT_FOUND' | 'CONFLICT' }>
+  activeScholarshipOptionExists(type: ScholarshipOptionType, code: string): Promise<boolean>
   reorder(resource: ContentResource, orderedIds: string[], actorAdminId: string): Promise<{ outcome: 'UPDATED'; records: ContentEntity[] } | { outcome: 'ORDER_SET_MISMATCH' }>
   deletionImpact(resource: ContentResource, id: string): Promise<DeletionImpact | null>
   deleteIfSafe(resource: ContentResource, id: string, actorAdminId: string): Promise<DeletionExecution>

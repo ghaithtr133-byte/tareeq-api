@@ -90,7 +90,7 @@ For real authenticated browser testing, use the shared-site production domains o
 
 `ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, site-settings updates, and analytics reporting are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
 
-The local generated OpenAPI contains exactly 128 operations:
+The local generated OpenAPI contains exactly 136 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
@@ -881,7 +881,7 @@ Render the returned order directly. The collection can be empty; `country` and `
 
 ## Country, Service, and Scholarship detail sections
 
-`GET /countries/{slug}` returns `studentFacts` (four nullable Arabic summaries), optional `overviewImageUrl`/`overviewImageAltAr`, and `studyGuide` (an empty array when unset). `GET /services/{slug}` returns ordered `stepsAr` and `benefitsAr`; `GET /scholarships/{slug}` returns ordered `benefitsAr`, `requirementItemsAr`, and `applicationStepsAr`. These public collections are visible only when their parent record is PUBLISHED.
+`GET /countries/{slug}` returns `studentFacts` with exactly four nullable strings — `studyLanguageAr`, `tuitionSummaryAr`, `admissionSummaryAr`, and `applicationDatesSummaryAr` — plus optional `overviewImageUrl`/`overviewImageAltAr`, and `studyGuide` (an empty ordered array when unset). Each guide row preserves its fixed `section` identifier, rich-text `bodyAr`, and `displayOrder`; Country detail is PUBLISHED-only. `GET /services/{slug}` returns ordered `stepsAr` and `benefitsAr`; `GET /scholarships/{slug}` returns ordered `benefitsAr`, `requirementItemsAr`, and `applicationStepsAr`. These public collections are visible only when their parent record is PUBLISHED.
 
 Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study-guide`, `/admin/services/{serviceId}/service-detail-items`, and `/admin/scholarships/{scholarshipId}/scholarship-detail-items`; individual entries use their corresponding `/admin/{collection}/{id}` PATCH and DELETE routes. Reorder requests must supply the complete, duplicate-free ID set for one parent and kind. Monetary Scholarship benefits require currency, coverage period, official source URL, and verification time.
 
@@ -891,7 +891,7 @@ Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 128 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 136 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

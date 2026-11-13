@@ -5,6 +5,7 @@ import type {
   CatalogListQuery,
   CityRecord,
   CityUpdateInput,
+  CatalogOption,
   ProgramCreateInput,
   ProgramListQuery,
   ProgramUpdateInput,
@@ -134,6 +135,24 @@ export class UniversityDirectoryService {
     if (result.outcome === 'NOT_FOUND') throw mutationError('NOT_FOUND')
     if (result.outcome === 'IN_USE') throw new ApiError(409, 'CITY_IN_USE', 'This city is referenced by Universities and cannot be deleted.')
     return { id }
+  }
+
+  async listStudyLanguages(includeInactive: boolean) {
+    return { items: await this.repository.listStudyLanguages(includeInactive) }
+  }
+
+  async createStudyLanguage(input: Pick<CatalogOption, 'code' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string) {
+    const result = await this.repository.createStudyLanguage(input, actorAdminId)
+    if (result.outcome === 'CONFLICT') throw new ApiError(409, 'STUDY_LANGUAGE_CONFLICT', 'Language code and Arabic name must be unique.', { fields: { code: ['Choose a unique code.'], nameAr: ['Choose a unique Arabic name.'] } })
+    return result.record
+  }
+
+  async updateStudyLanguage(id: string, input: Partial<Pick<CatalogOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string) {
+    const result = await this.repository.updateStudyLanguage(id, input, actorAdminId)
+    if (result.outcome === 'NOT_FOUND') throw new ApiError(404, 'STUDY_LANGUAGE_NOT_FOUND', 'Study language not found.')
+    if (result.outcome === 'CONFLICT') throw new ApiError(409, 'STUDY_LANGUAGE_CONFLICT', 'Arabic language name must be unique.', { fields: { nameAr: ['Choose a unique Arabic name.'] } })
+    if (result.outcome === 'UPDATED') return result.record
+    throw new ApiError(500, 'INTERNAL_SERVER_ERROR', 'An unexpected error occurred.')
   }
 
   private validateProgram(input: ProgramCreateInput) {

@@ -123,9 +123,15 @@ describe('content management APIs', () => {
       officialSourceUrl: 'https://example.invalid/source', status,
     }, ADMIN_ID)
     await create('government-scholarship', 'ASSOCIATE_BACHELOR_MASTER_PHD', 'GOVERNMENT_FUNDED')
-    await create('stipend-scholarship', 'MASTER', 'TUITION_AND_STIPEND')
-    await create('unknown-scholarship', 'test', 'test')
-    await create('draft-scholarship', 'MASTER', 'GOVERNMENT_FUNDED', 'DRAFT')
+    await contentRepository.create('scholarships', {
+      titleAr: 'stipend-scholarship', slug: 'stipend-scholarship', studyLevel: 'MASTER', fundingType: 'TUITION_AND_STIPEND', summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/source', status: 'PUBLISHED', publishedAt: FIXED_NOW,
+    }, { actorAdminId: ADMIN_ID, action: 'test.legacy.created', resourceType: 'SCHOLARSHIP', metadata: {} })
+    await contentRepository.create('scholarships', {
+      titleAr: 'unknown-scholarship', slug: 'unknown-scholarship', studyLevel: 'test', fundingType: 'test', summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/source', status: 'PUBLISHED', publishedAt: FIXED_NOW,
+    }, { actorAdminId: ADMIN_ID, action: 'test.legacy.created', resourceType: 'SCHOLARSHIP', metadata: {} })
+    await contentRepository.create('scholarships', {
+      titleAr: 'draft-scholarship', slug: 'draft-scholarship', studyLevel: 'MASTER', fundingType: 'GOVERNMENT_FUNDED', summaryAr: null, requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    }, { actorAdminId: ADMIN_ID, action: 'test.legacy.created', resourceType: 'SCHOLARSHIP', metadata: {} })
     await expect(app.request('/api/v1/scholarships/filter-options')).resolves.toMatchObject({ status: 200 })
     const result = await contentService.scholarshipFilterOptions()
     expect(result.studyLevels).toEqual(expect.arrayContaining([
@@ -138,6 +144,23 @@ describe('content management APIs', () => {
       { value: 'TUITION_AND_STIPEND', labelAr: 'رسوم دراسية ومخصصات', count: 1 },
       { value: 'test', labelAr: null, count: 1 },
     ]))
+  })
+
+  it('preserves unseeded legacy Scholarship codes on unrelated updates while rejecting new unknown or inactive selections', async () => {
+    const legacy = await contentRepository.create('scholarships', {
+      titleAr: 'منحة قديمة', slug: 'legacy-demo-only', studyLevel: 'test', fundingType: 'DEMO_ONLY', summaryAr: null, requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'PUBLISHED', publishedAt: FIXED_NOW,
+    }, { actorAdminId: ADMIN_ID, action: 'test.legacy.created', resourceType: 'SCHOLARSHIP', metadata: {} })
+    expect((await adminRequest(`/api/v1/admin/scholarships/${legacy.id}`, 'PATCH', { descriptionAr: 'وصف محدث' })).status).toBe(200)
+    const unknown = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      titleAr: 'منحة غير معروفة', slug: 'new-unknown-option', studyLevel: 'test', fundingType: 'DEMO_ONLY', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    })
+    expect(unknown.status).toBe(400)
+    const inactive = contentRepository.scholarshipOptions.find((option) => option.type === 'FUNDING_TYPE' && option.code === 'FULL')!
+    inactive.isActive = false
+    const inactiveSelection = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      titleAr: 'منحة غير نشطة', slug: 'new-inactive-option', studyLevel: 'BACHELORS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    })
+    expect(inactiveSelection.status).toBe(400)
   })
 
   it('rejects unauthenticated Admin access and accepts both approved roles', async () => {

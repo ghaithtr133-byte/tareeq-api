@@ -4,6 +4,8 @@ import type {
   ContentRepository,
   ContentResource,
   ContentWriteData,
+  ScholarshipOption,
+  ScholarshipOptionType,
 } from '../../src/content/types.js'
 import type { AuditIntent } from '../../src/audit/types.js'
 import {
@@ -24,6 +26,10 @@ const textIncludes = (value: unknown, search: string) =>
   typeof value === 'string' && value.toLocaleLowerCase().includes(search.toLocaleLowerCase())
 
 export class InMemoryContentRepository implements ContentRepository {
+  readonly scholarshipOptions: ScholarshipOption[] = ([
+    ['STUDY_LEVEL', 'FOUNDATION', 'السنة التحضيرية'], ['STUDY_LEVEL', 'DIPLOMA', 'دبلوم'], ['STUDY_LEVEL', 'BACHELORS', 'بكالوريوس'], ['STUDY_LEVEL', 'MASTERS', 'ماجستير'], ['STUDY_LEVEL', 'PHD', 'دكتوراه'], ['STUDY_LEVEL', 'ASSOCIATE_BACHELOR_MASTER_PHD', 'دبلوم مشارك، بكالوريوس، ماجستير ودكتوراه'], ['STUDY_LEVEL', 'BACHELOR_MASTER_PHD', 'بكالوريوس، ماجستير ودكتوراه'],
+    ['FUNDING_TYPE', 'FULL', 'تمويل كامل'], ['FUNDING_TYPE', 'PARTIAL', 'تمويل جزئي'], ['FUNDING_TYPE', 'GOVERNMENT_FUNDED', 'ممولة حكومياً'], ['FUNDING_TYPE', 'GOVERNMENT_FUNDED_FULL', 'تمويل حكومي كامل'], ['FUNDING_TYPE', 'TUITION_AND_STIPEND', 'رسوم دراسية ومخصصات'],
+  ] as Array<[string, string, string]>).map(([type, code, nameAr], sortOrder) => ({ id: crypto.randomUUID(), type: type as ScholarshipOptionType, code, nameAr, isActive: true, sortOrder, createdAt: new Date(), updatedAt: new Date() }))
   private readonly configuredDeletionImpacts = new Map<string, { items: DeletionImpactItem[]; analysisComplete: boolean }>()
   private readonly deletionChallenges = new Map<string, {
     actorAdminId: string
@@ -258,6 +264,16 @@ export class InMemoryContentRepository implements ContentRepository {
         return String(left.nameAr).localeCompare(String(right.nameAr), 'ar') || left.id.localeCompare(right.id)
       }
       if (query.sort === 'deadline') {
+        if (!publicOnly && resource === 'scholarships') {
+          const upcoming = (record: ContentEntity) => record.applicationStatus === 'OPEN' && record.verifiedDeadline instanceof Date && record.verifiedDeadline >= now
+          if (upcoming(left) !== upcoming(right)) return upcoming(left) ? -1 : 1
+          if (upcoming(left) && upcoming(right)) return (left.verifiedDeadline as Date).getTime() - (right.verifiedDeadline as Date).getTime() || left.id.localeCompare(right.id)
+          const leftStatus = String(left.applicationStatus ?? '')
+          const rightStatus = String(right.applicationStatus ?? '')
+          const leftDeadline = left.verifiedDeadline instanceof Date ? left.verifiedDeadline.getTime() : Number.MAX_SAFE_INTEGER
+          const rightDeadline = right.verifiedDeadline instanceof Date ? right.verifiedDeadline.getTime() : Number.MAX_SAFE_INTEGER
+          return leftStatus.localeCompare(rightStatus) || leftDeadline - rightDeadline || left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id)
+        }
         const leftDeadline = left.verifiedDeadline instanceof Date ? left.verifiedDeadline.getTime() : Number.MAX_SAFE_INTEGER
         const rightDeadline = right.verifiedDeadline instanceof Date ? right.verifiedDeadline.getTime() : Number.MAX_SAFE_INTEGER
         return leftDeadline - rightDeadline || left.id.localeCompare(right.id)
@@ -302,6 +318,18 @@ export class InMemoryContentRepository implements ContentRepository {
     const published = (this.records.get('scholarships') ?? []).filter((item) => item.status === 'PUBLISHED')
     const aggregate = (field: 'studyLevel' | 'fundingType') => [...new Map(published.filter((item) => typeof item[field] === 'string' && item[field] !== '').map((item) => [String(item[field]), 0])).keys()].sort().map((value) => ({ value, count: published.filter((item) => item[field] === value).length }))
     return { studyLevels: aggregate('studyLevel'), fundingTypes: aggregate('fundingType') }
+  }
+  async activeScholarshipOptionExists(type: ScholarshipOptionType, code: string) { return this.scholarshipOptions.some((item) => item.type === type && item.code === code && item.isActive) }
+  async listScholarshipOptions(type: ScholarshipOptionType, includeInactive: boolean) { return this.scholarshipOptions.filter((item) => item.type === type && (includeInactive || item.isActive)).sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code)).map((item) => ({ ...item })) }
+  async createScholarshipOption(input: Pick<ScholarshipOption, 'type' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string) {
+    if (this.scholarshipOptions.some((item) => item.type === input.type && item.nameAr.trim() === input.nameAr.trim())) return { outcome: 'CONFLICT' as const }
+    const record: ScholarshipOption = { ...input, id: crypto.randomUUID(), code: `CUSTOM_${crypto.randomUUID().replaceAll('-', '').toUpperCase()}`, createdAt: new Date(), updatedAt: new Date() }
+    this.scholarshipOptions.push(record); await this.audit.append({ actorAdminId, action: 'scholarship_option.created', resourceType: 'SCHOLARSHIP', metadata: { type: record.type, code: record.code } }, record.id); return { outcome: 'UPDATED' as const, record: { ...record } }
+  }
+  async updateScholarshipOption(id: string, input: Partial<Pick<ScholarshipOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string) {
+    const record = this.scholarshipOptions.find((item) => item.id === id); if (!record) return { outcome: 'NOT_FOUND' as const }
+    if (input.nameAr && this.scholarshipOptions.some((item) => item.id !== id && item.type === record.type && item.nameAr.trim() === input.nameAr!.trim())) return { outcome: 'CONFLICT' as const }
+    Object.assign(record, input, { updatedAt: new Date() }); await this.audit.append({ actorAdminId, action: 'scholarship_option.updated', resourceType: 'SCHOLARSHIP', metadata: { changedFields: Object.keys(input).sort() } }, id); return { outcome: 'UPDATED' as const, record: { ...record } }
   }
 
   async create(

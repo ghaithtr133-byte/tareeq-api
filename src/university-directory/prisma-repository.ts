@@ -1,4 +1,4 @@
-import { Prisma, type AcademicMajor, type City, type UniversityProgram } from '../generated/prisma/client.js'
+import { OptionCatalogType, Prisma, type AcademicMajor, type City, type UniversityProgram } from '../generated/prisma/client.js'
 import { getPrisma } from '../database/client.js'
 import type { PublicationStatus } from '../content/types.js'
 import type {
@@ -12,7 +12,7 @@ import type {
   ProgramListQuery,
   ProgramStudyLevel,
   ProgramUpdateInput,
-  TeachingLanguage,
+  CatalogOption,
   UniversityDirectoryFilters,
   UniversityDirectoryRepository,
   UniversityProgramRecord,
@@ -20,7 +20,7 @@ import type {
 
 type ProgramWithRelations = UniversityProgram & {
   academicMajor: AcademicMajor
-  languages: Array<{ language: TeachingLanguage }>
+  languages: Array<{ language: string }>
   tuitionFees: Array<{
     id: string
     amount: { toString(): string }
@@ -47,7 +47,7 @@ const asProgram = (record: ProgramWithRelations): UniversityProgramRecord => ({
   ...record,
   studyLevel: record.studyLevel as ProgramStudyLevel,
   status: record.status as PublicationStatus,
-  languages: record.languages.map(({ language }) => language as TeachingLanguage),
+  languages: record.languages.map(({ language }) => language),
   durationUnit: record.durationUnit as UniversityProgramRecord['durationUnit'],
   tuitionFees: record.tuitionFees.map((fee) => ({
     id: fee.id,
@@ -107,7 +107,7 @@ const programConditions = (
   if (filters.major && exclude !== 'major') conditions.push(Prisma.sql`m."slug" = ${filters.major}`)
   if (filters.studyLevel && exclude !== 'studyLevel') conditions.push(Prisma.sql`p."studyLevel" = CAST(${filters.studyLevel} AS "ProgramStudyLevel")`)
   if (filters.language && exclude !== 'language') {
-    conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM "UniversityProgramLanguage" selected_language WHERE selected_language."programId" = p."id" AND selected_language."language" = CAST(${filters.language} AS "TeachingLanguage"))`)
+    conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM "UniversityProgramLanguage" selected_language WHERE selected_language."programId" = p."id" AND selected_language."language" = ${filters.language})`)
   }
   return conditions
 }
@@ -125,6 +125,8 @@ const programExists = (filters: UniversityDirectoryFilters) => {
 }
 
 const auditMetadata = (metadata: Record<string, unknown>) => metadata as Prisma.InputJsonValue
+const normalizeName = (value: string) => value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar')
+const asCatalogOption = (record: { id: string; code: string; nameAr: string; isActive: boolean; sortOrder: number; createdAt: Date; updatedAt: Date }): CatalogOption => record
 
 export class PrismaUniversityDirectoryRepository implements UniversityDirectoryRepository {
   async resolvePublishedUniversity(slug: string) {
@@ -176,6 +178,7 @@ export class PrismaUniversityDirectoryRepository implements UniversityDirectoryR
         await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${PROGRAM_LOCK})`
         if (await transaction.university.count({ where: { id: input.universityId } }) !== 1) return { outcome: 'UNIVERSITY_NOT_FOUND' as const }
         if (await transaction.academicMajor.count({ where: { id: input.academicMajorId } }) !== 1) return { outcome: 'MAJOR_NOT_FOUND' as const }
+        if (await transaction.optionCatalog.count({ where: { type: OptionCatalogType.STUDY_LANGUAGE, isActive: true, code: { in: input.languages } } }) !== input.languages.length) return { outcome: 'CONFLICT' as const }
         const record = await transaction.universityProgram.create({
           data: {
             universityId: input.universityId,
@@ -218,6 +221,7 @@ export class PrismaUniversityDirectoryRepository implements UniversityDirectoryR
         const current = await transaction.universityProgram.findUnique({ where: { id }, include: includeProgram })
         if (!current) return { outcome: 'NOT_FOUND' as const }
         if (input.academicMajorId && await transaction.academicMajor.count({ where: { id: input.academicMajorId } }) !== 1) return { outcome: 'MAJOR_NOT_FOUND' as const }
+        if (input.languages && await transaction.optionCatalog.count({ where: { type: OptionCatalogType.STUDY_LANGUAGE, isActive: true, code: { in: input.languages } } }) !== input.languages.length) return { outcome: 'CONFLICT' as const }
         const nextStatus = input.status ?? current.status
         const nextNameAr = input.nameAr ?? current.nameAr
         const nextLanguageCount = input.languages?.length ?? current.languages.length
@@ -428,5 +432,41 @@ export class PrismaUniversityDirectoryRepository implements UniversityDirectoryR
       await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'city.deleted', resourceType: 'CITY', resourceId: id, metadata: auditMetadata({ slug: current.slug, countryId: current.countryId }) } })
       return { outcome: 'DELETED' as const }
     })
+  }
+
+  async listStudyLanguages(includeInactive: boolean) {
+    const records = await getPrisma().optionCatalog.findMany({
+      where: { type: OptionCatalogType.STUDY_LANGUAGE, ...(includeInactive ? {} : { isActive: true }) },
+      orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }],
+    })
+    return records.map(asCatalogOption)
+  }
+
+  async createStudyLanguage(input: Pick<CatalogOption, 'code' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string) {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        const record = await transaction.optionCatalog.create({ data: { ...input, type: OptionCatalogType.STUDY_LANGUAGE, normalizedName: normalizeName(input.nameAr) } })
+        await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'study_language.created', resourceType: 'UNIVERSITY_PROGRAM', resourceId: record.id, metadata: auditMetadata({ code: record.code, isActive: record.isActive, sortOrder: record.sortOrder }) } })
+        return { outcome: 'UPDATED' as const, record: asCatalogOption(record) }
+      })
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return { outcome: 'CONFLICT' as const }
+      throw error
+    }
+  }
+
+  async updateStudyLanguage(id: string, input: Partial<Pick<CatalogOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string) {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        const current = await transaction.optionCatalog.findFirst({ where: { id, type: OptionCatalogType.STUDY_LANGUAGE } })
+        if (!current) return { outcome: 'NOT_FOUND' as const }
+        const record = await transaction.optionCatalog.update({ where: { id }, data: { ...input, ...(input.nameAr === undefined ? {} : { normalizedName: normalizeName(input.nameAr) }) } })
+        await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'study_language.updated', resourceType: 'UNIVERSITY_PROGRAM', resourceId: id, metadata: auditMetadata({ changedFields: Object.keys(input).sort() }) } })
+        return { outcome: 'UPDATED' as const, record: asCatalogOption(record) }
+      })
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return { outcome: 'CONFLICT' as const }
+      throw error
+    }
   }
 }

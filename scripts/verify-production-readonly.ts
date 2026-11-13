@@ -97,16 +97,16 @@ await reporter.measure({
 await reporter.measure({
   id: 'openapi.release_contract',
   category: 'API Contract',
-  description: 'Production OpenAPI is 3.1 and has the same 128 method/path operations as local generated artifacts.',
+  description: 'Production OpenAPI is 3.1 and has the same 136 method/path operations as local generated artifacts.',
   environment: 'production',
-  expected: 'OpenAPI 3.1.0 and exactly 128 operations.',
+  expected: 'OpenAPI 3.1.0 and exactly 136 operations.',
 }, async () => {
   const { response, durationMs } = await request(`${baseUrl}/openapi.json`)
   const document = await response.json() as { openapi?: string, paths?: Record<string, Record<string, unknown>> }
   const methods = new Set(['get', 'post', 'put', 'patch', 'delete'])
   const operationCount = Object.values(document.paths ?? {}).flatMap((item) => Object.keys(item).filter((method) => methods.has(method))).length
   const internalDocumented = Object.keys(document.paths ?? {}).some((path) => path.includes('/internal/cron/'))
-  const ok = response.status === 200 && document.openapi === '3.1.0' && operationCount === 128 && !internalDocumented
+  const ok = response.status === 200 && document.openapi === '3.1.0' && operationCount === 136 && !internalDocumented
   return { status: ok ? 'PASS' : 'FAIL', actual: `HTTP ${response.status}; OpenAPI=${document.openapi ?? 'missing'}; operations=${operationCount}; internal dispatcher documented=${internalDocumented}; ${durationMs} ms.`, httpStatus: response.status, failureReason: ok ? undefined : 'Deployed OpenAPI contract differs from the expected public contract.', nextAction: ok ? undefined : 'Compare generated local OpenAPI and deployed release artifacts.' }
 })
 

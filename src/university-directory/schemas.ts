@@ -5,13 +5,12 @@ import { errorResponseSchema, successEnvelopeSchema } from '../shared/http.js'
 import {
   programDurationUnits,
   programStudyLevels,
-  teachingLanguages,
   tuitionBillingPeriods,
   universityTypes,
 } from './types.js'
 
 export const programStudyLevelSchema = z.enum(programStudyLevels).openapi('ProgramStudyLevel')
-export const teachingLanguageSchema = z.enum(teachingLanguages).openapi('TeachingLanguage')
+export const teachingLanguageSchema = z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,63}$/, 'Use an uppercase stable language code.').openapi('TeachingLanguage')
 export const universityTypeSchema = z.enum(universityTypes).openapi('UniversityType')
 export const programDurationUnitSchema = z.enum(programDurationUnits).openapi('ProgramDurationUnit')
 export const tuitionBillingPeriodSchema = z.enum(tuitionBillingPeriods).openapi('TuitionBillingPeriod')
@@ -69,7 +68,7 @@ const programFields = {
   durationValue: z.number().int().min(1).max(240).nullable().optional(),
   durationUnit: programDurationUnitSchema.nullable().optional(),
   studyLevel: programStudyLevelSchema,
-  languages: z.array(teachingLanguageSchema).min(1).max(teachingLanguages.length).superRefine((items, context) => {
+  languages: z.array(teachingLanguageSchema).min(1).max(100).superRefine((items, context) => {
     if (new Set(items).size !== items.length) context.addIssue({ code: 'custom', message: 'Duplicate teaching languages are not allowed.' })
   }),
   status: publicationStatusSchema.optional().default('DRAFT'),
@@ -97,6 +96,13 @@ export const cityCreateSchema = z.object({
   nameAr: z.string().trim().min(1).max(200), nameEn: z.string().trim().min(1).max(200),
 }).strict().openapi('CityCreateRequest')
 export const cityUpdateSchema = cityCreateSchema.partial().strict().refine((value) => Object.keys(value).length > 0, 'At least one field must be provided.').openapi('CityUpdateRequest')
+export const studyLanguageCreateSchema = z.object({
+  code: teachingLanguageSchema,
+  nameAr: z.string().trim().min(1).max(200),
+  isActive: z.boolean().optional().default(true),
+  sortOrder: z.number().int().min(0).max(1_000_000).optional().default(0),
+}).strict().openapi('StudyLanguageCreateRequest')
+export const studyLanguageUpdateSchema = studyLanguageCreateSchema.omit({ code: true }).partial().strict().refine((value) => Object.keys(value).length > 0, 'At least one field must be provided.').openapi('StudyLanguageUpdateRequest')
 
 const dateSchema = z.iso.datetime({ offset: true })
 const majorSchema = z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string(), category: z.string().nullable() }).openapi('AcademicMajorSummary')
@@ -120,6 +126,7 @@ const citySchema = z.object({
   createdAt: dateSchema, updatedAt: dateSchema,
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string().nullable() }).optional(),
 }).openapi('City')
+const studyLanguageRecordSchema = z.object({ id: z.uuid(), code: teachingLanguageSchema, nameAr: z.string(), isActive: z.boolean(), sortOrder: z.number().int(), createdAt: dateSchema, updatedAt: dateSchema }).openapi('StudyLanguage')
 const paginationSchema = z.object({ page: z.number().int(), limit: z.number().int(), total: z.number().int(), totalPages: z.number().int() })
 const paginated = <T extends z.ZodType>(item: T) => successEnvelopeSchema(z.object({ items: z.array(item), pagination: paginationSchema }))
 
@@ -130,6 +137,8 @@ export const majorListResponseSchema = paginated(majorAdminSchema).openapi('Acad
 export const majorResponseSchema = successEnvelopeSchema(majorAdminSchema).openapi('AcademicMajorResponse')
 export const cityListResponseSchema = paginated(citySchema).openapi('CityListResponse')
 export const cityResponseSchema = successEnvelopeSchema(citySchema).openapi('CityResponse')
+export const studyLanguageListResponseSchema = successEnvelopeSchema(z.object({ items: z.array(studyLanguageRecordSchema) })).openapi('StudyLanguageListResponse')
+export const studyLanguageResponseSchema = successEnvelopeSchema(studyLanguageRecordSchema).openapi('StudyLanguageResponse')
 
 const facetSchema = z.object({ value: z.string(), count: z.number().int().min(1) })
 export const filterOptionsResponseSchema = successEnvelopeSchema(z.object({

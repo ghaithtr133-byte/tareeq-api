@@ -23,6 +23,12 @@ import {
   publicQuerySchemas,
   contentReorderSchema,
   contentReorderResponseSchema,
+  scholarshipOptionQuerySchema,
+  adminScholarshipOptionQuerySchema,
+  scholarshipOptionCreateSchema,
+  scholarshipOptionUpdateSchema,
+  scholarshipOptionListResponseSchema,
+  scholarshipOptionResponseSchema,
   slugParamSchema,
   uuidParamSchema,
 } from './schemas.js'
@@ -405,6 +411,14 @@ export const createContentRoutes = (
     responses: { 200: { description: 'Published Scholarship facets.', content: { 'application/json': { schema: successEnvelopeSchema(scholarshipFilterOptionsSchema), example: { success: true, data: { studyLevels: [{ value: 'MASTERS', labelAr: 'ماجستير', count: 4 }], fundingTypes: [{ value: 'FULL', labelAr: 'تمويل كامل', count: 3 }] } } } } } },
   })
   publicRoutes.get('/scholarships/filter-options', async (c) => c.json(successResponse(await contentRuntime.getService().scholarshipFilterOptions()), 200))
+  routes.openAPIRegistry.registerPath({ method: 'get', path: '/scholarship-options', tags: ['Public — Scholarships'], summary: 'List active Scholarship options', description: 'Lists active Study Level or Funding Type options in persisted editorial order. Scholarship payloads continue to use code strings.', request: { query: scholarshipOptionQuerySchema }, responses: { 200: { description: 'Active Scholarship options.', content: { 'application/json': { schema: scholarshipOptionListResponseSchema, example: { success: true, data: { items: [] } } } } }, 400: contentErrorResponses[400] } })
+  routes.openAPIRegistry.registerPath({ method: 'get', path: '/admin/scholarship-options', tags: ['Admin — Scholarships'], summary: 'List Scholarship options', description: 'ADMIN or SUPER_ADMIN only. Includes inactive options unless activeOnly=true.', security: [{ accessCookie: [] }], request: { query: adminScholarshipOptionQuerySchema }, responses: { 200: { description: 'Scholarship options.', content: { 'application/json': { schema: scholarshipOptionListResponseSchema, example: { success: true, data: { items: [] } } } } }, 400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403] } })
+  routes.openAPIRegistry.registerPath({ method: 'post', path: '/admin/scholarship-options', tags: ['Admin — Scholarships'], summary: 'Create Scholarship option', description: 'ADMIN or SUPER_ADMIN only. Generates an immutable collision-safe code; the Admin submits type and Arabic name only.', security: [{ accessCookie: [] }], request: { body: { required: true, content: { 'application/json': { schema: scholarshipOptionCreateSchema, example: { type: 'STUDY_LEVEL', nameAr: 'سنة تحضيرية', sortOrder: 70 } } } } }, responses: { 201: { description: 'Scholarship option created.', content: { 'application/json': { schema: scholarshipOptionResponseSchema, example: { success: true, data: { id: exampleId, type: 'STUDY_LEVEL', code: 'CUSTOM_EXAMPLE', nameAr: 'سنة تحضيرية', isActive: true, sortOrder: 70, createdAt: '2026-11-14T00:00:00.000Z', updatedAt: '2026-11-14T00:00:00.000Z' } } } } }, 400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403], 409: contentErrorResponses[409], 415: contentErrorResponses[415] } })
+  routes.openAPIRegistry.registerPath({ method: 'patch', path: '/admin/scholarship-options/{id}', tags: ['Admin — Scholarships'], summary: 'Update Scholarship option', description: 'ADMIN or SUPER_ADMIN only. Code and type are immutable; Arabic label, activation, and sort order may change.', security: [{ accessCookie: [] }], request: { params: uuidParamSchema, body: { required: true, content: { 'application/json': { schema: scholarshipOptionUpdateSchema, example: { isActive: false } } } } }, responses: { 200: { description: 'Scholarship option updated.', content: { 'application/json': { schema: scholarshipOptionResponseSchema, example: { success: true, data: {} } } } }, 400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403], 404: contentErrorResponses[404], 409: contentErrorResponses[409], 415: contentErrorResponses[415] } })
+  publicRoutes.get('/scholarship-options', async (c) => { const { type } = parse(scholarshipOptionQuerySchema, queryObject(c.req.url)); return c.json(successResponse(await contentRuntime.getService().listScholarshipOptions(type, false)), 200) })
+  adminRoutes.get('/scholarship-options', async (c) => { const query = parse(adminScholarshipOptionQuerySchema, queryObject(c.req.url)); return c.json(successResponse(await contentRuntime.getService().listScholarshipOptions(query.type, query.activeOnly !== true)), 200) })
+  adminRoutes.post('/scholarship-options', async (c) => { const body = parse(scholarshipOptionCreateSchema, await readJson(c.req.raw)); return c.json(successResponse(await contentRuntime.getService().createScholarshipOption(body, c.get('authClaims').userId)), 201) })
+  adminRoutes.patch('/scholarship-options/:id', async (c) => { const { id } = parse(uuidParamSchema, { id: c.req.param('id') }); const body = parse(scholarshipOptionUpdateSchema, await readJson(c.req.raw)); const input = Object.fromEntries(Object.entries(body).filter(([, value]) => value !== undefined)); return c.json(successResponse(await contentRuntime.getService().updateScholarshipOption(id, input, c.get('authClaims').userId)), 200) })
 
   for (const resource of contentResources) {
     registerDocumentation(routes, resource)

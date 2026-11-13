@@ -107,16 +107,10 @@ enum ProgramStudyLevel {
   PHD
 }
 
-enum TeachingLanguage {
-  ARABIC
-  ENGLISH
-  FRENCH
-  GERMAN
-  TURKISH
-  ROMANIAN
-  RUSSIAN
-  SPANISH
-  ITALIAN
+enum OptionCatalogType {
+  STUDY_LANGUAGE
+  STUDY_LEVEL
+  FUNDING_TYPE
 }
 
 enum UniversityType {
@@ -495,12 +489,28 @@ model UniversityProgram {
 
 model UniversityProgramLanguage {
   programId String            @db.Uuid
-  language  TeachingLanguage
+  language  String            @db.VarChar(64)
   createdAt DateTime          @default(now()) @db.Timestamptz(3)
   program   UniversityProgram @relation(fields: [programId], references: [id], onDelete: Restrict)
 
   @@id([programId, language])
   @@index([language, programId])
+}
+
+model OptionCatalog {
+  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type           OptionCatalogType
+  code           String            @db.VarChar(64)
+  nameAr         String            @db.VarChar(200)
+  normalizedName String            @db.VarChar(200)
+  isActive       Boolean           @default(true)
+  sortOrder      Int               @default(0)
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(3)
+
+  @@unique([type, code])
+  @@unique([type, normalizedName])
+  @@index([type, isActive, sortOrder, code])
 }
 
 model UniversityProgramTuition {

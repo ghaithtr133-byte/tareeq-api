@@ -11,6 +11,11 @@ export const publicationStatusSchema = z
 export const applicationStatusSchema = z
   .enum(['OPEN', 'CLOSED'])
   .openapi('ScholarshipApplicationStatus')
+export const scholarshipOptionTypeSchema = z.enum(['STUDY_LEVEL', 'FUNDING_TYPE']).openapi('ScholarshipOptionType')
+export const scholarshipOptionQuerySchema = z.object({ type: scholarshipOptionTypeSchema }).strict()
+export const adminScholarshipOptionQuerySchema = scholarshipOptionQuerySchema.extend({ activeOnly: z.enum(['true', 'false']).transform((value) => value === 'true').optional() }).strict()
+export const scholarshipOptionCreateSchema = z.object({ type: scholarshipOptionTypeSchema, nameAr: z.string().trim().min(1).max(200), isActive: z.boolean().optional().default(true), sortOrder: z.number().int().min(0).max(1_000_000).optional().default(0) }).strict().openapi('ScholarshipOptionCreateRequest')
+export const scholarshipOptionUpdateSchema = scholarshipOptionCreateSchema.omit({ type: true }).partial().strict().refine((value) => Object.keys(value).length > 0, 'At least one field must be provided.').openapi('ScholarshipOptionUpdateRequest')
 export const universityTypeSchema = z.enum(universityTypes).openapi('UniversityType')
 const nullableUniversityTypeSchema = z.enum(universityTypes).nullable()
 
@@ -332,7 +337,10 @@ export const contentEntitySchemas = {
 } as const
 
 export const publicContentEntitySchemas = {
-  countries: countrySchema.omit({ status: true, createdAt: true, updatedAt: true }),
+  countries: countrySchema.omit({ status: true, createdAt: true, updatedAt: true, studyLanguageAr: true, tuitionSummaryAr: true, admissionSummaryAr: true, applicationDatesSummaryAr: true, studyGuideSections: true }).extend({
+    studentFacts: z.object({ studyLanguageAr: z.string().nullable(), tuitionSummaryAr: z.string().nullable(), admissionSummaryAr: z.string().nullable(), applicationDatesSummaryAr: z.string().nullable() }),
+    studyGuide: z.array(z.object({ id: z.uuid(), section: z.enum(['ACADEMIC_SYSTEM', 'ADMISSION_DOCUMENTS', 'COSTS_STUDENT_LIFE']).nullable(), titleAr: z.string(), bodyAr: z.string(), displayOrder: z.number().int() })),
+  }).openapi('PublicCountry'),
   universities: universitySchema.omit({ status: true, createdAt: true, updatedAt: true }),
   scholarships: scholarshipSchema.omit({ status: true, createdAt: true, updatedAt: true }),
   services: serviceSchema.omit({ status: true, createdAt: true, updatedAt: true }),
@@ -342,6 +350,9 @@ export const publicContentEntitySchemas = {
 export const paginationSchema = z.object({
   page: z.number().int(), limit: z.number().int(), total: z.number().int(), totalPages: z.number().int(),
 }).openapi('Pagination')
+const scholarshipOptionSchema = z.object({ id: z.uuid(), type: scholarshipOptionTypeSchema, code: z.string(), nameAr: z.string(), isActive: z.boolean(), sortOrder: z.number().int(), createdAt: z.iso.datetime({ offset: true }), updatedAt: z.iso.datetime({ offset: true }) }).openapi('ScholarshipOption')
+export const scholarshipOptionListResponseSchema = successEnvelopeSchema(z.object({ items: z.array(scholarshipOptionSchema) })).openapi('ScholarshipOptionListResponse')
+export const scholarshipOptionResponseSchema = successEnvelopeSchema(scholarshipOptionSchema).openapi('ScholarshipOptionResponse')
 
 const pageQuery = {
   page: z.coerce.number().int().min(1).optional().default(1).openapi({

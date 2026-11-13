@@ -5,6 +5,7 @@ import type {
   CatalogListQuery,
   CityRecord,
   CityUpdateInput,
+  CatalogOption,
   FilterOptions,
   ProgramCreateInput,
   ProgramListQuery,
@@ -44,6 +45,9 @@ export class InMemoryUniversityDirectoryRepository implements UniversityDirector
   readonly programs: UniversityProgramRecord[] = []
   readonly universities: UniversityDirectoryFixture[] = []
   readonly countryIds = new Set<string>()
+  readonly studyLanguages: CatalogOption[] = ([
+    ['ARABIC', 'العربية'], ['ENGLISH', 'الإنجليزية'], ['FRENCH', 'الفرنسية'], ['GERMAN', 'الألمانية'], ['TURKISH', 'التركية'], ['ROMANIAN', 'الرومانية'], ['RUSSIAN', 'الروسية'], ['SPANISH', 'الإسبانية'], ['ITALIAN', 'الإيطالية'],
+  ] as Array<[string, string]>).map(([code, nameAr], sortOrder) => ({ id: crypto.randomUUID(), code, nameAr, isActive: true, sortOrder: (sortOrder + 1) * 10, createdAt: new Date('2026-01-01T00:00:00.000Z'), updatedAt: new Date('2026-01-01T00:00:00.000Z') }))
 
   constructor(
     readonly audit = new InMemoryAuditRepository(),
@@ -233,5 +237,23 @@ export class InMemoryUniversityDirectoryRepository implements UniversityDirector
     this.cities.splice(index, 1)
     await this.audit.append({ actorAdminId, action: 'city.deleted', resourceType: 'CITY', metadata: {} }, id)
     return { outcome: 'DELETED' as const }
+  }
+  async listStudyLanguages(includeInactive: boolean) {
+    return this.studyLanguages.filter((item) => includeInactive || item.isActive).sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code)).map((item) => ({ ...item }))
+  }
+  async createStudyLanguage(input: Pick<CatalogOption, 'code' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string) {
+    if (this.studyLanguages.some((item) => item.code === input.code || item.nameAr.trim() === input.nameAr.trim())) return { outcome: 'CONFLICT' as const }
+    const record = { ...input, id: crypto.randomUUID(), createdAt: this.now(), updatedAt: this.now() }
+    this.studyLanguages.push(record)
+    await this.audit.append({ actorAdminId, action: 'study_language.created', resourceType: 'UNIVERSITY_PROGRAM', metadata: { code: record.code } }, record.id)
+    return { outcome: 'UPDATED' as const, record: { ...record } }
+  }
+  async updateStudyLanguage(id: string, input: Partial<Pick<CatalogOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string) {
+    const record = this.studyLanguages.find((item) => item.id === id)
+    if (!record) return { outcome: 'NOT_FOUND' as const }
+    if (input.nameAr && this.studyLanguages.some((item) => item.id !== id && item.nameAr.trim() === input.nameAr!.trim())) return { outcome: 'CONFLICT' as const }
+    Object.assign(record, input, { updatedAt: this.now() })
+    await this.audit.append({ actorAdminId, action: 'study_language.updated', resourceType: 'UNIVERSITY_PROGRAM', metadata: { changedFields: Object.keys(input).sort() } }, id)
+    return { outcome: 'UPDATED' as const, record: { ...record } }
   }
 }

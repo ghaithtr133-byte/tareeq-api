@@ -1,5 +1,5 @@
 import { getPrisma } from '../database/client.js'
-import type { Prisma } from '../generated/prisma/client.js'
+import { OptionCatalogType, type Prisma } from '../generated/prisma/client.js'
 import { ApiError } from '../shared/http.js'
 import type { AuditIntent } from '../audit/types.js'
 import type { UniversityDirectoryFilters } from '../university-directory/types.js'
@@ -19,6 +19,8 @@ import type {
   ContentRepository,
   ContentResource,
   ContentWriteData,
+  ScholarshipOption,
+  ScholarshipOptionType,
 } from './types.js'
 
 const relationSelections = {
@@ -618,6 +620,19 @@ export class PrismaContentRepository implements ContentRepository {
           : query.sort === 'deadline'
             ? [{ verifiedDeadline: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]
             : [{ createdAt: 'desc' }, { id: 'asc' }]
+        if (!publicOnly && query.sort === 'deadline') {
+          const records = await prisma.scholarship.findMany({ where, include: { country: relationSelections.country, university: relationSelections.university } })
+          const ranked = records.sort((left, right) => {
+            const leftUpcoming = left.applicationStatus === 'OPEN' && left.verifiedDeadline !== null && left.verifiedDeadline >= now
+            const rightUpcoming = right.applicationStatus === 'OPEN' && right.verifiedDeadline !== null && right.verifiedDeadline >= now
+            if (leftUpcoming !== rightUpcoming) return leftUpcoming ? -1 : 1
+            if (leftUpcoming && rightUpcoming) return left.verifiedDeadline!.getTime() - right.verifiedDeadline!.getTime() || left.id.localeCompare(right.id)
+            const leftDeadline = left.verifiedDeadline?.getTime() ?? Number.MAX_SAFE_INTEGER
+            const rightDeadline = right.verifiedDeadline?.getTime() ?? Number.MAX_SAFE_INTEGER
+            return left.applicationStatus.localeCompare(right.applicationStatus) || leftDeadline - rightDeadline || left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id)
+          })
+          return { items: asEntities(ranked.slice(pagination.skip, pagination.skip + pagination.take)), total: ranked.length }
+        }
         const [items, total] = await Promise.all([
           prisma.scholarship.findMany({
             where, orderBy, ...pagination,
@@ -722,6 +737,43 @@ export class PrismaContentRepository implements ContentRepository {
       getPrisma().scholarship.groupBy({ by: ['fundingType'], where: { status: 'PUBLISHED', fundingType: { not: '' } }, _count: { _all: true }, orderBy: { fundingType: 'asc' } }),
     ])
     return { studyLevels: studyLevels.map((row) => ({ value: row.studyLevel, count: row._count._all })), fundingTypes: fundingTypes.map((row) => ({ value: row.fundingType, count: row._count._all })) }
+  }
+
+  async activeScholarshipOptionExists(type: ScholarshipOptionType, code: string) {
+    return await getPrisma().optionCatalog.count({ where: { type: type as OptionCatalogType, code, isActive: true } }) === 1
+  }
+
+  async listScholarshipOptions(type: ScholarshipOptionType, includeInactive: boolean): Promise<ScholarshipOption[]> {
+    return (await getPrisma().optionCatalog.findMany({ where: { type: type as OptionCatalogType, ...(includeInactive ? {} : { isActive: true }) }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] })).map((record) => ({ ...record, type: record.type as ScholarshipOptionType }))
+  }
+
+  async createScholarshipOption(input: Pick<ScholarshipOption, 'type' | 'nameAr' | 'isActive' | 'sortOrder'>, actorAdminId: string) {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        const code = `CUSTOM_${crypto.randomUUID().replaceAll('-', '').toUpperCase()}`
+        const record = await transaction.optionCatalog.create({ data: { ...input, type: input.type as OptionCatalogType, code, normalizedName: input.nameAr.trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar') } })
+        await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'scholarship_option.created', resourceType: 'SCHOLARSHIP', resourceId: record.id, metadata: { type: record.type, code: record.code, sortOrder: record.sortOrder } } })
+        return { outcome: 'UPDATED' as const, record: record as ScholarshipOption }
+      })
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return { outcome: 'CONFLICT' as const }
+      throw error
+    }
+  }
+
+  async updateScholarshipOption(id: string, input: Partial<Pick<ScholarshipOption, 'nameAr' | 'isActive' | 'sortOrder'>>, actorAdminId: string) {
+    try {
+      return await getPrisma().$transaction(async (transaction) => {
+        const current = await transaction.optionCatalog.findFirst({ where: { id, type: { in: [OptionCatalogType.STUDY_LEVEL, OptionCatalogType.FUNDING_TYPE] } } })
+        if (!current) return { outcome: 'NOT_FOUND' as const }
+        const record = await transaction.optionCatalog.update({ where: { id }, data: { ...input, ...(input.nameAr === undefined ? {} : { normalizedName: input.nameAr.trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar') }) } })
+        await transaction.adminAuditLog.create({ data: { actorAdminId, action: 'scholarship_option.updated', resourceType: 'SCHOLARSHIP', resourceId: id, metadata: { type: record.type, changedFields: Object.keys(input).sort() } } })
+        return { outcome: 'UPDATED' as const, record: record as ScholarshipOption }
+      })
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') return { outcome: 'CONFLICT' as const }
+      throw error
+    }
   }
 
   async create(

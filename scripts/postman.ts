@@ -168,10 +168,12 @@ const folderFor = (entry: OperationEntry) => {
   if (entry.path.startsWith('/api/v1/auth/')) return 'Authentication'
   if (entry.path === '/api/v1/admin/uploads/images') return 'Admin — Media'
   if (entry.path === '/api/v1/admin/audit-logs') return 'Admin — Audit Logs'
-  if (entry.path === '/api/v1/universities/filter-options' || entry.path === '/api/v1/universities/{slug}/programs') return 'Public — University Directory'
+  if (entry.path === '/api/v1/scholarship-options') return 'Public — Scholarships'
+  if (entry.path === '/api/v1/admin/scholarship-options' || entry.path === '/api/v1/admin/scholarship-options/{id}') return 'Admin — Content Management'
+  if (entry.path === '/api/v1/universities/filter-options' || entry.path === '/api/v1/universities/{slug}/programs' || entry.path === '/api/v1/study-languages') return 'Public — University Directory'
   if (entry.path === '/api/v1/universities/{slug}/admission-requirements' || entry.path === '/api/v1/universities/{slug}/gallery') return 'Public — University Details'
   if (entry.path === '/api/v1/admin/universities/{universityId}/programs' || entry.path === '/api/v1/admin/university-programs/{id}') return 'Admin — University Programs'
-  if (entry.path === '/api/v1/admin/academic-majors' || entry.path === '/api/v1/admin/cities' || entry.path === '/api/v1/admin/academic-majors/{id}' || entry.path === '/api/v1/admin/cities/{id}') return 'Admin — Directory Catalogs'
+  if (entry.path === '/api/v1/admin/academic-majors' || entry.path === '/api/v1/admin/cities' || entry.path === '/api/v1/admin/study-languages' || entry.path === '/api/v1/admin/academic-majors/{id}' || entry.path === '/api/v1/admin/cities/{id}' || entry.path === '/api/v1/admin/study-languages/{id}') return 'Admin — Directory Catalogs'
   if (entry.path.includes('/admission-requirements') || entry.path.includes('/university-admission-requirements/') || entry.path.includes('/gallery') || entry.path.includes('/university-gallery/')) return 'Admin — University Details'
   if (entry.path.includes('/study-guide') || entry.path.includes('/service-detail-items') || entry.path.includes('/scholarship-detail-items')) return 'Admin — Content Management'
   if (entry.path === '/api/v1/faqs' || (/^\/api\/v1\/(countries|universities|services|scholarships)\/\{slug\}\/faqs$/.test(entry.path))) return 'Public — FAQs'
@@ -781,8 +783,8 @@ const check = async (document: OpenApiDocument) => {
   const expectedKeys = operationEntries(document).map((entry) => `${entry.method.toUpperCase()} ${entry.path}`).sort()
   const missing = expectedKeys.filter((key) => !actualKeys.includes(key))
   const obsolete = actualKeys.filter((key) => !expectedKeys.includes(key))
-  if (requests.length !== 128 || missing.length > 0 || obsolete.length > 0) {
-    throw new Error(`Postman operation mismatch. Expected 128, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
+  if (requests.length !== 136 || missing.length > 0 || obsolete.length > 0) {
+    throw new Error(`Postman operation mismatch. Expected 136, found ${requests.length}. Missing: ${missing.join(', ') || 'none'}. Obsolete: ${obsolete.join(', ') || 'none'}.`)
   }
 
   for (const [path, expected] of Object.entries(expectedArtifacts)) {
@@ -839,7 +841,7 @@ const main = async () => {
   if (command !== 'generate' && command !== 'check') throw new Error('Usage: tsx scripts/postman.ts <generate|check>')
   const document = await getOpenApiDocument()
   if (document.openapi !== '3.1.0') throw new Error(`Expected OpenAPI 3.1.0, received ${document.openapi}.`)
-  if (operationEntries(document).length !== 128) throw new Error(`Expected 128 OpenAPI operations, received ${operationEntries(document).length}.`)
+  if (operationEntries(document).length !== 136) throw new Error(`Expected 136 OpenAPI operations, received ${operationEntries(document).length}.`)
   if (command === 'generate') await generate(document)
   else await check(document)
 }
