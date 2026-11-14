@@ -328,6 +328,21 @@ const publicArticleDetailSchema = articleDetailSchema.omit({
   scholarshipIds: true,
 })
 
+const publicScholarshipDetailItemSchema = z.object({
+  id: z.uuid(),
+  scholarshipId: z.uuid(),
+  kind: z.enum(['BENEFIT', 'REQUIREMENT', 'APPLICATION_STEP']),
+  titleAr: z.string(),
+  descriptionAr: z.string().nullable(),
+  displayOrder: z.number().int(),
+  category: z.string().nullable(),
+  amount: z.string().nullable(),
+  currency: z.string().nullable(),
+  coveragePeriod: z.string().nullable(),
+  officialSourceUrl: z.string().nullable(),
+  verifiedAt: z.iso.datetime({ offset: true }).nullable(),
+})
+
 export const contentEntitySchemas = {
   countries: countrySchema,
   universities: universitySchema,
@@ -342,7 +357,11 @@ export const publicContentEntitySchemas = {
     studyGuide: z.array(z.object({ id: z.uuid(), section: z.enum(['ACADEMIC_SYSTEM', 'ADMISSION_DOCUMENTS', 'COSTS_STUDENT_LIFE']).nullable(), titleAr: z.string(), bodyAr: z.string(), displayOrder: z.number().int() })),
   }).openapi('PublicCountry'),
   universities: universitySchema.omit({ status: true, createdAt: true, updatedAt: true }),
-  scholarships: scholarshipSchema.omit({ status: true, createdAt: true, updatedAt: true }),
+  scholarships: scholarshipSchema.omit({ status: true, createdAt: true, updatedAt: true }).extend({
+    benefitsAr: z.array(publicScholarshipDetailItemSchema),
+    requirementItemsAr: z.array(publicScholarshipDetailItemSchema),
+    applicationStepsAr: z.array(publicScholarshipDetailItemSchema),
+  }).openapi('PublicScholarship'),
   services: serviceSchema.omit({ status: true, createdAt: true, updatedAt: true }),
   articles: articleSchema.omit({ status: true, createdAt: true, updatedAt: true, scholarship: true }),
 } as const

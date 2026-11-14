@@ -88,13 +88,13 @@ const publicView = (record: ContentEntity, now: Date) => {
   }
   if ('summaryAr' in publicRecord || 'fundingType' in publicRecord) {
     const items = Array.isArray(publicRecord.detailItems) ? publicRecord.detailItems as Array<Record<string, unknown>> : []
-    if ('summaryAr' in publicRecord) {
-      publicRecord.stepsAr = items.filter((item) => item.kind === 'STEP')
-      publicRecord.benefitsAr = items.filter((item) => item.kind === 'BENEFIT')
-    } else {
+    if ('fundingType' in publicRecord) {
       publicRecord.benefitsAr = items.filter((item) => item.kind === 'BENEFIT')
       publicRecord.requirementItemsAr = items.filter((item) => item.kind === 'REQUIREMENT')
       publicRecord.applicationStepsAr = items.filter((item) => item.kind === 'APPLICATION_STEP')
+    } else {
+      publicRecord.stepsAr = items.filter((item) => item.kind === 'STEP')
+      publicRecord.benefitsAr = items.filter((item) => item.kind === 'BENEFIT')
     }
     delete publicRecord.detailItems
   }

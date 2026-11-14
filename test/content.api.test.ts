@@ -501,6 +501,69 @@ describe('content management APIs', () => {
     expect(adminBody.data.status).toBe('PUBLISHED')
   })
 
+  it('maps Country study guides and Scholarship legacy detail collections to their public contracts', async () => {
+    await contentRepository.create('countries', {
+      ...countryInput('country-public-guide'),
+      status: 'PUBLISHED',
+      studyLanguageAr: null,
+      tuitionSummaryAr: 'رسوم تقديرية',
+      admissionSummaryAr: null,
+      applicationDatesSummaryAr: 'مواعيد التقديم',
+      studyGuideSections: [
+        { id: '20000000-0000-4000-8000-000000000001', section: 'ACADEMIC_SYSTEM', titleAr: 'النظام الأكاديمي والتخصصات', bodyAr: '<p>نص منسق</p>', displayOrder: 0 },
+        { id: '20000000-0000-4000-8000-000000000002', section: 'ADMISSION_DOCUMENTS', titleAr: 'القبول والوثائق المطلوبة', bodyAr: '<p>وثائق</p>', displayOrder: 1 },
+        { id: '20000000-0000-4000-8000-000000000003', section: 'COSTS_STUDENT_LIFE', titleAr: 'التكاليف والحياة الطلابية', bodyAr: '<p>تكاليف</p>', displayOrder: 2 },
+      ],
+    }, { actorAdminId: ADMIN_ID, action: 'test.country.created', resourceType: 'COUNTRY', metadata: {} })
+
+    const country = await app.request('/api/v1/countries/country-public-guide')
+    expect(country.status).toBe(200)
+    await expect(country.json()).resolves.toMatchObject({
+      data: {
+        studentFacts: {
+          studyLanguageAr: null,
+          tuitionSummaryAr: 'رسوم تقديرية',
+          admissionSummaryAr: null,
+          applicationDatesSummaryAr: 'مواعيد التقديم',
+        },
+        studyGuide: [
+          { section: 'ACADEMIC_SYSTEM', bodyAr: '<p>نص منسق</p>', displayOrder: 0 },
+          { section: 'ADMISSION_DOCUMENTS', displayOrder: 1 },
+          { section: 'COSTS_STUDENT_LIFE', displayOrder: 2 },
+        ],
+      },
+    })
+
+    await contentRepository.create('scholarships', {
+      titleAr: 'منحة تفاصيل عامة', slug: 'public-scholarship-details', studyLevel: 'MASTERS', fundingType: 'FULL',
+      summaryAr: 'ملخص', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.invalid/source', status: 'PUBLISHED', publishedAt: FIXED_NOW,
+      detailItems: [
+        { id: '30000000-0000-4000-8000-000000000001', scholarshipId: '30000000-0000-4000-8000-000000000000', kind: 'BENEFIT', titleAr: 'فائدة', descriptionAr: 'تفاصيل الفائدة', displayOrder: 0, category: null, amount: '500', currency: 'USD', coveragePeriod: null, officialSourceUrl: null, verifiedAt: null },
+        { id: '30000000-0000-4000-8000-000000000002', scholarshipId: '30000000-0000-4000-8000-000000000000', kind: 'REQUIREMENT', titleAr: 'شرط', descriptionAr: null, displayOrder: 0, category: null, amount: null, currency: null, coveragePeriod: null, officialSourceUrl: null, verifiedAt: null },
+        { id: '30000000-0000-4000-8000-000000000003', scholarshipId: '30000000-0000-4000-8000-000000000000', kind: 'APPLICATION_STEP', titleAr: 'خطوة', descriptionAr: null, displayOrder: 0, category: null, amount: null, currency: null, coveragePeriod: null, officialSourceUrl: null, verifiedAt: null },
+      ],
+    }, { actorAdminId: ADMIN_ID, action: 'test.scholarship.created', resourceType: 'SCHOLARSHIP', metadata: {} })
+
+    const scholarship = await app.request('/api/v1/scholarships/public-scholarship-details')
+    expect(scholarship.status).toBe(200)
+    const scholarshipBody = await scholarship.json() as { data: Record<string, unknown> }
+    expect(scholarshipBody.data).toMatchObject({
+      benefitsAr: [{ kind: 'BENEFIT', titleAr: 'فائدة', amount: '500' }],
+      requirementItemsAr: [{ kind: 'REQUIREMENT', titleAr: 'شرط' }],
+      applicationStepsAr: [{ kind: 'APPLICATION_STEP', titleAr: 'خطوة' }],
+    })
+    expect(scholarshipBody.data).not.toHaveProperty('stepsAr')
+
+    const openapi = await (await app.request('/openapi.json')).json() as { components: { schemas: Record<string, { properties?: Record<string, unknown> }> } }
+    const publicScholarshipSchema = openapi.components.schemas.PublicScholarship
+    expect(publicScholarshipSchema).toBeDefined()
+    expect(publicScholarshipSchema?.properties).toEqual(expect.objectContaining({
+      benefitsAr: expect.anything(),
+      requirementItemsAr: expect.anything(),
+      applicationStepsAr: expect.anything(),
+    }))
+  })
+
   it('paginates related University scholarships and preserves effective CLOSED status', async () => {
     const country = await createCountry({ ...countryInput('romania'), status: 'PUBLISHED' })
     const universityResponse = await adminRequest('/api/v1/admin/universities', 'POST', {

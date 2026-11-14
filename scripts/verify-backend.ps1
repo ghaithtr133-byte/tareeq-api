@@ -517,6 +517,29 @@ Add-Check -Id 'openapi.submission_email_semantics' -Category 'Documentation' -St
   -Evidence 'OpenAPI descriptions only; no submission or email is sent by the read-only verifier.' `
   -Classification $(if ($emailSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
+$publicCountrySchema = if ($null -ne $openApi -and (Test-Property $openApi 'components') -and (Test-Property $openApi.components 'schemas')) { $openApi.components.schemas.PublicCountry } else { $null }
+$publicCountryProperties = if ($null -ne $publicCountrySchema -and (Test-Property $publicCountrySchema 'properties')) { $publicCountrySchema.properties } else { $null }
+$countryStudentFactsPass = $null -ne $publicCountryProperties -and
+  (Test-Property $publicCountryProperties 'studentFacts') -and
+  (Test-Property $publicCountryProperties 'studyGuide')
+Add-Check -Id 'openapi.country_study_guide_contract' -Category 'Documentation' -Status $(if ($countryStudentFactsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'PublicCountry documents nullable studentFacts and the ordered public studyGuide collection.' `
+  -Actual "studentFacts documented=$(Test-Property $publicCountryProperties 'studentFacts'); studyGuide documented=$(Test-Property $publicCountryProperties 'studyGuide')." `
+  -Evidence 'OpenAPI response schema only; no content is modified.' `
+  -Classification $(if ($countryStudentFactsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
+$publicScholarshipSchema = if ($null -ne $openApi -and (Test-Property $openApi 'components') -and (Test-Property $openApi.components 'schemas')) { $openApi.components.schemas.PublicScholarship } else { $null }
+$publicScholarshipProperties = if ($null -ne $publicScholarshipSchema -and (Test-Property $publicScholarshipSchema 'properties')) { $publicScholarshipSchema.properties } else { $null }
+$scholarshipLegacyCollectionsPass = $null -ne $publicScholarshipProperties -and
+  (Test-Property $publicScholarshipProperties 'benefitsAr') -and
+  (Test-Property $publicScholarshipProperties 'requirementItemsAr') -and
+  (Test-Property $publicScholarshipProperties 'applicationStepsAr')
+Add-Check -Id 'openapi.scholarship_detail_collections' -Category 'Documentation' -Status $(if ($scholarshipLegacyCollectionsPass) { 'PASS' } else { 'FAIL' }) `
+  -Expected 'PublicScholarship documents benefitsAr, requirementItemsAr, and applicationStepsAr.' `
+  -Actual "benefitsAr documented=$(Test-Property $publicScholarshipProperties 'benefitsAr'); requirementItemsAr documented=$(Test-Property $publicScholarshipProperties 'requirementItemsAr'); applicationStepsAr documented=$(Test-Property $publicScholarshipProperties 'applicationStepsAr')." `
+  -Evidence 'OpenAPI response schema only; no content is modified.' `
+  -Classification $(if ($scholarshipLegacyCollectionsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+
 $scholarshipListOperation = if ($null -ne $openApi) { $openApi.paths.'/api/v1/scholarships'.get } else { $null }
 $scholarshipParameterNames = if ($null -ne $scholarshipListOperation -and (Test-Property $scholarshipListOperation 'parameters')) {
   @($scholarshipListOperation.parameters | Where-Object { $_.in -eq 'query' } | ForEach-Object { [string]$_.name })
