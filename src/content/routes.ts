@@ -96,7 +96,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     introductionAr: 'مقدمة عن الدراسة في ألمانيا', introductionEn: null,
     detailsAr: 'تفاصيل الدراسة والمعيشة', detailsEn: null,
     imageUrl: null, imageAltAr: null, imageAltEn: null, countryCode: null,
-    featured: true, displayOrder: 10, seoTitleAr: null, seoDescriptionAr: null,
+    featured: true, featuredAt: '2026-10-20T12:00:00.000Z', seoTitleAr: null, seoDescriptionAr: null,
     ...exampleDates,
   },
   universities: {
@@ -104,7 +104,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     officialName: 'Example University', slug: 'example-university', countryId: exampleCountryId,
     cityId: null, universityType: null, cityAr: 'مدينة تجريبية', cityEn: 'Example City', overviewAr: 'نظرة عامة أكاديمية',
     overviewEn: null, officialWebsite: 'https://example.edu', imageUrl: null,
-    imageAltAr: null, imageAltEn: null, logoUrl: null, logoAltAr: null, logoAltEn: null, featured: false, displayOrder: 0,
+    imageAltAr: null, imageAltEn: null, logoUrl: null, logoAltAr: null, logoAltEn: null, featured: false, featuredAt: null,
     seoTitleAr: null, seoDescriptionAr: null,
     country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', nameEn: 'Germany', countryCode: 'DE' },
     ...exampleDates,
@@ -116,7 +116,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     requirementsEn: null, descriptionAr: 'تفاصيل المنحة', descriptionEn: null,
     imageUrl: null, imageAltAr: null, imageAltEn: null,
     verifiedDeadline: '2027-01-31T23:59:59.000Z', officialSourceUrl: 'https://example.edu/scholarship',
-    applicationStatus: 'OPEN', effectiveApplicationStatus: 'OPEN', featured: true, displayOrder: 0,
+    applicationStatus: 'OPEN', effectiveApplicationStatus: 'OPEN', featured: true, featuredAt: '2026-10-20T12:00:00.000Z',
     seoTitleAr: null, seoDescriptionAr: null,
     country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', countryCode: 'DE' },
     university: { id: exampleUniversityId, slug: 'example-university', nameAr: 'جامعة تجريبية' },
@@ -126,7 +126,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
     id: exampleId, titleAr: 'الاستشارة الجامعية', titleEn: null,
     slug: 'university-consulting', summaryAr: 'ملخص الخدمة', summaryEn: null,
     descriptionAr: 'تفاصيل الخدمة', descriptionEn: null, imageUrl: null,
-    imageAltAr: null, imageAltEn: null, featured: true, displayOrder: 10,
+    imageAltAr: null, imageAltEn: null, featured: true, featuredAt: '2026-10-20T12:00:00.000Z',
     seoTitleAr: null, seoDescriptionAr: null, ...exampleDates,
   },
   articles: {
@@ -141,7 +141,7 @@ const adminEntityExamples: Record<ContentResource, Record<string, unknown>> = {
       imageUrl: null, country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا' },
       effectiveApplicationStatus: 'OPEN',
     }],
-    featured: true, displayOrder: 0, seoTitleAr: null, seoDescriptionAr: null,
+    featured: true, featuredAt: '2026-10-20T12:00:00.000Z', seoTitleAr: null, seoDescriptionAr: null,
     country: { id: exampleCountryId, slug: 'germany', nameAr: 'ألمانيا', countryCode: 'DE' },
     ...exampleDates,
   },
@@ -246,12 +246,12 @@ const registerDocumentation = (
     tags: [names.publicTag],
     summary: `List published ${resource}`,
     description: resource === 'universities'
-      ? 'Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.'
+      ? 'Public collection. Returns PUBLISHED Universities only. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.'
       : resource === 'scholarships'
-        ? 'Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.'
+        ? 'Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID; limit=5 returns the five most recently featured matching records. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and deadline sorts remain compatible. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.'
         : resource === 'articles'
-          ? 'Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.'
-          : 'Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.',
+          ? 'Public collection. Returns PUBLISHED records only. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination; explicit newest sorting remains available.'
+          : 'Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.',
     request: { query: publicQuerySchemas[resource] },
     responses: {
       200: { description: `Published ${resource}.`, content: successContent(listResponseSchema(resource), listExample) },
@@ -391,9 +391,9 @@ export const createContentRoutes = (
     const names = metadata[resource]
     routes.openAPIRegistry.registerPath({
       method: 'patch', path: `/admin/${resource}/order`, tags: [names.adminTag], summary: `Atomically reorder ${resource}`,
-      description: 'ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.',
+      description: 'ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.',
       security: [{ accessCookie: [] }], request: { body: { required: true, content: { 'application/json': { schema: contentReorderSchema, example: { orderedIds: ['b2b21ee5-f955-46ca-972f-6b6b81aa4a3d'] } } } } },
-      responses: { 200: { description: 'Persisted editorial order.', content: successContent(contentReorderResponseSchema, { success: true, data: { items: [{ id: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d', displayOrder: 0 }] } }) }, 400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403], 409: contentErrorResponses[409], 415: contentErrorResponses[415] },
+      responses: { 200: { description: 'Persisted optional manual order.', content: successContent(contentReorderResponseSchema, { success: true, data: { items: [{ id: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d', manualOrder: 0 }] } }) }, 400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403], 409: contentErrorResponses[409], 415: contentErrorResponses[415] },
     })
     adminRoutes.patch(`/${resource}/order`, async (c) => {
       const { orderedIds } = parse(contentReorderSchema, await readJson(c.req.raw))

@@ -20,6 +20,7 @@ export type ContentEntity = {
   slug: string
   status: PublicationStatus
   featured: boolean
+  featuredAt: Date | null
   publishedAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -36,6 +37,7 @@ export type ContentListQuery = {
   limit: number
   search?: string
   featured?: boolean
+  excludeIds?: string[]
   status?: PublicationStatus
   country?: string
   university?: string

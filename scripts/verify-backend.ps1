@@ -9,15 +9,23 @@ param(
   [ValidatePattern('^https?://')]
   [string]$AdminOrigin = 'https://admin.tareeq-academy.com',
 
-  [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports'),
+  [string]$OutputDirectory,
 
-  [string]$ManifestPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports\initial-seed-manifest.json'),
+  [string]$ManifestPath,
 
-  [string]$EnvironmentFile = (Join-Path (Split-Path -Parent $PSScriptRoot) '.env'),
+  [string]$EnvironmentFile,
 
-  [string]$BrowserReportPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'reports\backend-browser-auth.json'),
+  [string]$BrowserReportPath,
 
   [switch]$Authenticated,
+
+  [switch]$SmokeDefaultPaths,
+
+  [ValidatePattern('^/')]
+  [string]$DiagnosticGetPath,
+
+  [ValidatePattern('^/')]
+  [string]$DiagnosticDownloadPath,
 
   [ValidateRange(5, 120)]
   [int]$TimeoutSeconds = 20
@@ -26,9 +34,50 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-  throw 'PowerShell 7 or newer is required.'
+if ($PSVersionTable.PSVersion.Major -lt 5) {
+  throw 'Windows PowerShell 5.1 or PowerShell 7 or newer is required.'
 }
+
+# PowerShell 5.1 can evaluate param defaults before populating $PSScriptRoot when
+# invoked through Git Bash. Resolve all repository-relative defaults only after
+# parameter binding, while retaining any explicit command-line values.
+$scriptDirectory = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+  $PSScriptRoot
+} elseif (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
+  Split-Path -Parent $PSCommandPath
+} elseif (-not [string]::IsNullOrWhiteSpace($MyInvocation.MyCommand.Path)) {
+  Split-Path -Parent $MyInvocation.MyCommand.Path
+} else {
+  throw 'Unable to resolve the verifier script directory.'
+}
+$repositoryRoot = Split-Path -Parent $scriptDirectory
+if (-not $PSBoundParameters.ContainsKey('OutputDirectory')) {
+  $OutputDirectory = Join-Path $repositoryRoot 'reports'
+}
+if (-not $PSBoundParameters.ContainsKey('ManifestPath')) {
+  $ManifestPath = Join-Path $repositoryRoot 'reports\initial-seed-manifest.json'
+}
+if (-not $PSBoundParameters.ContainsKey('EnvironmentFile')) {
+  $EnvironmentFile = Join-Path $repositoryRoot '.env'
+}
+if (-not $PSBoundParameters.ContainsKey('BrowserReportPath')) {
+  $BrowserReportPath = Join-Path $repositoryRoot 'reports\backend-browser-auth.json'
+}
+
+if ($SmokeDefaultPaths.IsPresent) {
+  [pscustomobject]@{
+    outputDirectory = $OutputDirectory
+    manifestPath = $ManifestPath
+    environmentFile = $EnvironmentFile
+    browserReportPath = $BrowserReportPath
+  } | ConvertTo-Json -Compress
+  return
+}
+if (-not [string]::IsNullOrWhiteSpace($DiagnosticGetPath) -and -not [string]::IsNullOrWhiteSpace($DiagnosticDownloadPath)) {
+  throw 'Specify either DiagnosticGetPath or DiagnosticDownloadPath, not both.'
+}
+
+$supportsSkipHttpErrorCheck = (Get-Command Invoke-WebRequest).Parameters.ContainsKey('SkipHttpErrorCheck')
 
 $BaseUrl = $BaseUrl.TrimEnd('/')
 $resources = @('countries', 'universities', 'scholarships', 'services', 'articles')
@@ -59,6 +108,15 @@ function Add-Check {
   })
 }
 
+function Add-OpenApiBlockedCheck {
+  param([Parameter(Mandatory)][string]$Id, [Parameter(Mandatory)][string]$Expected, [Parameter(Mandatory)][int]$StatusCode)
+  Add-Check -Id $Id -Category 'Documentation' -Status 'BLOCKED' `
+    -Expected $Expected `
+    -Actual "Blocked: OpenAPI prerequisite was unavailable (HTTP $StatusCode)." `
+    -Evidence 'GET /openapi.json must return a parseable document before this contract assertion can run.' `
+    -Classification 'DEPLOYMENT_FAILURE'
+}
+
 function Test-Property {
   param([object]$Value, [string]$Name)
   return $null -ne $Value -and $Value.PSObject.Properties.Name -contains $Name
@@ -69,6 +127,15 @@ function Get-Header {
   $value = $Response.Headers[$Name]
   if ($null -eq $value) { return $null }
   return [string]($value -join ', ')
+}
+
+function Get-SafeTransportReason {
+  param([Parameter(Mandatory)][System.Exception]$Exception)
+  $reason = ([string]$Exception.Message) -replace "[\r\n]+", ' '
+  $reason = $reason -replace '(?i)(password|token|secret|authorization|cookie)=([^\s;&]+)', '$1=[redacted]'
+  $reason = $reason -replace '(?i)(https?://)[^/\s@]+:[^@/\s]+@', '$1[redacted]@'
+  if ($reason.Length -gt 300) { return "$($reason.Substring(0, 297))..." }
+  return $reason
 }
 
 function Invoke-ReadOnlyRequest {
@@ -86,11 +153,11 @@ function Invoke-ReadOnlyRequest {
     Method = $Method
     Headers = $Headers
     TimeoutSec = $TimeoutSeconds
-    SkipHttpErrorCheck = $true
     UseBasicParsing = $true
     MaximumRedirection = 3
   }
-  if ($null -ne $Body) {
+  if ($supportsSkipHttpErrorCheck) { $parameters.SkipHttpErrorCheck = $true }
+  if ($PSBoundParameters.ContainsKey('Body') -and $null -ne $Body) {
     $parameters.Body = $Body
     $parameters.ContentType = 'application/json'
   }
@@ -114,21 +181,50 @@ function Invoke-ReadOnlyRequest {
       accessControlAllowMethods = Get-Header $response 'Access-Control-Allow-Methods'
       body = [string]$response.Content
       transportError = $null
+      transportErrorType = $null
     }
   } catch {
-    $result = [pscustomobject]@{
-      method = $Method
-      path = $Path
-      purpose = $Purpose
-      statusCode = 0
-      contentType = $null
-      requestIdPresent = $false
-      requestIdMatchesSupplied = $null
-      accessControlAllowOrigin = $null
-      accessControlAllowCredentials = $null
-      accessControlAllowMethods = $null
-      body = ''
-      transportError = $_.Exception.Message
+    $exceptionResponse = if (Test-Property $_.Exception 'Response') { $_.Exception.Response } else { $null }
+    if ($null -ne $exceptionResponse) {
+      $body = ''
+      $stream = $exceptionResponse.GetResponseStream()
+      if ($null -ne $stream) {
+        $reader = New-Object System.IO.StreamReader($stream)
+        try { $body = $reader.ReadToEnd() } finally { $reader.Dispose() }
+      }
+      $responseRequestId = Get-Header $exceptionResponse 'X-Request-Id'
+      $result = [pscustomobject]@{
+        method = $Method
+        path = $Path
+        purpose = $Purpose
+        statusCode = [int]$exceptionResponse.StatusCode
+        contentType = Get-Header $exceptionResponse 'Content-Type'
+        requestIdPresent = -not [string]::IsNullOrWhiteSpace($responseRequestId)
+        requestIdMatchesSupplied = if ($Headers.ContainsKey('X-Request-Id')) { $responseRequestId -eq [string]$Headers['X-Request-Id'] } else { $null }
+        accessControlAllowOrigin = Get-Header $exceptionResponse 'Access-Control-Allow-Origin'
+        accessControlAllowCredentials = Get-Header $exceptionResponse 'Access-Control-Allow-Credentials'
+        accessControlAllowMethods = Get-Header $exceptionResponse 'Access-Control-Allow-Methods'
+        body = $body
+        transportError = $null
+        transportErrorType = $null
+      }
+      $exceptionResponse.Dispose()
+    } else {
+      $result = [pscustomobject]@{
+        method = $Method
+        path = $Path
+        purpose = $Purpose
+        statusCode = 0
+        contentType = $null
+        requestIdPresent = $false
+        requestIdMatchesSupplied = $null
+        accessControlAllowOrigin = $null
+        accessControlAllowCredentials = $null
+        accessControlAllowMethods = $null
+        body = ''
+        transportError = Get-SafeTransportReason $_.Exception
+        transportErrorType = $_.Exception.GetType().FullName
+      }
     }
   }
 
@@ -177,11 +273,19 @@ function Test-SuccessUserRole {
     (Test-Property $Body.data.user 'role') -and $Body.data.user.role -eq $Role
 }
 
+function Convert-JsonText {
+  param([Parameter(Mandatory)][string]$Text)
+  if ($PSVersionTable.PSVersion.Major -ge 6) {
+    return $Text | ConvertFrom-Json -Depth 100
+  }
+  return $Text | ConvertFrom-Json
+}
+
 function Convert-JsonBody {
   param([object]$Response)
   if ([string]::IsNullOrWhiteSpace($Response.body)) { return $null }
   try {
-    return $Response.body | ConvertFrom-Json -Depth 100
+    return Convert-JsonText $Response.body
   } catch {
     return $null
   }
@@ -194,27 +298,45 @@ function Invoke-DownloadRequest {
   )
 
   try {
-    $response = Invoke-WebRequest -Uri "$BaseUrl$Path" -Method GET -TimeoutSec $TimeoutSeconds `
-      -SkipHttpErrorCheck -UseBasicParsing -MaximumRedirection 3
-    $memory = [System.IO.MemoryStream]::new()
-    $response.RawContentStream.CopyTo($memory)
-    $bytes = $memory.ToArray()
-    $memory.Dispose()
-    $requestId = Get-Header $response 'X-Request-Id'
-    $result = [pscustomobject]@{
-      method = 'GET'
-      path = $Path
-      purpose = $Purpose
-      statusCode = [int]$response.StatusCode
-      contentType = Get-Header $response 'Content-Type'
-      contentDisposition = Get-Header $response 'Content-Disposition'
-      requestIdPresent = -not [string]::IsNullOrWhiteSpace($requestId)
-      requestIdMatchesSupplied = $null
-      accessControlAllowOrigin = Get-Header $response 'Access-Control-Allow-Origin'
-      accessControlAllowCredentials = Get-Header $response 'Access-Control-Allow-Credentials'
-      accessControlAllowMethods = Get-Header $response 'Access-Control-Allow-Methods'
-      bytes = $bytes
-      transportError = $null
+    $request = [System.Net.HttpWebRequest][System.Net.WebRequest]::Create("$BaseUrl$Path")
+    $request.Method = 'GET'
+    $request.Timeout = $TimeoutSeconds * 1000
+    $request.ReadWriteTimeout = $TimeoutSeconds * 1000
+    $request.AllowAutoRedirect = $true
+    $request.MaximumAutomaticRedirections = 3
+    try {
+      $response = [System.Net.HttpWebResponse]$request.GetResponse()
+    } catch {
+      $response = if (Test-Property $_.Exception 'Response') { [System.Net.HttpWebResponse]$_.Exception.Response } else { $null }
+      if ($null -eq $response) { throw }
+    }
+    try {
+      $memory = [System.IO.MemoryStream]::new()
+      try {
+        $response.GetResponseStream().CopyTo($memory)
+        $bytes = $memory.ToArray()
+      } finally {
+        $memory.Dispose()
+      }
+      $requestId = Get-Header $response 'X-Request-Id'
+      $result = [pscustomobject]@{
+        method = 'GET'
+        path = $Path
+        purpose = $Purpose
+        statusCode = [int]$response.StatusCode
+        contentType = Get-Header $response 'Content-Type'
+        contentDisposition = Get-Header $response 'Content-Disposition'
+        requestIdPresent = -not [string]::IsNullOrWhiteSpace($requestId)
+        requestIdMatchesSupplied = $null
+        accessControlAllowOrigin = Get-Header $response 'Access-Control-Allow-Origin'
+        accessControlAllowCredentials = Get-Header $response 'Access-Control-Allow-Credentials'
+        accessControlAllowMethods = Get-Header $response 'Access-Control-Allow-Methods'
+        bytes = $bytes
+        transportError = $null
+        transportErrorType = $null
+      }
+    } finally {
+      $response.Dispose()
     }
   } catch {
     $result = [pscustomobject]@{
@@ -230,12 +352,71 @@ function Invoke-DownloadRequest {
       accessControlAllowCredentials = $null
       accessControlAllowMethods = $null
       bytes = [byte[]]::new(0)
-      transportError = $_.Exception.Message
+      transportError = Get-SafeTransportReason $_.Exception
+      transportErrorType = $_.Exception.GetType().FullName
     }
   }
 
   $requests.Add($result)
   return $result
+}
+
+function Get-ZipArchiveInfo {
+  param([byte[]]$Bytes)
+  if ($null -eq $Bytes -or $Bytes.Length -lt 4) {
+    return [pscustomobject]@{ valid = $false; entries = @(); errorType = $null; errorReason = 'The response contained fewer than four bytes.' }
+  }
+  try {
+    if ($null -eq ('System.IO.Compression.ZipArchive' -as [type])) {
+      Add-Type -AssemblyName System.IO.Compression
+    }
+    $stream = [System.IO.MemoryStream]::new($Bytes)
+    try {
+      $archive = [System.IO.Compression.ZipArchive]::new($stream, [System.IO.Compression.ZipArchiveMode]::Read)
+      try {
+        return [pscustomobject]@{ valid = $true; entries = @($archive.Entries | ForEach-Object FullName); errorType = $null; errorReason = $null }
+      } finally {
+        $archive.Dispose()
+      }
+    } finally {
+      $stream.Dispose()
+    }
+  } catch {
+    return [pscustomobject]@{ valid = $false; entries = @(); errorType = $_.Exception.GetType().FullName; errorReason = Get-SafeTransportReason $_.Exception }
+  }
+}
+
+if (-not [string]::IsNullOrWhiteSpace($DiagnosticGetPath)) {
+  $diagnosticResponse = Invoke-ReadOnlyRequest -Method GET -Path $DiagnosticGetPath -Purpose 'transport diagnostic'
+  $diagnosticBody = Convert-JsonBody $diagnosticResponse
+  [pscustomobject]@{
+    statusCode = $diagnosticResponse.statusCode
+    contentType = $diagnosticResponse.contentType
+    requestIdPresent = $diagnosticResponse.requestIdPresent
+    jsonParsed = $null -ne $diagnosticBody
+    errorCode = if ((Test-Property $diagnosticBody 'error') -and (Test-Property $diagnosticBody.error 'code')) { $diagnosticBody.error.code } else { $null }
+    transportErrorType = $diagnosticResponse.transportErrorType
+    transportReason = $diagnosticResponse.transportError
+  } | ConvertTo-Json -Compress
+  return
+}
+if (-not [string]::IsNullOrWhiteSpace($DiagnosticDownloadPath)) {
+  $diagnosticDownload = Invoke-DownloadRequest -Path $DiagnosticDownloadPath -Purpose 'binary transport diagnostic'
+  $zipInfo = Get-ZipArchiveInfo $diagnosticDownload.bytes
+  $signature = if ($diagnosticDownload.bytes.Length -ge 4) { [BitConverter]::ToString($diagnosticDownload.bytes[0..3]) } else { '' }
+  [pscustomobject]@{
+    statusCode = $diagnosticDownload.statusCode
+    contentType = $diagnosticDownload.contentType
+    requestIdPresent = $diagnosticDownload.requestIdPresent
+    zipSignature = $signature
+    zipValid = $zipInfo.valid
+    zipEntries = @($zipInfo.entries).Count
+    zipErrorType = $zipInfo.errorType
+    zipErrorReason = $zipInfo.errorReason
+    transportErrorType = $diagnosticDownload.transportErrorType
+    transportReason = $diagnosticDownload.transportError
+  } | ConvertTo-Json -Compress
+  return
 }
 
 function Measure-PostmanRequests {
@@ -302,7 +483,7 @@ $seedManifest = $null
 $manifestLoadIssue = $null
 if (Test-Path -LiteralPath $ManifestPath) {
   try {
-    $seedManifest = Get-Content -Raw -LiteralPath $ManifestPath | ConvertFrom-Json -Depth 100
+    $seedManifest = Convert-JsonText (Get-Content -Raw -LiteralPath $ManifestPath)
     if (
       -not (Test-Property $seedManifest 'schemaVersion') -or
       $seedManifest.schemaVersion -ne 1 -or
@@ -362,6 +543,7 @@ Add-Check -Id 'security.media_upload_unauthorized' -Category 'Authorization' -St
 # OpenAPI document and exact operation contract.
 $openApiResponse = Invoke-ReadOnlyRequest -Method GET -Path '/openapi.json' -Purpose 'OpenAPI verification'
 $openApi = Convert-JsonBody $openApiResponse
+$openApiAvailable = $openApiResponse.statusCode -eq 200 -and $null -ne $openApi -and (Test-Property $openApi 'paths')
 $versionPass = $openApiResponse.statusCode -eq 200 -and (Test-Property $openApi 'openapi') -and $openApi.openapi -eq '3.1.0'
 Add-Check -Id 'openapi.version' -Category 'Documentation' -Status $(if ($versionPass) { 'PASS' } else { 'FAIL' }) `
   -Expected 'OpenAPI 3.1.0 document over HTTPS.' -Actual "HTTP $($openApiResponse.statusCode); version=$(if (Test-Property $openApi 'openapi') { $openApi.openapi } else { 'unavailable' })." `
@@ -485,48 +667,61 @@ if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
 }
 $operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
 $operationPass = $actualOperations.Count -eq 136 -and $operationDifference.Count -eq 0
-Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Exactly the approved 136 operations with no missing or unexpected operations.' `
-  -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
-  -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, submission, media-upload, audit-log, Admin-management, site-settings, analytics, FAQ, and University-directory surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
-  -Classification $(if ($openApiResponse.statusCode -eq 0 -or $openApiResponse.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
-
-$documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 136
-$documentationEvidence = if ($documentationIssues.Count -eq 0) {
-  'All 136 live operations passed documentation metadata checks.'
+if (-not $openApiAvailable) {
+  Add-OpenApiBlockedCheck -Id 'openapi.operations' -Expected 'Exactly the approved 136 operations with no missing or unexpected operations.' -StatusCode $openApiResponse.statusCode
+  Add-OpenApiBlockedCheck -Id 'openapi.operation_documentation' -Expected 'Every operation has summary, description, tags, examples, responses, and Admin security where applicable.' -StatusCode $openApiResponse.statusCode
 } else {
-  $issueLimit = [Math]::Min(10, $documentationIssues.Count)
-  @($documentationIssues.GetRange(0, $issueLimit)) -join '; '
-}
-Add-Check -Id 'openapi.operation_documentation' -Category 'Documentation' -Status $(if ($documentationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Every operation has summary, description, tags, examples, responses, and Admin security where applicable.' `
-  -Actual "$($documentationIssues.Count) documentation issue(s)." `
-  -Evidence $documentationEvidence `
-  -Classification $(if ($documentationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+  Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Exactly the approved 136 operations with no missing or unexpected operations.' `
+    -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
+    -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, submission, media-upload, audit-log, Admin-management, site-settings, analytics, FAQ, and University-directory surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
+    -Classification $(if ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-$applicationDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/applications'.post.description } else { '' }
-$inquiryDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/inquiries'.post.description } else { '' }
+  $documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 136
+  $documentationEvidence = if ($documentationIssues.Count -eq 0) {
+    'All 136 live operations passed documentation metadata checks.'
+  } else {
+    $issueLimit = [Math]::Min(10, $documentationIssues.Count)
+    @($documentationIssues.GetRange(0, $issueLimit)) -join '; '
+  }
+  Add-Check -Id 'openapi.operation_documentation' -Category 'Documentation' -Status $(if ($documentationPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Every operation has summary, description, tags, examples, responses, and Admin security where applicable.' `
+    -Actual "$($documentationIssues.Count) documentation issue(s)." `
+    -Evidence $documentationEvidence `
+    -Classification $(if ($documentationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
+
+$applicationDescription = if ($openApiAvailable) { [string]$openApi.paths.'/api/v1/applications'.post.description } else { '' }
+$inquiryDescription = if ($openApiAvailable) { [string]$openApi.paths.'/api/v1/inquiries'.post.description } else { '' }
 $emailSemanticsPass =
   $applicationDescription -match 'database acceptance' -and
   $applicationDescription -match 'not guaranteed' -and
   $inquiryDescription -match 'database acceptance' -and
   $inquiryDescription -match 'not guaranteed'
-Add-Check -Id 'openapi.submission_email_semantics' -Category 'Documentation' -Status $(if ($emailSemanticsPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Both public submission operations state that HTTP 201 confirms database acceptance rather than guaranteed email delivery.' `
-  -Actual "Application documented=$($applicationDescription -match 'database acceptance' -and $applicationDescription -match 'not guaranteed'); inquiry documented=$($inquiryDescription -match 'database acceptance' -and $inquiryDescription -match 'not guaranteed')." `
-  -Evidence 'OpenAPI descriptions only; no submission or email is sent by the read-only verifier.' `
-  -Classification $(if ($emailSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+if (-not $openApiAvailable) {
+  Add-OpenApiBlockedCheck -Id 'openapi.submission_email_semantics' -Expected 'Both public submission operations state that HTTP 201 confirms database acceptance rather than guaranteed email delivery.' -StatusCode $openApiResponse.statusCode
+} else {
+  Add-Check -Id 'openapi.submission_email_semantics' -Category 'Documentation' -Status $(if ($emailSemanticsPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Both public submission operations state that HTTP 201 confirms database acceptance rather than guaranteed email delivery.' `
+    -Actual "Application documented=$($applicationDescription -match 'database acceptance' -and $applicationDescription -match 'not guaranteed'); inquiry documented=$($inquiryDescription -match 'database acceptance' -and $inquiryDescription -match 'not guaranteed')." `
+    -Evidence 'OpenAPI descriptions only; no submission or email is sent by the read-only verifier.' `
+    -Classification $(if ($emailSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
 
 $publicCountrySchema = if ($null -ne $openApi -and (Test-Property $openApi 'components') -and (Test-Property $openApi.components 'schemas')) { $openApi.components.schemas.PublicCountry } else { $null }
 $publicCountryProperties = if ($null -ne $publicCountrySchema -and (Test-Property $publicCountrySchema 'properties')) { $publicCountrySchema.properties } else { $null }
 $countryStudentFactsPass = $null -ne $publicCountryProperties -and
   (Test-Property $publicCountryProperties 'studentFacts') -and
   (Test-Property $publicCountryProperties 'studyGuide')
-Add-Check -Id 'openapi.country_study_guide_contract' -Category 'Documentation' -Status $(if ($countryStudentFactsPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'PublicCountry documents nullable studentFacts and the ordered public studyGuide collection.' `
-  -Actual "studentFacts documented=$(Test-Property $publicCountryProperties 'studentFacts'); studyGuide documented=$(Test-Property $publicCountryProperties 'studyGuide')." `
-  -Evidence 'OpenAPI response schema only; no content is modified.' `
-  -Classification $(if ($countryStudentFactsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+if (-not $openApiAvailable) {
+  Add-OpenApiBlockedCheck -Id 'openapi.country_study_guide_contract' -Expected 'PublicCountry documents nullable studentFacts and the ordered public studyGuide collection.' -StatusCode $openApiResponse.statusCode
+} else {
+  Add-Check -Id 'openapi.country_study_guide_contract' -Category 'Documentation' -Status $(if ($countryStudentFactsPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'PublicCountry documents nullable studentFacts and the ordered public studyGuide collection.' `
+    -Actual "studentFacts documented=$(Test-Property $publicCountryProperties 'studentFacts'); studyGuide documented=$(Test-Property $publicCountryProperties 'studyGuide')." `
+    -Evidence 'OpenAPI response schema only; no content is modified.' `
+    -Classification $(if ($countryStudentFactsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
 
 $publicScholarshipSchema = if ($null -ne $openApi -and (Test-Property $openApi 'components') -and (Test-Property $openApi.components 'schemas')) { $openApi.components.schemas.PublicScholarship } else { $null }
 $publicScholarshipProperties = if ($null -ne $publicScholarshipSchema -and (Test-Property $publicScholarshipSchema 'properties')) { $publicScholarshipSchema.properties } else { $null }
@@ -534,13 +729,17 @@ $scholarshipLegacyCollectionsPass = $null -ne $publicScholarshipProperties -and
   (Test-Property $publicScholarshipProperties 'benefitsAr') -and
   (Test-Property $publicScholarshipProperties 'requirementItemsAr') -and
   (Test-Property $publicScholarshipProperties 'applicationStepsAr')
-Add-Check -Id 'openapi.scholarship_detail_collections' -Category 'Documentation' -Status $(if ($scholarshipLegacyCollectionsPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'PublicScholarship documents benefitsAr, requirementItemsAr, and applicationStepsAr.' `
-  -Actual "benefitsAr documented=$(Test-Property $publicScholarshipProperties 'benefitsAr'); requirementItemsAr documented=$(Test-Property $publicScholarshipProperties 'requirementItemsAr'); applicationStepsAr documented=$(Test-Property $publicScholarshipProperties 'applicationStepsAr')." `
-  -Evidence 'OpenAPI response schema only; no content is modified.' `
-  -Classification $(if ($scholarshipLegacyCollectionsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+if (-not $openApiAvailable) {
+  Add-OpenApiBlockedCheck -Id 'openapi.scholarship_detail_collections' -Expected 'PublicScholarship documents benefitsAr, requirementItemsAr, and applicationStepsAr.' -StatusCode $openApiResponse.statusCode
+} else {
+  Add-Check -Id 'openapi.scholarship_detail_collections' -Category 'Documentation' -Status $(if ($scholarshipLegacyCollectionsPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'PublicScholarship documents benefitsAr, requirementItemsAr, and applicationStepsAr.' `
+    -Actual "benefitsAr documented=$(Test-Property $publicScholarshipProperties 'benefitsAr'); requirementItemsAr documented=$(Test-Property $publicScholarshipProperties 'requirementItemsAr'); applicationStepsAr documented=$(Test-Property $publicScholarshipProperties 'applicationStepsAr')." `
+    -Evidence 'OpenAPI response schema only; no content is modified.' `
+    -Classification $(if ($scholarshipLegacyCollectionsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
 
-$scholarshipListOperation = if ($null -ne $openApi) { $openApi.paths.'/api/v1/scholarships'.get } else { $null }
+$scholarshipListOperation = if ($openApiAvailable) { $openApi.paths.'/api/v1/scholarships'.get } else { $null }
 $scholarshipParameterNames = if ($null -ne $scholarshipListOperation -and (Test-Property $scholarshipListOperation 'parameters')) {
   @($scholarshipListOperation.parameters | Where-Object { $_.in -eq 'query' } | ForEach-Object { [string]$_.name })
 } else { @() }
@@ -555,15 +754,19 @@ $universityScholarshipContractPass =
   $scholarshipListDescription -match 'same PUBLISHED UniversityProgram' -and
   $scholarshipListDescription -match 'complete University result set' -and
   $scholarshipListDescription -match 'effective OPEN/CLOSED'
-Add-Check -Id 'openapi.university_filtered_scholarships' -Category 'Documentation' -Status $(if ($universityScholarshipContractPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'The existing Scholarship list documents all eight University Directory query parameters, same-program matching, full-result-set evaluation, and effective application status.' `
-  -Actual "Missing parameters=$($missingUniversityScholarshipParameters -join ','); same-program documented=$($scholarshipListDescription -match 'same PUBLISHED UniversityProgram'); complete-set documented=$($scholarshipListDescription -match 'complete University result set'); effective status documented=$($scholarshipListDescription -match 'effective OPEN/CLOSED')." `
-  -Evidence 'OpenAPI metadata only; the verifier performs no Scholarship or University mutation.' `
-  -Classification $(if ($universityScholarshipContractPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+if (-not $openApiAvailable) {
+  Add-OpenApiBlockedCheck -Id 'openapi.university_filtered_scholarships' -Expected 'The existing Scholarship list documents all eight University Directory query parameters, same-program matching, full-result-set evaluation, and effective application status.' -StatusCode $openApiResponse.statusCode
+} else {
+  Add-Check -Id 'openapi.university_filtered_scholarships' -Category 'Documentation' -Status $(if ($universityScholarshipContractPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'The existing Scholarship list documents all eight University Directory query parameters, same-program matching, full-result-set evaluation, and effective application status.' `
+    -Actual "Missing parameters=$($missingUniversityScholarshipParameters -join ','); same-program documented=$($scholarshipListDescription -match 'same PUBLISHED UniversityProgram'); complete-set documented=$($scholarshipListDescription -match 'complete University result set'); effective status documented=$($scholarshipListDescription -match 'effective OPEN/CLOSED')." `
+    -Evidence 'OpenAPI metadata only; the verifier performs no Scholarship or University mutation.' `
+    -Classification $(if ($universityScholarshipContractPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
 
-$publicArticleDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/articles/{slug}'.get.description } else { '' }
-$adminArticleCreateDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/admin/articles'.post.description } else { '' }
-$adminArticleUpdateDescription = if ($null -ne $openApi) { [string]$openApi.paths.'/api/v1/admin/articles/{id}'.patch.description } else { '' }
+$publicArticleDescription = if ($openApiAvailable) { [string]$openApi.paths.'/api/v1/articles/{slug}'.get.description } else { '' }
+$adminArticleCreateDescription = if ($openApiAvailable) { [string]$openApi.paths.'/api/v1/admin/articles'.post.description } else { '' }
+$adminArticleUpdateDescription = if ($openApiAvailable) { [string]$openApi.paths.'/api/v1/admin/articles/{id}'.patch.description } else { '' }
 $articleScholarshipSemanticsPass =
   $publicArticleDescription -match 'relatedScholarships' -and
   $publicArticleDescription -match 'PUBLISHED Scholarships' -and
@@ -571,11 +774,15 @@ $articleScholarshipSemanticsPass =
   $adminArticleCreateDescription -match 'first array item' -and
   $adminArticleUpdateDescription -match 'preserve links' -and
   $adminArticleUpdateDescription -match '\[\] clears'
-Add-Check -Id 'openapi.article_related_scholarship_semantics' -Category 'Documentation' -Status $(if ($articleScholarshipSemanticsPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Article operations document public Scholarship visibility/order and the Admin legacy/multiple-field precedence, preservation, and clearing rules.' `
-  -Actual "Public cards documented=$($publicArticleDescription -match 'relatedScholarships' -and $publicArticleDescription -match 'PUBLISHED Scholarships'); create precedence documented=$($adminArticleCreateDescription -match 'scholarshipIds' -and $adminArticleCreateDescription -match 'first array item'); update preservation/clear documented=$($adminArticleUpdateDescription -match 'preserve links' -and $adminArticleUpdateDescription -match '\[\] clears')." `
-  -Evidence 'OpenAPI descriptions only; the verifier performs no Article or Scholarship mutation.' `
-  -Classification $(if ($articleScholarshipSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+if (-not $openApiAvailable) {
+  Add-OpenApiBlockedCheck -Id 'openapi.article_related_scholarship_semantics' -Expected 'Article operations document public Scholarship visibility/order and the Admin legacy/multiple-field precedence, preservation, and clearing rules.' -StatusCode $openApiResponse.statusCode
+} else {
+  Add-Check -Id 'openapi.article_related_scholarship_semantics' -Category 'Documentation' -Status $(if ($articleScholarshipSemanticsPass) { 'PASS' } else { 'FAIL' }) `
+    -Expected 'Article operations document public Scholarship visibility/order and the Admin legacy/multiple-field precedence, preservation, and clearing rules.' `
+    -Actual "Public cards documented=$($publicArticleDescription -match 'relatedScholarships' -and $publicArticleDescription -match 'PUBLISHED Scholarships'); create precedence documented=$($adminArticleCreateDescription -match 'scholarshipIds' -and $adminArticleCreateDescription -match 'first array item'); update preservation/clear documented=$($adminArticleUpdateDescription -match '\[\] clears')." `
+    -Evidence 'OpenAPI descriptions only; the verifier performs no Article or Scholarship mutation.' `
+    -Classification $(if ($articleScholarshipSemanticsPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
+}
 
 # Scalar HTML availability only; manual rendering is intentionally owner-managed.
 $scalar = Invoke-ReadOnlyRequest -Method GET -Path '/docs' -Purpose 'Scalar HTML availability'
@@ -590,7 +797,7 @@ Add-Check -Id 'scalar.endpoint' -Category 'Documentation' -Status $(if ($scalarP
 $collectionDownload = Invoke-DownloadRequest -Path '/postman/collection.json' -Purpose 'Postman Collection download verification'
 $downloadedCollection = $null
 try {
-  $downloadedCollection = [Text.Encoding]::UTF8.GetString($collectionDownload.bytes) | ConvertFrom-Json -Depth 100
+  $downloadedCollection = Convert-JsonText ([Text.Encoding]::UTF8.GetString($collectionDownload.bytes))
 } catch {
   $downloadedCollection = $null
 }
@@ -602,26 +809,17 @@ $collectionDownloadPass = $collectionDownload.statusCode -eq 200 -and
   $collectionDownload.contentDisposition -match 'attachment;\s*filename="tareeq-api\.postman_collection\.json"' -and
   (Test-Property $downloadedCollection 'info') -and
   $downloadedCollection.info.schema -eq 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' -and
-  $downloadedRequestCount -eq 87
+  $downloadedRequestCount -eq 136
 Add-Check -Id 'postman.collection_download' -Category 'Documentation' -Status $(if ($collectionDownloadPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 87 requests.' `
+  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 136 requests.' `
   -Actual "HTTP $($collectionDownload.statusCode); requests=$downloadedRequestCount; content type=$($collectionDownload.contentType); attachment=$(-not [string]::IsNullOrWhiteSpace($collectionDownload.contentDisposition))." `
   -Evidence 'GET /postman/collection.json; downloaded content is parsed in memory and is not retained in reports.' `
   -Classification $(if ($collectionDownload.statusCode -eq 0 -or $collectionDownload.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($collectionDownloadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
 $zipDownload = Invoke-DownloadRequest -Path '/postman/download.zip' -Purpose 'Postman ZIP package download verification'
-$zipEntries = @()
-$zipValid = $false
-try {
-  $zipStream = [System.IO.MemoryStream]::new($zipDownload.bytes)
-  $zipArchive = [System.IO.Compression.ZipArchive]::new($zipStream, [System.IO.Compression.ZipArchiveMode]::Read)
-  $zipEntries = @($zipArchive.Entries | ForEach-Object FullName)
-  $zipArchive.Dispose()
-  $zipStream.Dispose()
-  $zipValid = $true
-} catch {
-  $zipValid = $false
-}
+$zipInfo = Get-ZipArchiveInfo $zipDownload.bytes
+$zipEntries = @($zipInfo.entries)
+$zipValid = $zipInfo.valid
 $expectedZipEntries = @(
   'postman/tareeq-api.postman_collection.json',
   'postman/tareeq-api.read-only-smoke.postman_collection.json',
@@ -855,62 +1053,89 @@ $concurrentTargets = @(
     }
   }
 )
-$concurrentResults = @($concurrentTargets | ForEach-Object -ThrottleLimit 5 -Parallel {
-  try {
-    $response = Invoke-WebRequest `
-      -Uri "$($using:BaseUrl)$($_.path)" `
-      -Method GET `
-      -TimeoutSec $using:TimeoutSeconds `
-      -SkipHttpErrorCheck `
-      -UseBasicParsing `
-      -MaximumRedirection 3
-    $requestId = [string](($response.Headers['X-Request-Id'] -join ', '))
+$concurrentRequestsAlreadyRecorded = $false
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+  $concurrentResults = @($concurrentTargets | ForEach-Object -ThrottleLimit 5 -Parallel {
+    try {
+      $response = Invoke-WebRequest `
+        -Uri "$($using:BaseUrl)$($_.path)" `
+        -Method GET `
+        -TimeoutSec $using:TimeoutSeconds `
+        -SkipHttpErrorCheck `
+        -UseBasicParsing `
+        -MaximumRedirection 3
+      $requestId = [string](($response.Headers['X-Request-Id'] -join ', '))
+      [pscustomobject]@{
+        round = $_.round
+        resource = $_.resource
+        path = $_.path
+        statusCode = [int]$response.StatusCode
+        requestId = $requestId
+        transportError = $null
+      }
+    } catch {
+      [pscustomobject]@{
+        round = $_.round
+        resource = $_.resource
+        path = $_.path
+        statusCode = 0
+        requestId = ''
+        transportError = $_.Exception.Message
+      }
+    }
+  })
+  $concurrentReadMode = 'concurrent (PowerShell 7)'
+} else {
+  # ForEach-Object -Parallel is unavailable in Windows PowerShell 5.1. Preserve
+  # the same bounded, read-only stability coverage without starting child hosts.
+  $concurrentRequestsAlreadyRecorded = $true
+  $concurrentResults = @($concurrentTargets | ForEach-Object {
+    $read = Invoke-ReadOnlyRequest -Method GET -Path $_.path -Purpose 'database read stability compatibility verification'
     [pscustomobject]@{
       round = $_.round
       resource = $_.resource
       path = $_.path
-      statusCode = [int]$response.StatusCode
-      requestId = $requestId
-      transportError = $null
+      statusCode = $read.statusCode
+      requestId = if ($read.requestIdPresent) { 'present' } else { '' }
+      transportError = $read.transportError
     }
-  } catch {
-    [pscustomobject]@{
-      round = $_.round
-      resource = $_.resource
-      path = $_.path
-      statusCode = 0
-      requestId = ''
-      transportError = $_.Exception.Message
-    }
-  }
-})
+  })
+  $concurrentReadMode = 'sequential compatibility (Windows PowerShell 5.1)'
+}
 $concurrentFailures = [System.Collections.Generic.List[string]]::new()
 foreach ($result in $concurrentResults) {
   $requestIdPresent = -not [string]::IsNullOrWhiteSpace($result.requestId)
-  $requests.Add([pscustomobject]@{
-    method = 'GET'
-    path = $result.path
-    purpose = 'concurrent database read stability verification'
-    statusCode = $result.statusCode
-    contentType = $null
-    requestIdPresent = $requestIdPresent
-    requestIdMatchesSupplied = $null
-    accessControlAllowOrigin = $null
-    accessControlAllowCredentials = $null
-    accessControlAllowMethods = $null
-    body = ''
-    transportError = $result.transportError
-  })
+  if (-not $concurrentRequestsAlreadyRecorded) {
+    $requests.Add([pscustomobject]@{
+      method = 'GET'
+      path = $result.path
+      purpose = 'concurrent database read stability verification'
+      statusCode = $result.statusCode
+      contentType = $null
+      requestIdPresent = $requestIdPresent
+      requestIdMatchesSupplied = $null
+      accessControlAllowOrigin = $null
+      accessControlAllowCredentials = $null
+      accessControlAllowMethods = $null
+      body = ''
+      transportError = $result.transportError
+    })
+  }
   if ($result.statusCode -ne 200 -or -not $requestIdPresent) {
     $failureRequestId = if ($requestIdPresent) { $result.requestId } else { 'missing' }
     $concurrentFailures.Add("round $($result.round) $($result.resource) HTTP $($result.statusCode) requestId=$failureRequestId")
   }
 }
 $concurrentDatabasePass = $concurrentFailures.Count -eq 0
+$concurrentExpectation = if ($PSVersionTable.PSVersion.Major -ge 7) {
+  'Three concurrent rounds across all five public collections return HTTP 200 with request IDs.'
+} else {
+  'Three bounded read-stability rounds across all five public collections return HTTP 200 with request IDs.'
+}
 Add-Check -Id 'database.concurrent_read_stability' -Category 'Database' -Status $(if ($concurrentDatabasePass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Three concurrent rounds across all five public collections return HTTP 200 with request IDs.' `
+  -Expected $concurrentExpectation `
   -Actual "Requests=$($concurrentResults.Count); failures=$($concurrentFailures.Count)." `
-  -Evidence $(if ($concurrentDatabasePass) { 'All 15 concurrent read-only requests returned HTTP 200 with request IDs.' } else { @($concurrentFailures) -join '; ' }) `
+  -Evidence $(if ($concurrentDatabasePass) { "All 15 read-only requests returned HTTP 200 with request IDs; mode=$concurrentReadMode." } else { @($concurrentFailures) -join '; ' }) `
   -Classification $(if ($concurrentDatabasePass) { 'NONE' } else { 'DEPLOYMENT_FAILURE' })
 
 # Authentication, Admin authorization, CORS, and CSRF boundaries without credentials.
@@ -1408,7 +1633,22 @@ if (-not $Authenticated.IsPresent) {
   }
 }
 
-# Every received API response must carry a request ID. Transport failures are already classified elsewhere.
+# Transport failures retain only sanitized exception diagnostics; response bodies, credentials, and raw identifiers are never retained.
+$transportFailures = @($requests | Where-Object { $_.statusCode -eq 0 })
+if ($transportFailures.Count -gt 0) {
+  $transportEvidence = @($transportFailures | Select-Object -First 10 | ForEach-Object {
+    $type = if ([string]::IsNullOrWhiteSpace([string]$_.transportErrorType)) { 'unavailable' } else { [string]$_.transportErrorType }
+    $reason = if ([string]::IsNullOrWhiteSpace([string]$_.transportError)) { 'unavailable' } else { [string]$_.transportError }
+    "$($_.method) $($_.path): type=$type; reason=$reason"
+  }) -join '; '
+  Add-Check -Id 'transport.read_failures' -Category 'Transport' -Status 'FAIL' `
+    -Expected 'All read-only verifier HTTP requests establish a response.' `
+    -Actual "$($transportFailures.Count) transport failure(s)." `
+    -Evidence $transportEvidence `
+    -Classification 'DEPLOYMENT_FAILURE'
+}
+
+# Every received API response must carry a request ID. Transport failures are classified separately.
 $missingRequestIds = @($requests | Where-Object { $_.statusCode -gt 0 -and -not $_.requestIdPresent } | ForEach-Object { "$($_.method) $($_.path)" })
 $requestIdPass = $missingRequestIds.Count -eq 0
 Add-Check -Id 'contracts.request_ids' -Category 'Response Contracts' -Status $(if ($requestIdPass) { 'PASS' } else { 'FAIL' }) `
@@ -1458,7 +1698,7 @@ $browserVerification = [ordered]@{
 }
 if (Test-Path -LiteralPath $BrowserReportPath) {
   try {
-    $browserReport = Get-Content -Raw -LiteralPath $BrowserReportPath | ConvertFrom-Json -Depth 100
+    $browserReport = Convert-JsonText (Get-Content -Raw -LiteralPath $BrowserReportPath)
     if (
       $browserReport.schemaVersion -eq 1 -and
       $browserReport.overallStatus -in @('PASS', 'FAIL', 'BLOCKED') -and

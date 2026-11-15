@@ -68,6 +68,7 @@ const publicView = (record: ContentEntity, now: Date) => {
   delete publicRecord.status
   delete publicRecord.createdAt
   delete publicRecord.updatedAt
+  delete publicRecord.manualOrder
   delete publicRecord.scholarship
   delete publicRecord.scholarshipIds
   if ('detailsAr' in publicRecord) {
@@ -110,6 +111,7 @@ const publicView = (record: ContentEntity, now: Date) => {
 
 const adminView = (record: ContentEntity, now: Date) => {
   const adminRecord = withRelatedScholarshipViews(record, now)
+  delete adminRecord.manualOrder
   if (!('applicationStatus' in adminRecord)) return adminRecord
   const deadline = adminRecord.verifiedDeadline
   return {
@@ -199,7 +201,7 @@ export class ContentService {
   async reorder(resource: ContentResource, orderedIds: string[], actorAdminId: string) {
     const result = await this.repository.reorder(resource, orderedIds, actorAdminId)
     if (result.outcome === 'ORDER_SET_MISMATCH') throw new ApiError(409, 'ORDER_SET_MISMATCH', 'Submit every reorderable record exactly once.', { fields: { orderedIds: ['Refresh the complete administrative collection and retry.'] } })
-    return { items: result.records.map((item) => ({ id: item.id, displayOrder: Number(item.displayOrder) })) }
+    return { items: result.records.map((item) => ({ id: item.id, manualOrder: Number(item.manualOrder) })) }
   }
 
   async delete(
@@ -280,10 +282,12 @@ export class ContentService {
   ) {
     input = this.normalizeArticleAssociations(resource, input, true)
     const status = input.status ?? 'DRAFT'
+    const now = this.now()
     const data: ContentWriteData = {
       ...input,
       status,
-      publishedAt: status === 'PUBLISHED' ? this.now() : null,
+      featuredAt: input.featured ? now : null,
+      publishedAt: status === 'PUBLISHED' ? now : null,
     }
     this.normalizeDates(data)
     await this.validateWrite(resource, data, status === 'PUBLISHED')
@@ -336,6 +340,11 @@ export class ContentService {
 
     const data = { ...input } as ContentWriteData
     this.normalizeDates(data)
+    if (input.featured === true && current.featured === false) {
+      data.featuredAt = this.now()
+    } else if (input.featured === false) {
+      data.featuredAt = null
+    }
     if (
       input.status === 'PUBLISHED' &&
       current.status !== 'PUBLISHED' &&

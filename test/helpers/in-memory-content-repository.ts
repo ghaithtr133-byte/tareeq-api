@@ -156,7 +156,7 @@ export class InMemoryContentRepository implements ContentRepository {
   async reorder(resource: ContentResource, orderedIds: string[], audit: AuditIntent['actorAdminId']) {
     const records = (this.records.get(resource) ?? []).filter((item) => item.status !== 'ARCHIVED')
     if (records.length !== orderedIds.length || new Set(orderedIds).size !== orderedIds.length || records.some((item) => !orderedIds.includes(item.id))) return { outcome: 'ORDER_SET_MISMATCH' as const }
-    orderedIds.forEach((id, displayOrder) => { const item = records.find((record) => record.id === id)!; item.displayOrder = displayOrder })
+    orderedIds.forEach((id, manualOrder) => { const item = records.find((record) => record.id === id)!; item.manualOrder = manualOrder })
     const auditResourceId = orderedIds[0]
     if (auditResourceId) await this.audit.append({ actorAdminId: audit, action: `content.${resource}.reordered`, resourceType: ({ countries: 'COUNTRY', universities: 'UNIVERSITY', scholarships: 'SCHOLARSHIP', services: 'SERVICE', articles: 'ARTICLE' } as const)[resource], metadata: { count: orderedIds.length } }, auditResourceId)
     return { outcome: 'UPDATED' as const, records: orderedIds.map((id) => records.find((item) => item.id === id)!) }
@@ -186,6 +186,10 @@ export class InMemoryContentRepository implements ContentRepository {
     )
     if (query.featured !== undefined) {
       records = records.filter((record) => record.featured === query.featured)
+    }
+    if (query.excludeIds?.length) {
+      const excluded = new Set(query.excludeIds)
+      records = records.filter((record) => !excluded.has(record.id))
     }
     if (query.search) {
       const search = query.search
@@ -251,14 +255,13 @@ export class InMemoryContentRepository implements ContentRepository {
       })
     }
     records.sort((left, right) => {
-      if (publicOnly && resource === 'scholarships' && left.featured !== right.featured) {
-        return left.featured ? -1 : 1
+      if (query.sort === 'manual') {
+        return Number(left.manualOrder ?? 0) - Number(right.manualOrder ?? 0) || right.createdAt.getTime() - left.createdAt.getTime() || left.id.localeCompare(right.id)
       }
-      const manualByDefault = publicOnly && query.sort === undefined && (
-        resource === 'universities' || resource === 'scholarships' || resource === 'articles'
-      )
-      if (query.sort === 'manual' || manualByDefault) {
-        return Number(left.displayOrder ?? 0) - Number(right.displayOrder ?? 0) || right.createdAt.getTime() - left.createdAt.getTime() || left.id.localeCompare(right.id)
+      if (publicOnly && query.featured === true && query.sort === undefined) {
+        const leftFeaturedAt = left.featuredAt instanceof Date ? left.featuredAt.getTime() : Number.NEGATIVE_INFINITY
+        const rightFeaturedAt = right.featuredAt instanceof Date ? right.featuredAt.getTime() : Number.NEGATIVE_INFINITY
+        return rightFeaturedAt - leftFeaturedAt || right.createdAt.getTime() - left.createdAt.getTime() || left.id.localeCompare(right.id)
       }
       if (query.sort === 'name') {
         return String(left.nameAr).localeCompare(String(right.nameAr), 'ar') || left.id.localeCompare(right.id)
@@ -341,7 +344,8 @@ export class InMemoryContentRepository implements ContentRepository {
     const record = {
       id: crypto.randomUUID(),
       featured: false,
-      displayOrder: 0,
+      featuredAt: null,
+      manualOrder: 0,
       status: 'DRAFT',
       publishedAt: null,
       createdAt: now,

@@ -1321,14 +1321,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "manual",
-                  "description": "Sort by display order or newest creation time.",
+                  "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1378,14 +1384,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1446,14 +1458,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -1544,7 +1562,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -1724,14 +1742,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                  "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Universities only. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1817,14 +1841,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1921,14 +1951,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -2019,7 +2055,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"featuredAt\": null,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -2429,14 +2465,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                  "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID; limit=5 returns the five most recently featured matching records. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and deadline sorts remain compatible. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -2564,14 +2606,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID; limit=5 returns the five most recently featured matching records. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and deadline sorts remain compatible. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -2710,14 +2758,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID; limit=5 returns the five most recently featured matching records. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and deadline sorts remain compatible. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -2808,7 +2862,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -2946,14 +3000,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "manual",
-                  "description": "Sort by display order or newest creation time.",
+                  "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -2997,14 +3057,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -3059,14 +3125,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -3157,7 +3229,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -3307,14 +3379,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                  "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -3370,14 +3448,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -3444,14 +3528,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -3542,7 +3632,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -7562,9 +7652,15 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "manual",
-                  "description": "Sort by display order or newest creation time.",
+                  "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                   "disabled": true
                 },
                 {
@@ -7626,9 +7722,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -7701,9 +7803,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -7776,9 +7884,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -7851,9 +7965,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -7957,7 +8077,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -8731,7 +8851,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -9705,7 +9825,7 @@
                 "order"
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -9718,7 +9838,7 @@
           },
           "response": [
             {
-              "name": "200 Persisted editorial order.",
+              "name": "200 Persisted optional manual order.",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -9752,7 +9872,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -9773,7 +9893,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"displayOrder\": 0\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"manualOrder\": 0\n      }\n    ]\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -9810,7 +9930,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -9868,7 +9988,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -9926,7 +10046,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -9984,7 +10104,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -10042,7 +10162,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -10695,7 +10815,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"nameAr\": \"ألمانيا\",\n    \"nameEn\": \"Germany\",\n    \"slug\": \"germany\",\n    \"introductionAr\": \"مقدمة عن الدراسة في ألمانيا\",\n    \"introductionEn\": null,\n    \"detailsAr\": \"تفاصيل الدراسة والمعيشة\",\n    \"detailsEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"countryCode\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -12237,9 +12357,15 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                  "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                   "disabled": true
                 },
                 {
@@ -12337,9 +12463,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     },
                     {
@@ -12448,9 +12580,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     },
                     {
@@ -12559,9 +12697,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     },
                     {
@@ -12670,9 +12814,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     },
                     {
@@ -12776,7 +12926,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"featuredAt\": null,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -13061,7 +13211,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"featuredAt\": null,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -13912,7 +14062,7 @@
                 "order"
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -13925,7 +14075,7 @@
           },
           "response": [
             {
-              "name": "200 Persisted editorial order.",
+              "name": "200 Persisted optional manual order.",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -13959,7 +14109,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -13980,7 +14130,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"displayOrder\": 0\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"manualOrder\": 0\n      }\n    ]\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -14017,7 +14167,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -14075,7 +14225,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -14133,7 +14283,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -14191,7 +14341,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -14249,7 +14399,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -14391,7 +14541,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"nameAr\": \"جامعة تجريبية\",\n    \"nameEn\": \"Example University\",\n    \"officialName\": \"Example University\",\n    \"slug\": \"example-university\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"cityId\": null,\n    \"universityType\": null,\n    \"cityAr\": \"مدينة تجريبية\",\n    \"cityEn\": \"Example City\",\n    \"overviewAr\": \"نظرة عامة أكاديمية\",\n    \"overviewEn\": null,\n    \"officialWebsite\": \"https://example.edu\",\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"logoUrl\": null,\n    \"logoAltAr\": null,\n    \"logoAltEn\": null,\n    \"featured\": false,\n    \"featuredAt\": null,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"nameEn\": \"Germany\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -15208,9 +15358,15 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                  "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                   "disabled": true
                 },
                 {
@@ -15350,9 +15506,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     },
                     {
@@ -15503,9 +15665,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     },
                     {
@@ -15656,9 +15824,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     },
                     {
@@ -15809,9 +15983,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     },
                     {
@@ -15915,7 +16095,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -16299,7 +16479,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -17273,7 +17453,7 @@
                 "order"
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -17286,7 +17466,7 @@
           },
           "response": [
             {
-              "name": "200 Persisted editorial order.",
+              "name": "200 Persisted optional manual order.",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -17320,7 +17500,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -17341,7 +17521,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"displayOrder\": 0\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"manualOrder\": 0\n      }\n    ]\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -17378,7 +17558,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -17436,7 +17616,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -17494,7 +17674,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -17552,7 +17732,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -17610,7 +17790,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -17752,7 +17932,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n    \"titleAr\": \"منحة تجريبية\",\n    \"titleEn\": \"Example Scholarship\",\n    \"slug\": \"example-scholarship\",\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": \"88008b68-b698-4725-93e9-801537e7797c\",\n    \"studyLevel\": \"MASTERS\",\n    \"fundingType\": \"FULL\",\n    \"requirementsAr\": \"متطلبات التقديم\",\n    \"requirementsEn\": null,\n    \"descriptionAr\": \"تفاصيل المنحة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"verifiedDeadline\": \"2027-01-31T23:59:59.000Z\",\n    \"officialSourceUrl\": \"https://example.edu/scholarship\",\n    \"applicationStatus\": \"OPEN\",\n    \"effectiveApplicationStatus\": \"OPEN\",\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"university\": {\n      \"id\": \"88008b68-b698-4725-93e9-801537e7797c\",\n      \"slug\": \"example-university\",\n      \"nameAr\": \"جامعة تجريبية\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -18610,9 +18790,15 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "manual",
-                  "description": "Sort by display order or newest creation time.",
+                  "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                   "disabled": true
                 },
                 {
@@ -18668,9 +18854,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -18737,9 +18929,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -18806,9 +19004,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -18875,9 +19079,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     },
                     {
@@ -18981,7 +19191,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -19365,7 +19575,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -20339,7 +20549,7 @@
                 "order"
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -20352,7 +20562,7 @@
           },
           "response": [
             {
-              "name": "200 Persisted editorial order.",
+              "name": "200 Persisted optional manual order.",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -20386,7 +20596,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -20407,7 +20617,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"displayOrder\": 0\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"manualOrder\": 0\n      }\n    ]\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -20444,7 +20654,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -20502,7 +20712,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -20560,7 +20770,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -20618,7 +20828,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -20676,7 +20886,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -20818,7 +21028,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"displayOrder\": 10,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"الاستشارة الجامعية\",\n    \"titleEn\": null,\n    \"slug\": \"university-consulting\",\n    \"summaryAr\": \"ملخص الخدمة\",\n    \"summaryEn\": null,\n    \"descriptionAr\": \"تفاصيل الخدمة\",\n    \"descriptionEn\": null,\n    \"imageUrl\": null,\n    \"imageAltAr\": null,\n    \"imageAltEn\": null,\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -21688,9 +21898,15 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                  "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                   "disabled": true
                 },
                 {
@@ -21758,9 +21974,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     },
                     {
@@ -21839,9 +22061,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     },
                     {
@@ -21920,9 +22148,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     },
                     {
@@ -22001,9 +22235,15 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     },
                     {
@@ -22107,7 +22347,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"scholarshipIds\": [\n      \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\"\n    ],\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"scholarshipIds\": [\n      \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\"\n    ],\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -22392,7 +22632,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"scholarshipIds\": [\n      \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\"\n    ],\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"scholarshipIds\": [\n      \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\"\n    ],\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -23243,7 +23483,7 @@
                 "order"
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+            "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -23256,7 +23496,7 @@
           },
           "response": [
             {
-              "name": "200 Persisted editorial order.",
+              "name": "200 Persisted optional manual order.",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -23290,7 +23530,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -23311,7 +23551,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"displayOrder\": 0\n      }\n    ]\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n        \"manualOrder\": 0\n      }\n    ]\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",
@@ -23348,7 +23588,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -23406,7 +23646,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -23464,7 +23704,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -23522,7 +23762,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -23580,7 +23820,7 @@
                     "order"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted displayOrder changes are atomic; empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted editorial order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
+                "description": "ADMIN or SUPER_ADMIN only. Submit the complete, unfiltered set of every non-archived record exactly once. The operation, audit record when records exist, and persisted optional manualOrder changes are atomic; manualOrder never controls default public list sorting. Empty orderedIds is valid only when no non-archived records exist.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Persisted optional manual order.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n409: The slug conflicts with an existing record or a published slug is immutable.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"orderedIds\": [\n    \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  ]\n}",
@@ -23722,7 +23962,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"scholarshipIds\": [\n      \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\"\n    ],\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"displayOrder\": 0,\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\",\n    \"titleAr\": \"دليل الدراسة\",\n    \"titleEn\": null,\n    \"slug\": \"study-guide\",\n    \"summaryAr\": \"ملخص المقال\",\n    \"summaryEn\": null,\n    \"bodyAr\": [\n      {\n        \"type\": \"paragraph\",\n        \"text\": \"محتوى المقال كنص منظم وآمن.\"\n      }\n    ],\n    \"bodyEn\": null,\n    \"coverImageUrl\": null,\n    \"coverImageAltAr\": null,\n    \"coverImageAltEn\": null,\n    \"countryId\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n    \"universityId\": null,\n    \"scholarshipId\": null,\n    \"scholarshipIds\": [\n      \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\"\n    ],\n    \"relatedScholarships\": [\n      {\n        \"id\": \"9f414dec-fcbc-49dd-994f-086d2ef40e1f\",\n        \"slug\": \"example-scholarship\",\n        \"titleAr\": \"منحة تجريبية\",\n        \"imageUrl\": null,\n        \"country\": {\n          \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n          \"slug\": \"germany\",\n          \"nameAr\": \"ألمانيا\"\n        },\n        \"effectiveApplicationStatus\": \"OPEN\"\n      }\n    ],\n    \"featured\": true,\n    \"featuredAt\": \"2026-10-20T12:00:00.000Z\",\n    \"seoTitleAr\": null,\n    \"seoDescriptionAr\": null,\n    \"country\": {\n      \"id\": \"9879d0a4-9b7e-48d1-850a-da51be9de671\",\n      \"slug\": \"germany\",\n      \"nameAr\": \"ألمانيا\",\n      \"countryCode\": \"DE\"\n    },\n    \"status\": \"PUBLISHED\",\n    \"publishedAt\": \"2026-10-19T12:00:00.000Z\",\n    \"createdAt\": \"2026-10-19T11:00:00.000Z\",\n    \"updatedAt\": \"2026-10-19T12:00:00.000Z\"\n  }\n}"
             },
             {
               "name": "400 Validation, publication prerequisite, or relationship error.",

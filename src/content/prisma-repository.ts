@@ -502,11 +502,11 @@ export class PrismaContentRepository implements ContentRepository {
         articles: () => transaction.article.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),
       })[resource]()
       if (records.length !== orderedIds.length || new Set(orderedIds).size !== orderedIds.length || records.some((record) => !orderedIds.includes(record.id))) return { outcome: 'ORDER_SET_MISMATCH' as const }
-      for (const [displayOrder, id] of orderedIds.entries()) await ({ countries: () => transaction.country.update({ where: { id }, data: { displayOrder } }), universities: () => transaction.university.update({ where: { id }, data: { displayOrder } }), scholarships: () => transaction.scholarship.update({ where: { id }, data: { displayOrder } }), services: () => transaction.service.update({ where: { id }, data: { displayOrder } }), articles: () => transaction.article.update({ where: { id }, data: { displayOrder } }) })[resource]()
+      for (const [manualOrder, id] of orderedIds.entries()) await ({ countries: () => transaction.country.update({ where: { id }, data: { manualOrder } }), universities: () => transaction.university.update({ where: { id }, data: { manualOrder } }), scholarships: () => transaction.scholarship.update({ where: { id }, data: { manualOrder } }), services: () => transaction.service.update({ where: { id }, data: { manualOrder } }), articles: () => transaction.article.update({ where: { id }, data: { manualOrder } }) })[resource]()
       const auditResourceId = orderedIds[0]
       if (auditResourceId) await transaction.adminAuditLog.create({ data: { actorAdminId, action: `content.${resource}.reordered`, resourceType: ({ countries: 'COUNTRY', universities: 'UNIVERSITY', scholarships: 'SCHOLARSHIP', services: 'SERVICE', articles: 'ARTICLE' } as const)[resource], resourceId: auditResourceId, metadata: { count: orderedIds.length } } })
       const recordsById = new Map(records.map((record) => [record.id, record]))
-      return { outcome: 'UPDATED' as const, records: orderedIds.map((id, displayOrder) => asEntity({ ...recordsById.get(id)!, displayOrder })) }
+      return { outcome: 'UPDATED' as const, records: orderedIds.map((id, manualOrder) => asEntity({ ...recordsById.get(id)!, manualOrder })) }
     })
   }
   async list(
@@ -528,6 +528,7 @@ export class PrismaContentRepository implements ContentRepository {
         const where: Prisma.CountryWhereInput = {
           ...visibility,
           ...(query.featured === undefined ? {} : { featured: query.featured }),
+          ...(query.excludeIds?.length ? { id: { notIn: query.excludeIds } } : {}),
           ...(query.search
             ? { OR: [
                 { nameAr: { contains: query.search, mode: 'insensitive' } },
@@ -536,10 +537,11 @@ export class PrismaContentRepository implements ContentRepository {
               ] }
             : {}),
         }
-        const orderBy: Prisma.CountryOrderByWithRelationInput[] =
-          query.sort === 'newest'
-            ? [{ createdAt: 'desc' }, { id: 'asc' }]
-            : [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+        const orderBy: Prisma.CountryOrderByWithRelationInput[] = query.sort === 'manual'
+          ? [{ manualOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+          : publicOnly && query.featured === true && query.sort === undefined
+          ? [{ featuredAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }]
+          : [{ createdAt: 'desc' }, { id: 'asc' }]
         const [items, total] = await Promise.all([
           prisma.country.findMany({ where, orderBy, ...pagination }),
           prisma.country.count({ where }),
@@ -550,12 +552,13 @@ export class PrismaContentRepository implements ContentRepository {
         const where: Prisma.UniversityWhereInput = {
           ...visibility,
           ...universityDirectoryWhere(universityListFilters(query)),
+          ...(query.excludeIds?.length ? { id: { notIn: query.excludeIds } } : {}),
         }
         const orderBy: Prisma.UniversityOrderByWithRelationInput[] =
           query.sort === 'name'
             ? [{ nameAr: 'asc' }, { id: 'asc' }]
-            : publicOnly && query.sort === undefined
-              ? [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+            : publicOnly && query.featured === true && query.sort === undefined
+              ? [{ featuredAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }]
               : [{ createdAt: 'desc' }, { id: 'asc' }]
         const [items, total] = await Promise.all([
           prisma.university.findMany({
@@ -593,6 +596,7 @@ export class PrismaContentRepository implements ContentRepository {
         const where: Prisma.ScholarshipWhereInput = {
           ...visibility,
           ...(query.featured === undefined ? {} : { featured: query.featured }),
+          ...(query.excludeIds?.length ? { id: { notIn: query.excludeIds } } : {}),
           ...(query.country ? { country: { slug: query.country } } : {}),
           ...(hasDirectoryFilters
             ? { university: { is: {
@@ -613,10 +617,10 @@ export class PrismaContentRepository implements ContentRepository {
         }
         const orderBy: Prisma.ScholarshipOrderByWithRelationInput[] = publicOnly
           ? query.sort === 'deadline'
-            ? [{ featured: 'desc' }, { verifiedDeadline: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]
-            : query.sort === 'newest'
-              ? [{ featured: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }]
-              : [{ featured: 'desc' }, { displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+            ? [{ verifiedDeadline: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]
+            : query.featured === true && query.sort === undefined
+              ? [{ featuredAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }]
+              : [{ createdAt: 'desc' }, { id: 'asc' }]
           : query.sort === 'deadline'
             ? [{ verifiedDeadline: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }]
             : [{ createdAt: 'desc' }, { id: 'asc' }]
@@ -649,11 +653,13 @@ export class PrismaContentRepository implements ContentRepository {
         const where: Prisma.ServiceWhereInput = {
           ...visibility,
           ...(query.featured === undefined ? {} : { featured: query.featured }),
+          ...(query.excludeIds?.length ? { id: { notIn: query.excludeIds } } : {}),
         }
-        const orderBy: Prisma.ServiceOrderByWithRelationInput[] =
-          query.sort === 'newest'
-            ? [{ createdAt: 'desc' }, { id: 'asc' }]
-            : [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+        const orderBy: Prisma.ServiceOrderByWithRelationInput[] = query.sort === 'manual'
+          ? [{ manualOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+          : publicOnly && query.featured === true && query.sort === undefined
+          ? [{ featuredAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }]
+          : [{ createdAt: 'desc' }, { id: 'asc' }]
         const [items, total] = await Promise.all([
           prisma.service.findMany({ where, orderBy, ...pagination }),
           prisma.service.count({ where }),
@@ -664,6 +670,7 @@ export class PrismaContentRepository implements ContentRepository {
         const where: Prisma.ArticleWhereInput = {
           ...visibility,
           ...(query.featured === undefined ? {} : { featured: query.featured }),
+          ...(query.excludeIds?.length ? { id: { notIn: query.excludeIds } } : {}),
           ...(query.country ? { country: { slug: query.country } } : {}),
           ...(query.search
             ? { OR: [
@@ -673,8 +680,8 @@ export class PrismaContentRepository implements ContentRepository {
               ] }
             : {}),
         }
-        const orderBy: Prisma.ArticleOrderByWithRelationInput[] = publicOnly && query.sort === undefined
-          ? [{ displayOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }]
+        const orderBy: Prisma.ArticleOrderByWithRelationInput[] = publicOnly && query.featured === true && query.sort === undefined
+          ? [{ featuredAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }, { id: 'asc' }]
           : [{ createdAt: 'desc' }, { id: 'asc' }]
         const [items, total] = await Promise.all([
           prisma.article.findMany({

@@ -273,14 +273,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "manual",
-                  "description": "Sort by display order or newest creation time.",
+                  "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -330,14 +336,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -398,14 +410,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published countries.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -517,14 +535,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                  "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Universities only. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -610,14 +634,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -714,14 +744,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.",
+                      "description": "Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Universities only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Universities only. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and name sorts remain compatible. Existing filters remain compatible; optional Major, Study Level, and Teaching Language filters must match the same PUBLISHED UniversityProgram, while normalized City and University Type apply at University level.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published universities.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -875,14 +911,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                  "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID; limit=5 returns the five most recently featured matching records. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and deadline sorts remain compatible. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1010,14 +1052,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID; limit=5 returns the five most recently featured matching records. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and deadline sorts remain compatible. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1156,14 +1204,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.",
+                      "description": "Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Matching Featured Scholarships always precede non-Featured Scholarships before pagination. When sort is omitted, persisted editorial displayOrder applies within each Featured tier; newest and deadline sorts apply within each Featured tier when explicitly requested. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED Scholarships with authoritative effective OPEN/CLOSED filtering. Omitted sorting is createdAt DESC then ID. featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID; limit=5 returns the five most recently featured matching records. excludeIds is applied before sorting and pagination so a featured carousel can safely exclude its already-rendered IDs. Explicit newest and deadline sorts remain compatible. Existing Scholarship filters keep their meanings. Optional universitySearch, universityCountry, universityMajor, universityStudyLevel, universityLanguage, universityCity, universityType, and universityFeatured filters require an associated PUBLISHED University; Program filters must match the same PUBLISHED UniversityProgram across the complete University result set.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published scholarships.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -1233,14 +1287,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "manual",
-                  "description": "Sort by display order or newest creation time.",
+                  "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1284,14 +1344,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1346,14 +1412,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "manual",
-                      "description": "Sort by display order or newest creation time.",
+                      "description": "Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Countries and Services use persisted editorial displayOrder by default; their explicit newest sort remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only with validated pagination and documented filters. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. Country and Service retain manual as an explicit legacy optional sort only; it is never the default. excludeIds is applied before sorting and pagination.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published services.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,
@@ -1435,14 +1507,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "excludeIds",
+                  "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                  "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                  "disabled": true
+                },
+                {
                   "key": "sort",
                   "value": "newest",
-                  "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                  "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                   "disabled": true
                 }
               ]
             },
-            "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+            "description": "Public collection. Returns PUBLISHED records only. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
           },
           "response": [
             {
@@ -1498,14 +1576,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "OK",
               "code": 200,
@@ -1572,14 +1656,20 @@
                       "disabled": true
                     },
                     {
+                      "key": "excludeIds",
+                      "value": "b2b21ee5-f955-46ca-972f-6b6b81aa4a3d",
+                      "description": "Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.",
+                      "disabled": true
+                    },
+                    {
                       "key": "sort",
                       "value": "newest",
-                      "description": "When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.",
+                      "description": "Explicit newest-first sorting. Omitted sorting is also newest-first.",
                       "disabled": true
                     }
                   ]
                 },
-                "description": "Public collection. Returns PUBLISHED records only. When sort is omitted, records use persisted editorial displayOrder, then creation time and ID; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
+                "description": "Public collection. Returns PUBLISHED records only. Omitted sorting is createdAt DESC then ID; featured=true without an explicit sort uses featuredAt DESC (NULL legacy timestamps last), then createdAt DESC and ID. excludeIds is applied before sorting and pagination; explicit newest sorting remains available.\n\nAuthentication: none.\n\nRead-only operation.\n\nExpected responses:\n200: Published articles.\n400: Validation, publication prerequisite, or relationship error."
               },
               "status": "Bad Request",
               "code": 400,

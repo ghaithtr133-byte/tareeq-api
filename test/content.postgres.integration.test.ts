@@ -62,7 +62,7 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
   it('persists relationships, enforces unique slugs, filters publication state, and updates records', async () => {
     const country = track('countries', await service.create('countries', {
       nameAr: 'بلد اختبار التكامل', slug: slug('country'), introductionAr: 'مقدمة', detailsAr: 'تفاصيل',
-      featured: true, displayOrder: 1, status: 'PUBLISHED',
+      featured: true, status: 'PUBLISHED',
     }, actorAdminId))
     const university = track('universities', await service.create('universities', {
       nameAr: 'جامعة اختبار التكامل', officialName: 'Integration University', slug: slug('university'),
@@ -76,7 +76,7 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
     }, actorAdminId))
     const draftService = track('services', await service.create('services', {
       titleAr: 'خدمة اختبار التكامل', slug: slug('service'), summaryAr: 'ملخص',
-      descriptionAr: 'وصف', displayOrder: 1, status: 'DRAFT', featured: false,
+      descriptionAr: 'وصف', status: 'DRAFT', featured: false,
     }, actorAdminId))
     track('articles', await service.create('articles', {
       titleAr: 'مقال اختبار التكامل', slug: slug('article'), summaryAr: 'ملخص',
@@ -89,7 +89,7 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
     }, actorAdminId)).rejects.toMatchObject({ code: 'SLUG_CONFLICT' })
 
     const countries = await service.list('countries', {
-      page: 1, limit: 12, search: 'اختبار التكامل', featured: true, sort: 'manual',
+      page: 1, limit: 12, search: 'اختبار التكامل', featured: true,
     }, true)
     expect(countries.pagination.total).toBe(1)
     expect(countries.items[0]?.slug).toBe(country.slug)
@@ -176,5 +176,42 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
     const afterRollback = await service.getAdmin('articles', article.id)
     expect(afterRollback.scholarshipId).toBe(closed.id)
     expect(afterRollback.scholarshipIds).toEqual([closed.id, draft.id, open.id])
+  }, 30_000)
+
+  it('preserves legacy featured rows, transitions featuredAt, and atomically persists manual reorder storage', async () => {
+    let clock = new Date('2026-11-14T09:00:00.000Z')
+    const timedService = new ContentService(repository, () => new Date(clock))
+    const legacy = await getPrisma().service.create({ data: {
+      titleAr: 'خدمة مميزة قديمة', slug: slug('legacy-featured-service'), summaryAr: 'ملخص', descriptionAr: 'وصف',
+      featured: true, featuredAt: null, status: 'PUBLISHED',
+    } })
+    createdIds.get('services')?.push(legacy.id)
+    const current = track('services', await timedService.create('services', {
+      titleAr: 'خدمة مميزة حديثة', slug: slug('current-featured-service'), summaryAr: 'ملخص', descriptionAr: 'وصف',
+      featured: true, status: 'PUBLISHED',
+    }, actorAdminId))
+    expect(current.featuredAt).toEqual(clock)
+    const featured = await timedService.list('services', { page: 1, limit: 50, featured: true }, true)
+    expect(featured.items.slice(0, 2).map(({ id }) => id)).toEqual([current.id, legacy.id])
+
+    clock = new Date('2026-11-15T09:00:00.000Z')
+    await timedService.update('services', current.id, { titleAr: 'تحرير عادي' }, actorAdminId)
+    expect((await timedService.getAdmin('services', current.id)).featuredAt).toEqual(new Date('2026-11-14T09:00:00.000Z'))
+    await timedService.update('services', current.id, { featured: false }, actorAdminId)
+    expect((await timedService.getAdmin('services', current.id)).featuredAt).toBeNull()
+    clock = new Date('2026-11-16T09:00:00.000Z')
+    await timedService.update('services', current.id, { featured: true }, actorAdminId)
+    expect((await timedService.getAdmin('services', current.id)).featuredAt).toEqual(clock)
+
+    const before = await getPrisma().service.findMany({ where: { id: { in: [legacy.id, current.id] } }, orderBy: { id: 'asc' } })
+    const allIds = (await getPrisma().service.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' }, select: { id: true } })).map(({ id }) => id)
+    const orderedIds = [current.id, legacy.id, ...allIds.filter((id) => id !== current.id && id !== legacy.id)]
+    expect(await repository.reorder('services', orderedIds, actorAdminId)).toMatchObject({ outcome: 'UPDATED' })
+    const persisted = await getPrisma().service.findMany({ where: { id: { in: [legacy.id, current.id] } }, select: { id: true, manualOrder: true } })
+    expect(persisted).toEqual(expect.arrayContaining([{ id: current.id, manualOrder: 0 }, { id: legacy.id, manualOrder: 1 }]))
+    const incomplete = await repository.reorder('services', [current.id], actorAdminId)
+    expect(incomplete).toEqual({ outcome: 'ORDER_SET_MISMATCH' })
+    const after = await getPrisma().service.findMany({ where: { id: { in: [legacy.id, current.id] } }, orderBy: { id: 'asc' } })
+    expect(after.map(({ manualOrder }) => manualOrder)).toEqual(before.map((item) => item.id === current.id ? 0 : item.id === legacy.id ? 1 : item.manualOrder))
   }, 30_000)
 })

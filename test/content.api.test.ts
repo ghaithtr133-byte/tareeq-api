@@ -37,17 +37,7 @@ const countryInput = (slug = 'germany') => ({
   imageUrl: 'https://example.invalid/country.webp',
   imageAltAr: 'صورة للدراسة في ألمانيا',
   featured: false,
-  displayOrder: 10,
   status: 'DRAFT',
-})
-
-const serviceInput = (slug: string, displayOrder = 0) => ({
-  titleAr: `خدمة ${slug}`,
-  slug,
-  summaryAr: 'ملخص الخدمة',
-  descriptionAr: 'تفاصيل الخدمة',
-  displayOrder,
-  status: 'PUBLISHED',
 })
 
 describe('content management APIs', () => {
@@ -56,6 +46,7 @@ describe('content management APIs', () => {
   let superAdminToken: string
   let contentRepository: InMemoryContentRepository
   let contentService: ContentService
+  let clock: Date
 
   beforeAll(async () => {
     adminToken = await signAccessToken({ id: ADMIN_ID, role: 'ADMIN' }, JWT_SECRET)
@@ -66,6 +57,7 @@ describe('content management APIs', () => {
   })
 
   beforeEach(() => {
+    clock = new Date(FIXED_NOW)
     const authRepository = new InMemoryAuthRepository()
     authRepository.addUser({
       id: ADMIN_ID,
@@ -90,7 +82,7 @@ describe('content management APIs', () => {
     contentRepository = new InMemoryContentRepository()
     contentService = new ContentService(
       contentRepository,
-      () => new Date(FIXED_NOW),
+      () => new Date(clock),
     )
     const contentRuntime: ContentRuntime = { getService: () => contentService }
     app = createApp({ authRuntime, contentRuntime })
@@ -176,8 +168,11 @@ describe('content management APIs', () => {
   })
 
   it('exposes the complete-set Country reorder route before the dynamic ID route', async () => {
+    const rejectedLegacyWrite = await adminRequest('/api/v1/admin/countries', 'POST', { ...countryInput('legacy-display-order'), displayOrder: 1 })
+    expect(rejectedLegacyWrite.status).toBe(400)
     const first = await createCountry(countryInput('first-country'))
     const second = await createCountry(countryInput('second-country'))
+    expect(first.body.data).not.toHaveProperty('displayOrder')
     const orderedIds = [second.body.data.id, first.body.data.id]
 
     const unauthenticated = await app.request('/api/v1/admin/countries/order', {
@@ -192,8 +187,8 @@ describe('content management APIs', () => {
     await expect(reordered.json()).resolves.toMatchObject({
       success: true,
       data: { items: [
-        { id: second.body.data.id, displayOrder: 0 },
-        { id: first.body.data.id, displayOrder: 1 },
+        { id: second.body.data.id, manualOrder: 0 },
+        { id: first.body.data.id, manualOrder: 1 },
       ] },
     })
     expect(contentRepository.audit.events).toEqual(expect.arrayContaining([
@@ -693,145 +688,71 @@ describe('content management APIs', () => {
     log.mockRestore()
   })
 
-  it('paginates, filters featured records, and applies deterministic manual ordering', async () => {
-    await adminRequest('/api/v1/admin/services', 'POST', { ...serviceInput('second', 20), featured: false })
-    await adminRequest('/api/v1/admin/services', 'POST', { ...serviceInput('first', 10), featured: true })
+  it('uses newest-created public defaults while preserving optional Admin manual reorder storage', async () => {
+    const first = await contentService.create('services', { titleAr: 'الأولى', slug: 'newest-first', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED', createdAt: new Date('2026-01-01T00:00:00.000Z') }, ADMIN_ID)
+    const second = await contentService.create('services', { titleAr: 'الثانية', slug: 'newest-second', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED', createdAt: new Date('2026-01-02T00:00:00.000Z') }, ADMIN_ID)
+    const reordered = await (await adminRequest('/api/v1/admin/services/order', 'PATCH', { orderedIds: [first.id, second.id] })).json() as { data: { items: Array<{ id: string; manualOrder: number }> } }
+    expect(reordered.data.items).toEqual([{ id: first.id, manualOrder: 0 }, { id: second.id, manualOrder: 1 }])
+    const publicList = await (await app.request('/api/v1/services?limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(publicList.data.items.map(({ id }) => id)).toEqual([second.id, first.id])
+    expect(publicList.data.items[0]).not.toHaveProperty('manualOrder')
+    const manualList = await (await app.request('/api/v1/services?sort=manual&limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(manualList.data.items.map(({ id }) => id)).toEqual([first.id, second.id])
+  })
 
-    const response = await app.request('/api/v1/services?featured=true&page=1&limit=1&sort=manual')
-    const body = await response.json() as {
-      data: { items: Array<{ slug: string }>; pagination: { page: number; limit: number; total: number; totalPages: number } }
+  it('tracks feature activation separately from creation and preserves it through ordinary edits', async () => {
+    const scholarship = (slug: string, createdAt: Date) => contentService.create('scholarships', {
+      titleAr: slug, slug, studyLevel: 'MASTERS', fundingType: 'FULL', summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: `https://example.edu/${slug}`, status: 'PUBLISHED', createdAt,
+    }, ADMIN_ID)
+    const oldRecord = await scholarship('old-featured-today', new Date('2026-01-01T00:00:00.000Z'))
+    const newerRecord = await scholarship('newer-featured-yesterday', new Date('2026-02-01T00:00:00.000Z'))
+    clock = new Date('2026-11-13T10:00:00.000Z')
+    await contentService.update('scholarships', newerRecord.id, { featured: true }, ADMIN_ID)
+    const yesterday = (await contentService.getAdmin('scholarships', newerRecord.id)).featuredAt
+    clock = new Date('2026-11-14T10:00:00.000Z')
+    await contentService.update('scholarships', oldRecord.id, { featured: true }, ADMIN_ID)
+    const today = (await contentService.getAdmin('scholarships', oldRecord.id)).featuredAt
+    expect(today).toEqual(clock)
+    expect(yesterday).toEqual(new Date('2026-11-13T10:00:00.000Z'))
+    const featured = await (await app.request('/api/v1/scholarships?featured=true&limit=5')).json() as { data: { items: Array<{ id: string; featuredAt: string }> } }
+    expect(featured.data.items.map(({ id }) => id)).toEqual([oldRecord.id, newerRecord.id])
+    clock = new Date('2026-11-15T10:00:00.000Z')
+    await contentService.update('scholarships', oldRecord.id, { titleAr: 'تحرير لا يغير التمييز' }, ADMIN_ID)
+    expect((await contentService.getAdmin('scholarships', oldRecord.id)).featuredAt).toEqual(today)
+    await contentService.update('scholarships', oldRecord.id, { featured: false }, ADMIN_ID)
+    expect((await contentService.getAdmin('scholarships', oldRecord.id)).featuredAt).toBeNull()
+    clock = new Date('2026-11-16T10:00:00.000Z')
+    await contentService.update('scholarships', oldRecord.id, { featured: true }, ADMIN_ID)
+    expect((await contentService.getAdmin('scholarships', oldRecord.id)).featuredAt).toEqual(clock)
+  })
+
+  it('returns five latest featured records and supports pagination-safe exclusion from a newest regular feed', async () => {
+    const records = [] as Array<{ id: string }>
+    for (let index = 0; index < 7; index += 1) {
+      const record = await contentService.create('articles', { titleAr: `مقال ${index}`, slug: `featured-article-${index}`, summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED', createdAt: new Date(`2026-01-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`) }, ADMIN_ID)
+      clock = new Date(`2026-11-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`)
+      await contentService.update('articles', record.id, { featured: true }, ADMIN_ID)
+      records.push(record)
     }
-    expect(body.data.items.map((item) => item.slug)).toEqual(['first'])
-    expect(body.data.pagination).toEqual({ page: 1, limit: 1, total: 1, totalPages: 1 })
-    const defaults = await app.request('/api/v1/services')
-    await expect(defaults.json()).resolves.toMatchObject({
-      data: { pagination: { page: 1, limit: 12, total: 2, totalPages: 1 } },
-    })
-    expect((await app.request('/api/v1/services?limit=51')).status).toBe(400)
-    expect((await app.request('/api/v1/services?page=0')).status).toBe(400)
+    const featured = await (await app.request('/api/v1/articles?featured=true&limit=5')).json() as { data: { items: Array<{ id: string }>; pagination: { total: number } } }
+    const displayed = featured.data.items.map(({ id }) => id)
+    expect(displayed).toEqual(records.slice().reverse().slice(0, 5).map(({ id }) => id))
+    expect(featured.data.pagination.total).toBe(7)
+    const regular = await (await app.request(`/api/v1/articles?limit=50&excludeIds=${displayed.join(',')}`)).json() as { data: { items: Array<{ id: string }>; pagination: { total: number } } }
+    expect(regular.data.pagination.total).toBe(2)
+    expect(regular.data.items.map(({ id }) => id)).toEqual(records.slice(0, 2).reverse().map(({ id }) => id))
+    expect((await app.request(`/api/v1/articles?excludeIds=${displayed[0]},${displayed[0]}`)).status).toBe(400)
   })
 
-  it('uses persisted Admin order for every published public directory and keeps drafts private', async () => {
-    await expect((await app.request('/api/v1/articles')).json()).resolves.toMatchObject({ data: { items: [] } })
-
-    const firstCountry = await contentService.create('countries', {
-      nameAr: 'البلد الأول', slug: 'ordered-country-first', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.edu/country-first.webp', imageAltAr: 'صورة البلد الأول', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const secondCountry = await contentService.create('countries', {
-      nameAr: 'البلد الثاني', slug: 'ordered-country-second', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.edu/country-second.webp', imageAltAr: 'صورة البلد الثاني', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const firstUniversity = await contentService.create('universities', {
-      nameAr: 'الجامعة الأولى', officialName: 'First University', slug: 'ordered-university-first', countryId: firstCountry.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const secondUniversity = await contentService.create('universities', {
-      nameAr: 'الجامعة الثانية', officialName: 'Second University', slug: 'ordered-university-second', countryId: firstCountry.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const firstScholarship = await contentService.create('scholarships', {
-      titleAr: 'المنحة الأولى', slug: 'ordered-scholarship-first', studyLevel: 'MASTERS', fundingType: 'FULL',
-      summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-first', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const secondScholarship = await contentService.create('scholarships', {
-      titleAr: 'المنحة الثانية', slug: 'ordered-scholarship-second', studyLevel: 'MASTERS', fundingType: 'FULL',
-      summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/ordered-second', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const firstService = await contentService.create('services', {
-      titleAr: 'الخدمة الأولى', slug: 'ordered-service-first', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const secondService = await contentService.create('services', {
-      titleAr: 'الخدمة الثانية', slug: 'ordered-service-second', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const firstArticle = await contentService.create('articles', {
-      titleAr: 'المقال الأول', slug: 'ordered-article-first', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const secondArticle = await contentService.create('articles', {
-      titleAr: 'المقال الثاني', slug: 'ordered-article-second', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const draftArticle = await contentService.create('articles', {
-      titleAr: 'مسودة', slug: 'ordered-article-draft', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'DRAFT',
-    }, ADMIN_ID)
-    await contentService.update('articles', draftArticle.id, { status: 'ARCHIVED' }, ADMIN_ID)
-
-    const collections = [
-      ['countries', firstCountry, secondCountry],
-      ['universities', firstUniversity, secondUniversity],
-      ['scholarships', firstScholarship, secondScholarship],
-      ['services', firstService, secondService],
-      ['articles', firstArticle, secondArticle],
-    ] as const
-    for (const [resource, first, second] of collections) {
-      expect((await adminRequest(`/api/v1/admin/${resource}/order`, 'PATCH', { orderedIds: [second.id, first.id] })).status).toBe(200)
-      const response = await app.request(`/api/v1/${resource}?page=1&limit=50`)
-      const body = await response.json() as { data: { items: Array<{ id: string }> } }
-      expect(body.data.items.map(({ id }) => id)).toEqual([second.id, first.id])
-    }
-    const articles = await (await app.request('/api/v1/articles?limit=50')).json() as { data: { items: Array<{ id: string }> } }
-    expect(articles.data.items).not.toEqual(expect.arrayContaining([expect.objectContaining({ id: draftArticle.id })]))
-  })
-
-  it('keeps matching Featured Scholarships first before manual and explicit sorting across pages', async () => {
-    const scholarship = async (slug: string, featured: boolean, fundingType: string, verifiedDeadline: string) =>
-      contentService.create('scholarships', {
-        titleAr: slug, slug, studyLevel: 'MASTERS', fundingType, requirementsAr: 'متطلبات', descriptionAr: 'وصف',
-        summaryAr: 'ملخص المنحة', officialSourceUrl: `https://example.edu/${slug}`, verifiedDeadline, featured, status: 'PUBLISHED',
-      }, ADMIN_ID)
-    const nonFeaturedFirst = await scholarship('non-featured-first', false, 'FULL', '2027-01-01T00:00:00.000Z')
-    const featuredLate = await scholarship('featured-late', true, 'FULL', '2030-01-01T00:00:00.000Z')
-    const featuredEarly = await scholarship('featured-early', true, 'FULL', '2028-01-01T00:00:00.000Z')
-    const nonFeaturedSecond = await scholarship('non-featured-second', false, 'FULL', '2026-12-01T00:00:00.000Z')
-    const filteredFeatured = await scholarship('filtered-featured', true, 'PARTIAL', '2027-01-01T00:00:00.000Z')
-    const orderedIds = [nonFeaturedFirst.id, featuredLate.id, featuredEarly.id, nonFeaturedSecond.id, filteredFeatured.id]
-    expect((await adminRequest('/api/v1/admin/scholarships/order', 'PATCH', { orderedIds })).status).toBe(200)
-
-    const firstPage = await (await app.request('/api/v1/scholarships?page=1&limit=2')).json() as { data: { items: Array<{ id: string }>; pagination: { total: number; totalPages: number } } }
-    const secondPage = await (await app.request('/api/v1/scholarships?page=2&limit=2')).json() as { data: { items: Array<{ id: string }> } }
-    expect(firstPage.data.items.map(({ id }) => id)).toEqual([featuredLate.id, featuredEarly.id])
-    expect(secondPage.data.items.map(({ id }) => id)).toEqual([filteredFeatured.id, nonFeaturedFirst.id])
-    expect(firstPage.data.pagination).toMatchObject({ total: 5, totalPages: 3 })
-
-    const deadlineOrder = await (await app.request('/api/v1/scholarships?sort=deadline&limit=50')).json() as { data: { items: Array<{ id: string }> } }
-    expect(deadlineOrder.data.items.map(({ id }) => id)).toEqual([
-      filteredFeatured.id, featuredEarly.id, featuredLate.id, nonFeaturedSecond.id, nonFeaturedFirst.id,
-    ])
-
-    const newestOrder = await (await app.request('/api/v1/scholarships?sort=newest&limit=50')).json() as { data: { items: Array<{ id: string }> } }
-    expect(newestOrder.data.items.slice(0, 3).map(({ id }) => id)).toEqual(expect.arrayContaining([
-      featuredLate.id, featuredEarly.id, filteredFeatured.id,
-    ]))
-    expect(newestOrder.data.items.slice(3).map(({ id }) => id)).toEqual(expect.arrayContaining([
-      nonFeaturedFirst.id, nonFeaturedSecond.id,
-    ]))
-
-    const fullOnly = await (await app.request('/api/v1/scholarships?fundingType=FULL&limit=50')).json() as { data: { items: Array<{ id: string }> } }
-    expect(fullOnly.data.items.map(({ id }) => id)).toEqual([
-      featuredLate.id, featuredEarly.id, nonFeaturedFirst.id, nonFeaturedSecond.id,
-    ])
-  })
-
-  it('places new default-order records predictably ahead of simulated legacy backfills and keeps ties stable', async () => {
-    const country = await contentService.create('countries', {
-      nameAr: 'بلد الترتيب', slug: 'ordering-country', introductionAr: 'مقدمة', detailsAr: 'تفاصيل',
-      imageUrl: 'https://example.edu/ordering-country.webp', imageAltAr: 'صورة بلد الترتيب', status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const legacyFirst = await contentService.create('universities', {
-      nameAr: 'جامعة قديمة أولى', officialName: 'Legacy First', slug: 'legacy-order-first', countryId: country.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', displayOrder: 10, status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const legacySecond = await contentService.create('universities', {
-      nameAr: 'جامعة قديمة ثانية', officialName: 'Legacy Second', slug: 'legacy-order-second', countryId: country.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', displayOrder: 10, status: 'PUBLISHED',
-    }, ADMIN_ID)
-    const newlyCreated = await contentService.create('universities', {
-      nameAr: 'جامعة جديدة', officialName: 'New University', slug: 'new-default-order-university', countryId: country.id,
-      cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED',
-    }, ADMIN_ID)
-
-    const firstRead = await (await app.request('/api/v1/universities?limit=50')).json() as { data: { items: Array<{ id: string; displayOrder: number }> } }
-    const secondRead = await (await app.request('/api/v1/universities?limit=50')).json() as { data: { items: Array<{ id: string; displayOrder: number }> } }
-    expect(firstRead.data.items[0]).toMatchObject({ id: newlyCreated.id, displayOrder: 0 })
-    expect(firstRead.data.items.map(({ id }) => id)).toEqual(secondRead.data.items.map(({ id }) => id))
-    expect(firstRead.data.items.map(({ id }) => id)).toEqual(expect.arrayContaining([legacyFirst.id, legacySecond.id]))
+  it('keeps featured=false separate and preserves explicit Scholarship deadline sorting', async () => {
+    const featured = await contentService.create('scholarships', { titleAr: 'مميزة', slug: 'featured-filter', studyLevel: 'MASTERS', fundingType: 'FULL', summaryAr: 'ملخص', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/featured-filter', featured: true, verifiedDeadline: '2030-01-01T00:00:00.000Z', status: 'PUBLISHED', createdAt: new Date('2026-01-01T00:00:00.000Z') }, ADMIN_ID)
+    const regular = await contentService.create('scholarships', { titleAr: 'عادية', slug: 'regular-filter', studyLevel: 'MASTERS', fundingType: 'FULL', summaryAr: 'ملخص', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/regular-filter', verifiedDeadline: '2027-01-01T00:00:00.000Z', status: 'PUBLISHED', createdAt: new Date('2026-02-01T00:00:00.000Z') }, ADMIN_ID)
+    const all = await (await app.request('/api/v1/scholarships?limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(all.data.items.map(({ id }) => id)).toEqual([regular.id, featured.id])
+    const nonFeatured = await (await app.request('/api/v1/scholarships?featured=false&limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(nonFeatured.data.items.map(({ id }) => id)).toEqual([regular.id])
+    const byDeadline = await (await app.request('/api/v1/scholarships?sort=deadline&limit=50')).json() as { data: { items: Array<{ id: string }> } }
+    expect(byDeadline.data.items.map(({ id }) => id)).toEqual([regular.id, featured.id])
   })
 
   it('safely hard deletes only independent non-published records and reports relationship impacts', async () => {

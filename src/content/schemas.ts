@@ -99,7 +99,6 @@ export const countryCreateSchema = z
       if (new Set(items.map((item) => item.section)).size !== items.length) context.addIssue({ code: 'custom', message: 'Each fixed study-guide section may be supplied only once.' })
     }).optional(),
     countryCode: countryCodeSchema.nullable().optional(),
-    displayOrder: z.number().int().min(0).max(1_000_000).optional().default(0),
     ...commonCreateFields,
   })
   .strict()
@@ -165,7 +164,6 @@ export const serviceCreateSchema = z
     imageUrl: optionalUrl,
     imageAltAr: z.string().trim().min(1).max(300).optional(),
     imageAltEn: z.string().trim().min(1).max(300).optional(),
-    displayOrder: z.number().int().min(0).max(1_000_000).optional().default(0),
     detailItems: z.array(serviceDetailInputSchema).max(100).superRefine((items, context) => {
       const ids = items.flatMap((item) => item.id ? [item.id] : [])
       if (new Set(ids).size !== ids.length) context.addIssue({ code: 'custom', message: 'Duplicate service detail IDs are not allowed.' })
@@ -237,6 +235,7 @@ const entityBase = {
   id: z.uuid(),
   slug: z.string(),
   featured: z.boolean(),
+  featuredAt: nullableDateSchema,
   publishedAt: nullableDateSchema,
   seoTitleAr: z.string().nullable(),
   seoDescriptionAr: z.string().nullable(),
@@ -258,7 +257,6 @@ export const countrySchema = z.object({
   admissionSummaryAr: z.string().nullable(), applicationDatesSummaryAr: z.string().nullable(),
   studyGuideSections: z.array(z.object({ id: z.uuid(), section: z.enum(['ACADEMIC_SYSTEM', 'ADMISSION_DOCUMENTS', 'COSTS_STUDENT_LIFE']).nullable(), titleAr: z.string(), bodyAr: z.string(), displayOrder: z.number().int() })).optional(),
   countryCode: z.string().nullable(),
-  displayOrder: z.number().int(),
   ...adminFields,
 }).openapi('Country')
 
@@ -269,7 +267,6 @@ export const universitySchema = z.object({
   overviewAr: z.string(), overviewEn: z.string().nullable(), summaryAr: z.string().nullable(), officialWebsite: z.string().nullable(),
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   logoUrl: z.string().nullable(), logoAltAr: z.string().nullable(), logoAltEn: z.string().nullable(),
-  displayOrder: z.number().int(),
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).optional(),
   city: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), nameEn: z.string() }).nullable().optional(),
   ...adminFields,
@@ -282,7 +279,6 @@ export const scholarshipSchema = z.object({
   descriptionAr: z.string(), descriptionEn: z.string().nullable(), verifiedDeadline: nullableDateSchema,
   imageUrl: z.string().nullable(), imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   officialSourceUrl: z.string().nullable(), applicationStatus: applicationStatusSchema,
-  displayOrder: z.number().int(),
   effectiveApplicationStatus: applicationStatusSchema.optional(),
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).nullable().optional(),
   university: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
@@ -293,7 +289,7 @@ export const serviceSchema = z.object({
   ...entityBase,
   titleAr: z.string(), titleEn: z.string().nullable(), summaryAr: z.string(), summaryEn: z.string().nullable(),
   descriptionAr: z.string(), descriptionEn: z.string().nullable(), imageUrl: z.string().nullable(),
-  imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(), displayOrder: z.number().int(),
+  imageAltAr: z.string().nullable(), imageAltEn: z.string().nullable(),
   detailItems: z.array(z.object({ id: z.uuid(), kind: z.enum(['STEP', 'BENEFIT']), titleAr: z.string(), descriptionAr: z.string().nullable(), iconKey: z.string().nullable(), displayOrder: z.number().int() })).optional(),
   ...adminFields,
 }).openapi('Service')
@@ -307,7 +303,6 @@ export const articleSchema = z.object({
   country: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string(), countryCode: z.string().nullable() }).nullable().optional(),
   university: z.object({ id: z.uuid(), slug: z.string(), nameAr: z.string() }).nullable().optional(),
   scholarship: z.object({ id: z.uuid(), slug: z.string(), titleAr: z.string() }).nullable().optional(),
-  displayOrder: z.number().int(),
   ...adminFields,
 }).openapi('Article')
 
@@ -388,13 +383,17 @@ const featuredQuery = z.enum(['true', 'false'])
 const searchQuery = z.string().trim().min(1).max(200).optional().openapi({
   description: 'Case-insensitive text search.', example: 'الدراسة',
 })
+const excludeIdsQuery = z.string().trim().min(1).transform((value) => value.split(',').map((id) => id.trim()).filter(Boolean)).pipe(
+  z.array(z.uuid()).min(1).max(50).refine((ids) => new Set(ids).size === ids.length, 'Duplicate IDs are not allowed.'),
+).optional().openapi({ description: 'Optional comma-separated UUIDs to exclude before sorting and pagination. Use the IDs already rendered in a featured section to prevent duplicate cards.', example: 'b2b21ee5-f955-46ca-972f-6b6b81aa4a3d' })
 
 const queryFor = (resource: ContentResource) => {
   const resourceFields = {
     countries: {
       search: searchQuery,
       featured: featuredQuery,
-      sort: z.enum(['manual', 'newest']).optional().default('manual').openapi({ description: 'Sort by display order or newest creation time.' }),
+      excludeIds: excludeIdsQuery,
+      sort: z.enum(['manual', 'newest']).optional().openapi({ description: 'Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.' }),
     },
     universities: {
       search: searchQuery,
@@ -405,7 +404,8 @@ const queryFor = (resource: ContentResource) => {
       city: slugSchema.optional().openapi({ description: 'Normalized City slug.' }),
       universityType: universityTypeSchema.optional(),
       featured: featuredQuery,
-        sort: z.enum(['newest', 'name']).optional().openapi({ description: 'When omitted on the public directory, use persisted editorial display order. Explicit values sort newest first or by Arabic name.' }),
+      excludeIds: excludeIdsQuery,
+        sort: z.enum(['newest', 'name']).optional().openapi({ description: 'Omitted or newest sorts by creation time descending; name sorts by Arabic name ascending.' }),
     },
     scholarships: {
       search: searchQuery,
@@ -423,17 +423,20 @@ const queryFor = (resource: ContentResource) => {
       universityCity: slugSchema.optional().openapi({ description: 'Normalized City slug of the associated published University.', example: 'bucharest' }),
       universityType: universityTypeSchema.optional().openapi({ description: 'Type of the associated published University.' }),
       universityFeatured: featuredQuery.openapi({ description: 'Filter by the associated published University featured state.', example: 'true' }),
-        sort: z.enum(['newest', 'deadline']).optional().openapi({ description: 'When omitted on the public directory, use persisted editorial display order. Featured Scholarships remain first for every sort; explicit values sort within each Featured tier.' }),
+      excludeIds: excludeIdsQuery,
+        sort: z.enum(['newest', 'deadline']).optional().openapi({ description: 'Omitted or newest sorts by creation time descending. With featured=true and no explicit sort, newest feature activation ranks first. deadline sorts by verified deadline.' }),
     },
     services: {
       featured: featuredQuery,
-      sort: z.enum(['manual', 'newest']).optional().default('manual').openapi({ description: 'Sort by display order or newest creation time.' }),
+      excludeIds: excludeIdsQuery,
+      sort: z.enum(['manual', 'newest']).optional().openapi({ description: 'Omitted or newest sorts by creation time descending. manual is a legacy explicit optional drag-and-drop order.' }),
     },
     articles: {
       search: searchQuery,
       country: slugSchema.optional().openapi({ description: 'Related Country slug.' }),
       featured: featuredQuery,
-        sort: z.literal('newest').optional().openapi({ description: 'When omitted on the public directory, use persisted editorial display order. Explicit newest sorting remains available.' }),
+      excludeIds: excludeIdsQuery,
+        sort: z.literal('newest').optional().openapi({ description: 'Explicit newest-first sorting. Omitted sorting is also newest-first.' }),
     },
   }[resource]
   return z.object({ ...pageQuery, ...resourceFields }).strict()
@@ -467,7 +470,7 @@ export const contentReorderSchema = z.object({
   }),
 }).strict().openapi('ContentReorderRequest')
 export const contentReorderResponseSchema = successEnvelopeSchema(z.object({
-  items: z.array(z.object({ id: z.uuid(), displayOrder: z.number().int() })),
+  items: z.array(z.object({ id: z.uuid(), manualOrder: z.number().int() })),
 })).openapi('ContentReorderResponse')
 export const deletionImpactItemSchema = z.object({
   resourceType: z.string(), effect: z.enum(['DELETE', 'SET_NULL', 'UNLINK', 'PRESERVE', 'BLOCK', 'UNKNOWN']),

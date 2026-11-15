@@ -349,7 +349,8 @@ model Country {
   applicationDatesSummaryAr String?
   countryCode         String?              @db.VarChar(2)
   featured            Boolean              @default(false)
-  displayOrder        Int                  @default(0)
+  featuredAt          DateTime?            @db.Timestamptz(3)
+  manualOrder         Int                  @default(0) @map("displayOrder")
   status              PublicationStatus    @default(DRAFT)
   publishedAt         DateTime?            @db.Timestamptz(3)
   seoTitleAr          String?
@@ -364,7 +365,8 @@ model Country {
   cities              City[]
   studyGuideSections  CountryStudyGuideSection[]
 
-  @@index([status, featured, displayOrder, id])
+  @@index([status, featured, featuredAt, createdAt, id])
+  @@index([status, featured, manualOrder, id], map: "Country_status_featured_displayOrder_id_idx")
   @@index([createdAt, id])
   @@unique([countryCode])
 }
@@ -406,7 +408,8 @@ model University {
   logoAltAr             String?
   logoAltEn             String?
   featured              Boolean                          @default(false)
-  displayOrder          Int                              @default(0)
+  featuredAt            DateTime?                        @db.Timestamptz(3)
+  manualOrder           Int                              @default(0) @map("displayOrder")
   status                PublicationStatus                @default(DRAFT)
   publishedAt           DateTime?                        @db.Timestamptz(3)
   seoTitleAr            String?
@@ -423,7 +426,9 @@ model University {
   admissionRequirements UniversityAdmissionRequirement[]
   galleryImages         UniversityGalleryImage[]
 
-  @@index([countryId, status, featured, createdAt, id])
+  @@index([countryId, status, featured, featuredAt, createdAt, id])
+  @@index([countryId, status, featured, createdAt, id], map: "University_countryId_status_featured_createdAt_id_idx")
+  @@index([status, manualOrder, id], map: "University_status_displayOrder_id_idx")
   @@index([cityId, status, createdAt, id])
   @@index([universityType, status, createdAt, id])
   @@index([status, createdAt, id])
@@ -588,7 +593,8 @@ model Scholarship {
   applicationStatus   ScholarshipApplicationStatus @default(OPEN)
   status              PublicationStatus            @default(DRAFT)
   featured            Boolean                      @default(false)
-  displayOrder        Int                          @default(0)
+  featuredAt          DateTime?                    @db.Timestamptz(3)
+  manualOrder         Int                          @default(0) @map("displayOrder")
   publishedAt         DateTime?                    @db.Timestamptz(3)
   seoTitleAr          String?
   seoDescriptionAr    String?
@@ -602,7 +608,9 @@ model Scholarship {
   faqEntries          FaqEntry[]
   detailItems         ScholarshipDetailItem[]
 
-  @@index([countryId, status, featured, createdAt, id])
+  @@index([countryId, status, featured, featuredAt, createdAt, id])
+  @@index([countryId, status, featured, createdAt, id], map: "Scholarship_countryId_status_featured_createdAt_id_idx")
+  @@index([status, featured, manualOrder, id], map: "Scholarship_status_featured_displayOrder_id_idx")
   @@index([universityId, status, createdAt, id])
   @@index([status, applicationStatus, verifiedDeadline, id])
   @@index([studyLevel, fundingType])
@@ -641,7 +649,8 @@ model Service {
   imageAltAr       String?
   imageAltEn       String?
   featured         Boolean           @default(false)
-  displayOrder     Int               @default(0)
+  featuredAt       DateTime?         @db.Timestamptz(3)
+  manualOrder      Int               @default(0) @map("displayOrder")
   status           PublicationStatus @default(DRAFT)
   publishedAt      DateTime?         @db.Timestamptz(3)
   seoTitleAr       String?
@@ -651,7 +660,8 @@ model Service {
   faqEntries       FaqEntry[]
   detailItems      ServiceDetailItem[]
 
-  @@index([status, featured, displayOrder, id])
+  @@index([status, featured, featuredAt, createdAt, id])
+  @@index([status, featured, manualOrder, id], map: "Service_status_featured_displayOrder_id_idx")
   @@index([createdAt, id])
 }
 
@@ -714,7 +724,8 @@ model Article {
   universityId        String?              @db.Uuid
   scholarshipId       String?              @db.Uuid
   featured            Boolean              @default(false)
-  displayOrder        Int                  @default(0)
+  featuredAt          DateTime?            @db.Timestamptz(3)
+  manualOrder         Int                  @default(0) @map("displayOrder")
   status              PublicationStatus    @default(DRAFT)
   publishedAt         DateTime?            @db.Timestamptz(3)
   seoTitleAr          String?
@@ -729,7 +740,9 @@ model Article {
   @@index([countryId, status, createdAt, id])
   @@index([universityId, status, createdAt, id])
   @@index([scholarshipId, status, createdAt, id])
-  @@index([status, featured, createdAt, id])
+  @@index([status, featured, featuredAt, createdAt, id])
+  @@index([status, featured, createdAt, id], map: "Article_status_featured_createdAt_id_idx")
+  @@index([status, manualOrder, id], map: "Article_status_displayOrder_id_idx")
 }
 
 model ArticleScholarship {

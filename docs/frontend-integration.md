@@ -186,7 +186,7 @@ Admin creation/deletion, password recovery, image deletion, a standalone media l
 ```ts
 // Published countries
 const countries = await publicApi.get('/countries', {
-  params: { featured: true, page: 1, limit: 12, sort: 'manual' },
+  params: { featured: true, page: 1, limit: 5 },
 })
 
 // Universities filtered by Country slug
@@ -202,11 +202,15 @@ const scholarships = await publicApi.get('/scholarships', {
 
 Scholarship `status` controls editorial publication. `effectiveApplicationStatus` reports whether applications are effectively `OPEN` or `CLOSED`; a passed `verifiedDeadline` makes it `CLOSED` without hiding the published record.
 
-### Public editorial ordering
+### Featured content and public ordering
 
-Countries and Services retain their existing `sort=manual` default. Universities, Scholarships, and Articles now use persisted `displayOrder` when `sort` is omitted; this intentionally replaces their previous chronological default. Existing explicit sorts remain available: University `newest`/`name`, Scholarship `newest`/`deadline`, Article `newest`, and Country/Service `newest`.
+For Countries, Universities, Scholarships, Services, and Articles, an omitted `featured` parameter returns every eligible published record in `createdAt DESC, id ASC` order. `featured=false` returns only non-featured records in that same order. `featured=true` without an explicit `sort` returns only featured records in `featuredAt DESC NULLS LAST, createdAt DESC, id ASC` order. This lets `featured=true&limit=5` render the five most recently featured matching cards. `featuredAt` is server-managed: it is set only when an item becomes featured, preserved during ordinary edits, cleared when unfeatured, and set again when it is re-featured.
 
-Scholarship results always rank matching `featured=true` records ahead of matching non-featured records before pagination. With no explicit sort, `displayOrder` applies within each Featured tier. With `sort=newest` or `sort=deadline`, that requested sort applies only within each tier. Filters are applied first, so a Featured Scholarship that does not match the request is never inserted into the result.
+Legacy records that were already featured before this migration retain `featuredAt=null`; their historical activation time is unknown and is not fabricated. They remain visible in featured results after timestamped featured records, with deterministic `createdAt DESC, id ASC` fallback order.
+
+To avoid duplicate cards without client-side post-pagination filtering, send the IDs rendered in the featured section as `excludeIds` in the normal collection request: `GET /scholarships?limit=12&excludeIds=<uuid>,<uuid>,...`. Exclusion is applied before sort, count, and pagination. It accepts one comma-separated, duplicate-free list of up to 50 UUIDs.
+
+Explicit sorts remain supported: University `newest`/`name`, Scholarship `newest`/`deadline`, Article `newest`, and Country/Service `newest`. Country and Service also accept legacy explicit `sort=manual` for optional drag-and-drop placement; it is never the default. Scholarship `sort=deadline` continues to sort matching records by verified deadline; no feature-priority records are injected into filtered results.
 
 Services and Articles currently contain only DRAFT seed records, so their public collections may correctly return an empty `items` array.
 
@@ -276,9 +280,9 @@ await adminApi.patch(`/admin/countries/${id}`, { status: 'PUBLISHED' })
 
 Admin detail and update routes use UUIDs, while public detail routes use slugs. The first publication sets `publishedAt`; later unpublish/archive transitions preserve it. Published slugs are immutable.
 
-### Top-level editorial ordering
+### Optional top-level manual ordering
 
-`ADMIN` and `SUPER_ADMIN` reorder Countries, Universities, Scholarships, Services, and Articles through `PATCH /admin/{resource}/order`. Send `{ "orderedIds": ["uuid", "..."] }` containing the complete, unfiltered set of all non-archived records exactly once. The response is `{ success: true, data: { items: [{ id, displayOrder }] } }` in the persisted order. Fetch every page of the unfiltered Admin collection (maximum 50 per page), discard archived records locally, then submit the remaining complete set. `409 ORDER_SET_MISMATCH` means a record was added, archived, or otherwise changed while the editor was preparing the full set; refresh every page and retry. An empty array is valid only for a collection with no non-archived records. Never send only the current page or a filtered subset.
+`ADMIN` and `SUPER_ADMIN` can retain a future drag-and-drop sequence through `PATCH /admin/{resource}/order`. Send `{ "orderedIds": ["uuid", "..."] }` containing the complete, unfiltered set of all non-archived records exactly once. The response is `{ success: true, data: { items: [{ id, manualOrder }] } }` in the persisted order. This optional manual order never changes public default list sorting. Fetch every page of the unfiltered Admin collection (maximum 50 per page), discard archived records locally, then submit the remaining complete set. `409 ORDER_SET_MISMATCH` means a record was added, archived, or otherwise changed while the editor was preparing the full set; refresh every page and retry. An empty array is valid only when no non-archived records exist. Never send only the current page or a filtered subset.
 
 ### Guarded hard deletion — Phases A and B
 
