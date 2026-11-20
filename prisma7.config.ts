@@ -2,8 +2,12 @@ import 'dotenv/config'
 
 import { defineConfig } from 'prisma/config'
 
+import { getDisposableTestDatabaseTarget, isTestDatabaseMode } from './src/database/test-safety.js'
+
 const configuredDatabaseUrl =
-  process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL
+  isTestDatabaseMode()
+    ? getDisposableTestDatabaseTarget().url
+    : process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL
 const isDatabaseCommand = process.argv.some((argument) =>
   ['migrate', 'db', 'studio'].includes(argument),
 )

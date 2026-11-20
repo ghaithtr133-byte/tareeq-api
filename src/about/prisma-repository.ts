@@ -1,5 +1,6 @@
 import type { Prisma } from '../generated/prisma/client.js'
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import { ABOUT_US_ID, type AboutUsRecord, type AboutUsRepository, type AboutUsUpdate } from './types.js'
 
 const ABOUT_US_MUTATION_LOCK = 9_000_010
@@ -14,11 +15,11 @@ export class PrismaAboutUsRepository implements AboutUsRepository {
 
   async update(actorAdminId: string, input: AboutUsUpdate) {
     return await getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${ABOUT_US_MUTATION_LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, ABOUT_US_MUTATION_LOCK)
       const actor = await transaction.adminUser.findUnique({
         where: { id: actorAdminId }, select: { isActive: true, role: true },
       })
-      if (!actor?.isActive || !['ADMIN', 'SUPER_ADMIN'].includes(actor.role)) return null
+      if (!actor?.isActive || actor.role !== 'SUPER_ADMIN') return null
 
       const current = await transaction.aboutUs.findUnique({ where: { id: ABOUT_US_ID } })
       const nextStatus = input.status ?? current?.status ?? 'DRAFT'

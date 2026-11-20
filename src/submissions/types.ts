@@ -85,6 +85,10 @@ export type SubmissionUpdate = {
   internalNote?: string | null
 }
 
+export type SubmissionDeletionResult =
+  | { outcome: 'DELETED'; id: string; emailNotificationCount: number }
+  | { outcome: 'NOT_FOUND' }
+
 export type PublishedCountryReference = { id: string }
 export type PublishedUniversityReference = { id: string; countryId: string }
 export type AvailableScholarshipReference = {
@@ -135,4 +139,6 @@ export interface SubmissionRepository {
     data: SubmissionUpdate,
     audit: AuditIntent,
   ): Promise<GeneralInquiryRecord>
+  deleteApplication(id: string, audit: AuditIntent): Promise<SubmissionDeletionResult>
+  deleteInquiry(id: string, audit: AuditIntent): Promise<SubmissionDeletionResult>
 }

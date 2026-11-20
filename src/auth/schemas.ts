@@ -31,6 +31,16 @@ export const loginRequestSchema = z
   })
   .openapi('LoginRequest')
 
+export const profileNameUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(200).transform((value) => value.replace(/\s+/g, ' ')).openapi({
+      description: 'Administrator display name. Leading, trailing, and repeated whitespace is normalized.',
+      example: 'Admin Name',
+    }),
+  })
+  .strict()
+  .openapi('ProfileNameUpdateRequest')
+
 export const strongPasswordSchema = z
   .string()
   .min(12)
@@ -53,6 +63,42 @@ export const changePasswordRequestSchema = z
     path: ['newPassword'],
   })
   .openapi('ChangePasswordRequest')
+
+export const passwordRecoveryRequestSchema = z
+  .object({ email: normalizedEmailSchema })
+  .strict()
+  .openapi('PasswordRecoveryRequest')
+
+export const passwordRecoveryVerificationSchema = z
+  .object({
+    challengeId: z.uuid(),
+    otp: z.string().regex(/^\d{6}$/, 'Recovery code must contain exactly six digits.'),
+  })
+  .strict()
+  .openapi('PasswordRecoveryVerificationRequest')
+
+export const passwordRecoveryResetSchema = z
+  .object({
+    challengeId: z.uuid(),
+    resetAuthorization: z.string().min(32).max(256),
+    newPassword: strongPasswordSchema,
+  })
+  .strict()
+  .openapi('PasswordRecoveryResetRequest')
+
+export const adminAccountIdParamSchema = z.object({ id: z.uuid() }).openapi('AdminAccountIdParam')
+
+export const passwordRecoveryAcceptedResponseSchema = successEnvelopeSchema(
+  z.object({ message: z.string() }),
+).openapi('PasswordRecoveryAcceptedResponse')
+
+export const passwordRecoveryRequestResponseSchema = successEnvelopeSchema(
+  z.object({ message: z.string(), challengeId: z.uuid() }),
+).openapi('PasswordRecoveryRequestResponse')
+
+export const passwordRecoveryVerificationResponseSchema = successEnvelopeSchema(
+  z.object({ resetAuthorization: z.string() }),
+).openapi('PasswordRecoveryVerificationResponse')
 
 export const authUserResponseSchema = successEnvelopeSchema(
   z.object({ user: publicAdminSchema }),
@@ -82,6 +128,13 @@ export const authErrorResponses = {
     content: { 'application/json': { schema: errorResponseSchema, example: {
       success: false,
       error: { code: 'CSRF_VALIDATION_FAILED', message: 'Request origin is not allowed.', details: {} },
+    } } },
+  },
+  404: {
+    description: 'The requested resource was not found.',
+    content: { 'application/json': { schema: errorResponseSchema, example: {
+      success: false,
+      error: { code: 'ADMIN_ACCOUNT_NOT_FOUND', message: 'Administrator account was not found.', details: {} },
     } } },
   },
   415: {

@@ -350,6 +350,20 @@ describe('University Programs and advanced directory filters', () => {
     expect((await app.request('/api/v1/universities/bucharest-medical/programs', { method: 'POST' })).status).toBe(404)
   })
 
+  it('requires English identity names for Cities and Academic Majors while allowing partial Arabic updates', async () => {
+    expect((await adminRequest('/api/v1/admin/academic-majors', 'POST', {
+      slug: 'arabic-only-major', nameAr: 'تخصص عربي فقط',
+    })).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/cities', 'POST', {
+      countryId: COUNTRY_ID, slug: 'arabic-only-city', nameAr: 'مدينة عربية فقط',
+    })).status).toBe(400)
+
+    const majorPatch = await adminRequest(`/api/v1/admin/academic-majors/${medicineId}`, 'PATCH', { nameAr: 'الطب المحدث' })
+    await expect(majorPatch.json()).resolves.toMatchObject({ data: { nameAr: 'الطب المحدث', nameEn: 'Medicine' } })
+    const cityPatch = await adminRequest(`/api/v1/admin/cities/${bucharestId}`, 'PATCH', { nameAr: 'بوخارست المحدثة' })
+    await expect(cityPatch.json()).resolves.toMatchObject({ data: { nameAr: 'بوخارست المحدثة', nameEn: 'Bucharest' } })
+  })
+
   it('updates languages and status atomically, archives without DELETE, and writes safe audit events', async () => {
     const updated = await adminRequest(`/api/v1/admin/university-programs/${medicineBachelorsId}`, 'PATCH', { languages: ['ENGLISH', 'ROMANIAN'], status: 'ARCHIVED' })
     expect(updated.status).toBe(200)

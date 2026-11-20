@@ -155,6 +155,75 @@ describe('content management APIs', () => {
     expect(inactiveSelection.status).toBe(400)
   })
 
+  it('accepts Arabic-only content where English translations are optional and preserves supplied translations on partial updates', async () => {
+    const arabicCountry = await createCountry({
+      nameAr: 'بلد عربي فقط', slug: 'arabic-only-country', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', status: 'DRAFT',
+    })
+    expect(arabicCountry.response.status).toBe(201)
+
+    const arabicUniversity = await adminRequest('/api/v1/admin/universities', 'POST', {
+      nameAr: 'جامعة عربية فقط', officialName: 'Arabic Only University', slug: 'arabic-only-university',
+      countryId: arabicCountry.body.data.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'DRAFT',
+    })
+    expect(arabicUniversity.status).toBe(201)
+
+    const arabicScholarship = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      titleAr: 'منحة عربية فقط', slug: 'arabic-only-scholarship', studyLevel: 'BACHELORS', fundingType: 'FULL',
+      requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    })
+    expect(arabicScholarship.status).toBe(201)
+
+    const arabicService = await adminRequest('/api/v1/admin/services', 'POST', {
+      titleAr: 'خدمة عربية فقط', slug: 'arabic-only-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
+    })
+    expect(arabicService.status).toBe(201)
+
+    const arabicArticle = await adminRequest('/api/v1/admin/articles', 'POST', {
+      titleAr: 'مقال عربي فقط', slug: 'arabic-only-article', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'DRAFT',
+    })
+    expect(arabicArticle.status).toBe(201)
+
+    const translatedCountry = await createCountry(countryInput('translated-country'))
+    const countryPatch = await adminRequest(`/api/v1/admin/countries/${translatedCountry.body.data.id}`, 'PATCH', { nameAr: 'ألمانيا المحدثة' })
+    await expect(countryPatch.json()).resolves.toMatchObject({ data: { nameEn: 'Germany', slug: 'translated-country' } })
+
+    const translatedUniversity = await adminRequest('/api/v1/admin/universities', 'POST', {
+      nameAr: 'جامعة مترجمة', nameEn: 'Translated University', officialName: 'Translated University', slug: 'translated-university',
+      countryId: translatedCountry.body.data.id, cityAr: 'مدينة', cityEn: 'City', overviewAr: 'نظرة عامة', overviewEn: 'Overview', status: 'DRAFT',
+    })
+    const translatedUniversityBody = await translatedUniversity.json() as { data: { id: string } }
+    const universityPatch = await adminRequest(`/api/v1/admin/universities/${translatedUniversityBody.data.id}`, 'PATCH', { nameAr: 'جامعة مترجمة محدثة' })
+    await expect(universityPatch.json()).resolves.toMatchObject({ data: { nameEn: 'Translated University', cityEn: 'City', overviewEn: 'Overview', slug: 'translated-university' } })
+
+    const translatedScholarship = await adminRequest('/api/v1/admin/scholarships', 'POST', {
+      titleAr: 'منحة مترجمة', titleEn: 'Translated Scholarship', slug: 'translated-scholarship', studyLevel: 'BACHELORS', fundingType: 'FULL',
+      requirementsAr: 'متطلبات', requirementsEn: 'Requirements', descriptionAr: 'وصف', descriptionEn: 'Description', status: 'DRAFT',
+    })
+    const translatedScholarshipBody = await translatedScholarship.json() as { data: { id: string } }
+    const scholarshipPatch = await adminRequest(`/api/v1/admin/scholarships/${translatedScholarshipBody.data.id}`, 'PATCH', { titleAr: 'منحة مترجمة محدثة' })
+    await expect(scholarshipPatch.json()).resolves.toMatchObject({ data: { titleEn: 'Translated Scholarship', requirementsEn: 'Requirements', descriptionEn: 'Description', slug: 'translated-scholarship' } })
+
+    const translatedService = await adminRequest('/api/v1/admin/services', 'POST', {
+      titleAr: 'خدمة مترجمة', titleEn: 'Translated Service', slug: 'translated-service', summaryAr: 'ملخص', summaryEn: 'Summary', descriptionAr: 'وصف', descriptionEn: 'Description', status: 'DRAFT',
+    })
+    const translatedServiceBody = await translatedService.json() as { data: { id: string } }
+    const servicePatch = await adminRequest(`/api/v1/admin/services/${translatedServiceBody.data.id}`, 'PATCH', { titleAr: 'خدمة مترجمة محدثة' })
+    await expect(servicePatch.json()).resolves.toMatchObject({ data: { titleEn: 'Translated Service', summaryEn: 'Summary', descriptionEn: 'Description', slug: 'translated-service' } })
+
+    const translatedArticle = await adminRequest('/api/v1/admin/articles', 'POST', {
+      titleAr: 'مقال مترجم', titleEn: 'Translated Article', slug: 'translated-article', summaryAr: 'ملخص', summaryEn: 'Summary',
+      bodyAr: [{ type: 'paragraph', text: 'نص' }], bodyEn: [{ type: 'paragraph', text: 'Text' }], status: 'DRAFT',
+    })
+    const translatedArticleBody = await translatedArticle.json() as { data: { id: string } }
+    const articlePatch = await adminRequest(`/api/v1/admin/articles/${translatedArticleBody.data.id}`, 'PATCH', { titleAr: 'مقال مترجم محدث' })
+    await expect(articlePatch.json()).resolves.toMatchObject({ data: { titleEn: 'Translated Article', summaryEn: 'Summary', bodyEn: [{ type: 'paragraph', text: 'Text' }], slug: 'translated-article' } })
+
+    const missingOfficialName = await adminRequest('/api/v1/admin/universities', 'POST', {
+      nameAr: 'جامعة بلا اسم رسمي', slug: 'university-without-official-name', countryId: translatedCountry.body.data.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'DRAFT',
+    })
+    expect(missingOfficialName.status).toBe(400)
+  })
+
   it('rejects unauthenticated Admin access and accepts both approved roles', async () => {
     const unauthenticated = await app.request('/api/v1/admin/countries')
     expect(unauthenticated.status).toBe(401)

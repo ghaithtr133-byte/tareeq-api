@@ -13,7 +13,10 @@ import { InMemoryAuthRepository } from './helpers/in-memory-auth-repository.js'
 import { InMemorySubmissionRepository } from './helpers/in-memory-submission-repository.js'
 
 const ADMIN_ORIGIN = 'https://admin.tareeq-academy.com'
-const PUBLIC_ORIGIN = 'https://tareeq-academy.com'
+const APEX_PUBLIC_ORIGIN = 'https://tareeq-academy.com'
+const WWW_PUBLIC_ORIGIN = 'https://www.tareeq-academy.com'
+const LOCAL_PUBLIC_ORIGIN = 'http://localhost:3000'
+const PUBLIC_ORIGIN = APEX_PUBLIC_ORIGIN
 const JWT_SECRET = 'submission-api-test-secret-that-is-longer-than-thirty-two-characters'
 const FIXED_NOW = new Date('2026-10-25T10:00:00.000Z')
 const ADMIN_ID = 'a4a2ec6a-c2e0-48ca-99e4-d11353120b20'
@@ -26,7 +29,7 @@ const config: AuthConfig = {
   databaseUrl: 'postgresql://unused:unused@localhost:5432/unused',
   jwtSecret: JWT_SECRET,
   allowedOrigins: [ADMIN_ORIGIN],
-  publicAllowedOrigins: [PUBLIC_ORIGIN],
+  publicAllowedOrigins: [APEX_PUBLIC_ORIGIN, WWW_PUBLIC_ORIGIN, LOCAL_PUBLIC_ORIGIN],
   isProduction: false,
 }
 
@@ -257,20 +260,25 @@ describe('student applications and inquiries APIs', () => {
     })
   })
 
-  it('allows Public Website POST CORS without credentials and rejects untrusted origins', async () => {
-    const preflight = await app.request('/api/v1/applications', {
-      method: 'OPTIONS',
-      headers: {
-        Origin: PUBLIC_ORIGIN,
-        'Access-Control-Request-Method': 'POST',
-        'Access-Control-Request-Headers': 'Content-Type',
-      },
-    })
-    expect(preflight.status).toBe(204)
-    expect(preflight.headers.get('access-control-allow-origin')).toBe(PUBLIC_ORIGIN)
-    expect(preflight.headers.get('access-control-allow-methods')).toContain('POST')
-    expect(preflight.headers.get('access-control-allow-methods')).not.toContain('GET')
-    expect(preflight.headers.get('access-control-allow-credentials')).toBeNull()
+  it('allows the approved public origins to preflight inquiry POST without credentials or redirects', async () => {
+    for (const origin of [APEX_PUBLIC_ORIGIN, WWW_PUBLIC_ORIGIN, LOCAL_PUBLIC_ORIGIN]) {
+      const preflight = await app.request('/api/v1/inquiries', {
+        method: 'OPTIONS',
+        headers: {
+          Origin: origin,
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'Content-Type',
+        },
+      })
+      expect(preflight.status).toBe(204)
+      expect(preflight.headers.get('location')).toBeNull()
+      expect(preflight.headers.get('access-control-allow-origin')).toBe(origin)
+      expect(preflight.headers.get('access-control-allow-methods')).toContain('POST')
+      expect(preflight.headers.get('access-control-allow-methods')).toContain('OPTIONS')
+      expect(preflight.headers.get('access-control-allow-methods')).not.toContain('GET')
+      expect(preflight.headers.get('access-control-allow-headers')).toContain('Content-Type')
+      expect(preflight.headers.get('access-control-allow-credentials')).toBeNull()
+    }
 
     const allowed = await submit('/api/v1/inquiries', inquiryInput())
     expect(allowed.headers.get('access-control-allow-origin')).toBe(PUBLIC_ORIGIN)
@@ -425,7 +433,86 @@ describe('student applications and inquiries APIs', () => {
     })
   })
 
-  it('documents exactly the eight approved operations and preserves request IDs', async () => {
+  it('permanently deletes submissions only after SUPER_ADMIN confirmation and preserves unrelated records', async () => {
+    await submit('/api/v1/applications', applicationInput())
+    await submit('/api/v1/inquiries', inquiryInput())
+    const application = repository.applications[0]
+    const inquiry = repository.inquiries[0]
+    if (!application || !inquiry) throw new Error('Missing deletion fixtures.')
+    const confirmation = { confirmation: 'DELETE' }
+
+    const anonymous = await app.request(`/api/v1/admin/applications/${application.id}`, {
+      method: 'DELETE', headers: { Origin: ADMIN_ORIGIN, 'Content-Type': 'application/json' }, body: JSON.stringify(confirmation),
+    })
+    expect(anonymous.status).toBe(401)
+    expect((await adminRequest(`/api/v1/admin/applications/${application.id}`, 'DELETE', confirmation)).status).toBe(403)
+    expect((await adminRequest(`/api/v1/admin/applications/${application.id}`, 'DELETE', {} , 'SUPER_ADMIN')).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/applications/not-a-uuid', 'DELETE', confirmation, 'SUPER_ADMIN')).status).toBe(400)
+    expect((await adminRequest('/api/v1/admin/applications/22222222-2222-4222-8222-222222222222', 'DELETE', confirmation, 'SUPER_ADMIN')).status).toBe(404)
+
+    const deletedApplication = await adminRequest(`/api/v1/admin/applications/${application.id}`, 'DELETE', confirmation, 'SUPER_ADMIN')
+    expect(deletedApplication.status).toBe(200)
+    await expect(deletedApplication.json()).resolves.toEqual({ success: true, data: { id: application.id } })
+    expect(repository.applications).toHaveLength(0)
+    expect(repository.inquiries).toHaveLength(1)
+    expect(repository.scholarships.get(SCHOLARSHIP_ID)).toBeDefined()
+    expect(repository.emailNotifications.every((notification) => notification.application?.id !== application.id)).toBe(true)
+    expect(repository.emailNotifications.some((notification) => notification.inquiry?.id === inquiry.id)).toBe(true)
+    const applicationAudit = repository.audit.events.at(-1)
+    expect(applicationAudit).toMatchObject({ actorAdminId: SUPER_ADMIN_ID, action: 'student_application.deleted', resourceType: 'STUDENT_APPLICATION', resourceId: application.id, metadata: { deletionMode: 'SUPER_ADMIN_CONFIRMED', emailNotificationCount: 1 } })
+    expect(JSON.stringify(applicationAudit)).not.toContain(application.fullName)
+    expect(JSON.stringify(applicationAudit)).not.toContain(application.email)
+
+    const deletedInquiry = await adminRequest(`/api/v1/admin/inquiries/${inquiry.id}`, 'DELETE', confirmation, 'SUPER_ADMIN')
+    expect(deletedInquiry.status).toBe(200)
+    expect(repository.inquiries).toHaveLength(0)
+    expect(repository.emailNotifications).toHaveLength(0)
+    expect(repository.audit.events.at(-1)).toMatchObject({ action: 'general_inquiry.deleted', resourceType: 'GENERAL_INQUIRY', resourceId: inquiry.id, metadata: { emailNotificationCount: 1 } })
+  })
+
+  it('rolls back in-memory deletion when the required audit write fails', async () => {
+    await submit('/api/v1/inquiries', inquiryInput())
+    const inquiry = repository.inquiries[0]
+    if (!inquiry) throw new Error('Missing inquiry fixture.')
+    repository.audit.failNextWrite = true
+    const response = await adminRequest(`/api/v1/admin/inquiries/${inquiry.id}`, 'DELETE', { confirmation: 'DELETE' }, 'SUPER_ADMIN')
+    expect(response.status).toBe(500)
+    expect(repository.inquiries).toHaveLength(1)
+    expect(repository.emailNotifications.some((notification) => notification.inquiry?.id === inquiry.id)).toBe(true)
+  })
+
+  it('allows DELETE preflight only for the trusted Admin origin', async () => {
+    for (const path of [
+      `/api/v1/admin/applications/${ADMIN_ID}`,
+      `/api/v1/admin/inquiries/${SUPER_ADMIN_ID}`,
+    ]) {
+      const allowed = await app.request(path, {
+        method: 'OPTIONS',
+        headers: {
+          Origin: ADMIN_ORIGIN,
+          'Access-Control-Request-Method': 'DELETE',
+          'Access-Control-Request-Headers': 'Content-Type',
+        },
+      })
+      expect(allowed.status).toBe(204)
+      expect(allowed.headers.get('access-control-allow-origin')).toBe(ADMIN_ORIGIN)
+      expect(allowed.headers.get('access-control-allow-credentials')).toBe('true')
+      expect(allowed.headers.get('access-control-allow-methods')).toContain('DELETE')
+      expect(allowed.headers.get('access-control-allow-headers')).toContain('Content-Type')
+    }
+
+    const rejected = await app.request(`/api/v1/admin/applications/${ADMIN_ID}`, {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://untrusted.example.invalid',
+        'Access-Control-Request-Method': 'DELETE',
+        'Access-Control-Request-Headers': 'Content-Type',
+      },
+    })
+    expect(rejected.headers.get('access-control-allow-origin')).toBeNull()
+  })
+
+  it('documents the ten approved operations and preserves request IDs', async () => {
     const response = await app.request('/openapi.json', {
       headers: { 'X-Request-Id': 'task-5-openapi-check' },
     })
@@ -437,10 +524,12 @@ describe('student applications and inquiries APIs', () => {
       ['get', '/api/v1/admin/applications'],
       ['get', '/api/v1/admin/applications/{id}'],
       ['patch', '/api/v1/admin/applications/{id}/status'],
+      ['delete', '/api/v1/admin/applications/{id}'],
       ['post', '/api/v1/inquiries'],
       ['get', '/api/v1/admin/inquiries'],
       ['get', '/api/v1/admin/inquiries/{id}'],
       ['patch', '/api/v1/admin/inquiries/{id}/status'],
+      ['delete', '/api/v1/admin/inquiries/{id}'],
     ] as const
     for (const [method, path] of expected) {
       expect(document.paths[path]?.[method]).toBeDefined()
@@ -453,7 +542,7 @@ describe('student applications and inquiries APIs', () => {
       (total, path) => total + Object.keys(path).filter((method) => methods.has(method)).length,
       0,
     )
-    expect(operationCount).toBe(136)
+    expect(operationCount).toBe(143)
     expect(response.headers.get('x-request-id')).toBe('task-5-openapi-check')
   })
 })

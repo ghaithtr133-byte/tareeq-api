@@ -40,6 +40,24 @@ export const adminAccountIdParamSchema = z.object({
 export const adminAccountUpdateSchema = z.union([
   z.object({ isActive: z.boolean() }).strict(),
   z.object({ role: managedAdminRoleSchema }).strict(),
+  z.object({
+    name: z.string().trim().min(1).max(200)
+      .transform((value) => value.replace(/\s+/g, ' '))
+      .optional()
+      .openapi({
+        description: 'Administrator display name. Leading, trailing, and repeated whitespace is normalized.',
+        example: 'Updated Admin Name',
+      }),
+    email: z.string().trim().toLowerCase().pipe(z.email().max(254))
+      .optional()
+      .openapi({
+        description: 'Administrator sign-in email. Input is trimmed and normalized to lowercase.',
+        example: 'updated.admin@example.invalid',
+      }),
+  }).strict().refine(
+    (value) => value.name !== undefined || value.email !== undefined,
+    { message: 'Provide at least one of name or email.' },
+  ),
 ]).openapi('AdminAccountUpdateRequest')
 
 export const adminAccountResponseSchema = successEnvelopeSchema(
@@ -89,12 +107,12 @@ export const adminManagementErrorResponses = {
     }),
   },
   409: {
-    description: 'The requested change violates administrator safety invariants or changes nothing.',
+    description: 'The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.',
     content: errorContent({
       success: false,
       error: {
-        code: 'LAST_ACTIVE_SUPER_ADMIN_REQUIRED',
-        message: 'At least one active SUPER_ADMIN account must remain.',
+        code: 'ADMIN_EMAIL_ALREADY_EXISTS',
+        message: 'An administrator account already uses that email address.',
         details: {},
       },
     }),

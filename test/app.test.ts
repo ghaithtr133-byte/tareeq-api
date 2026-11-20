@@ -51,7 +51,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(collection.info.schema).toBe(
       'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
     )
-    expect(collectRequests(collection.item)).toHaveLength(136)
+    expect(collectRequests(collection.item)).toHaveLength(143)
 
     const zipResponse = await app.request('/postman/download.zip')
     const zip = Buffer.from(await zipResponse.arrayBuffer())
@@ -168,7 +168,7 @@ describe('Tareeq Academy API foundation', () => {
     expect(document.components.schemas.HealthResponse).toBeDefined()
   })
 
-  it('documents the complete 136-operation API with descriptions, examples, and Admin security', async () => {
+  it('documents the complete 143-operation API with descriptions, examples, and Admin security', async () => {
     const response = await app.request('/openapi.json')
     const document = (await response.json()) as {
       info?: { description?: string }
@@ -195,7 +195,7 @@ describe('Tareeq Academy API foundation', () => {
         .map(([method, operation]) => ({ path, method, operation })),
     )
 
-    expect(operations).toHaveLength(136)
+    expect(operations).toHaveLength(143)
     const contentResources = '(countries|universities|scholarships|services|articles)'
     const operationGroups = {
       system: operations.filter(({ path }) => path === '/api/v1/health'),
@@ -258,7 +258,7 @@ describe('Tareeq Academy API foundation', () => {
       Object.entries(operationGroups).map(([group, entries]) => [group, entries.length]),
     )).toEqual({
       system: 1,
-      authentication: 5,
+      authentication: 10,
       publicContent: 11,
       adminContent: 30,
       adminMedia: 1,
@@ -429,7 +429,9 @@ describe('Tareeq Academy API foundation', () => {
             '/api/v1/admin/users',
             '/api/v1/admin/users/{id}',
             '/api/v1/admin/site-settings',
-          ].includes(path) || path.startsWith('/api/v1/admin/analytics/') || path.endsWith('/hard-delete/confirm')
+            '/api/v1/admin/about',
+          ].includes(path) || path.startsWith('/api/v1/admin/analytics/') || path.endsWith('/hard-delete/confirm') ||
+          (method === 'delete' && (path === '/api/v1/admin/applications/{id}' || path === '/api/v1/admin/inquiries/{id}'))
             ? 'SUPER_ADMIN only'
             : 'ADMIN or SUPER_ADMIN',
         )

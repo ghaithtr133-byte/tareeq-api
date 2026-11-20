@@ -57,6 +57,11 @@ export class AdminManagementService {
         'LAST_ACTIVE_SUPER_ADMIN_REQUIRED',
         'At least one active SUPER_ADMIN account must remain.',
       ),
+      EMAIL_ALREADY_EXISTS: new ApiError(
+        409,
+        'ADMIN_EMAIL_ALREADY_EXISTS',
+        'An administrator account already uses that email address.',
+      ),
       UNCHANGED: new ApiError(
         409,
         'ADMIN_ACCOUNT_UNCHANGED',

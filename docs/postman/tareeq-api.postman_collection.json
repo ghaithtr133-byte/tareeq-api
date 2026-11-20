@@ -252,7 +252,7 @@
                 "login"
               ]
             },
-            "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+            "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
@@ -298,7 +298,7 @@
                     "login"
                   ]
                 },
-                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
@@ -355,7 +355,7 @@
                     "login"
                   ]
                 },
-                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
@@ -412,7 +412,7 @@
                     "login"
                   ]
                 },
-                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
@@ -469,7 +469,7 @@
                     "login"
                   ]
                 },
-                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
@@ -491,6 +491,63 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CSRF_VALIDATION_FAILED\",\n    \"message\": \"Request origin is not allowed.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The requested resource was not found.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"ADMIN_ACCOUNT_NOT_FOUND\",\n    \"message\": \"Administrator account was not found.\",\n    \"details\": {}\n  }\n}"
             },
             {
               "name": "415 The request body is not application/json.",
@@ -526,7 +583,7 @@
                     "login"
                   ]
                 },
-                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates an active administrator and sets host-only HttpOnly access and refresh cookies. Authentication credentials are never returned in JSON.\n\nAuthentication: none. Provide an authorized email/password manually; Postman stores returned HttpOnly cookies for the host.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Authentication succeeded.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
@@ -650,6 +707,396 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Update the current administrator profile name",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Updates only the authenticated active administrator's display name. Role, email, activation state, password, and all other account fields are rejected.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Current administrator profile updated.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin Name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Current administrator profile updated.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Updates only the authenticated active administrator's display name. Role, email, activation state, password, and all other account fields are rejected.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Current administrator profile updated.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin Name\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n      \"name\": \"Admin Name\",\n      \"email\": \"admin@example.invalid\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}"
+            },
+            {
+              "name": "400 The request is invalid.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Updates only the authenticated active administrator's display name. Role, email, activation state, password, and all other account fields are rejected.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Current administrator profile updated.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin Name\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Invalid request.\",\n    \"details\": []\n  }\n}"
+            },
+            {
+              "name": "401 Authentication failed or is required.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Updates only the authenticated active administrator's display name. Role, email, activation state, password, and all other account fields are rejected.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Current administrator profile updated.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin Name\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The request is forbidden due to permissions or origin validation.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Updates only the authenticated active administrator's display name. Role, email, activation state, password, and all other account fields are rejected.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Current administrator profile updated.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin Name\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CSRF_VALIDATION_FAILED\",\n    \"message\": \"Request origin is not allowed.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The requested resource was not found.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Updates only the authenticated active administrator's display name. Role, email, activation state, password, and all other account fields are rejected.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Current administrator profile updated.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin Name\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"ADMIN_ACCOUNT_NOT_FOUND\",\n    \"message\": \"Administrator account was not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not application/json.",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Updates only the authenticated active administrator's display name. Role, email, activation state, password, and all other account fields are rejected.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Current administrator profile updated.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Admin Name\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Unsupported media type.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         },
@@ -970,7 +1417,7 @@
                 "change-password"
               ]
             },
-            "description": "Validates the current password, updates it, revokes refresh sessions, clears authentication cookies, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+            "description": "Validates the current password, atomically increments the account security version, revokes refresh sessions, clears authentication cookies, immediately invalidates prior access JWTs, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
@@ -983,7 +1430,7 @@
           },
           "response": [
             {
-              "name": "200 Password changed, sessions revoked, and cookies cleared.",
+              "name": "200 Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.",
               "originalRequest": {
                 "method": "POST",
                 "header": [
@@ -1016,7 +1463,7 @@
                     "change-password"
                   ]
                 },
-                "description": "Validates the current password, updates it, revokes refresh sessions, clears authentication cookies, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates the current password, atomically increments the account security version, revokes refresh sessions, clears authentication cookies, immediately invalidates prior access JWTs, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
@@ -1073,7 +1520,7 @@
                     "change-password"
                   ]
                 },
-                "description": "Validates the current password, updates it, revokes refresh sessions, clears authentication cookies, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates the current password, atomically increments the account security version, revokes refresh sessions, clears authentication cookies, immediately invalidates prior access JWTs, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
@@ -1130,7 +1577,7 @@
                     "change-password"
                   ]
                 },
-                "description": "Validates the current password, updates it, revokes refresh sessions, clears authentication cookies, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates the current password, atomically increments the account security version, revokes refresh sessions, clears authentication cookies, immediately invalidates prior access JWTs, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
@@ -1187,10 +1634,347 @@
                     "change-password"
                   ]
                 },
-                "description": "Validates the current password, updates it, revokes refresh sessions, clears authentication cookies, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Validates the current password, atomically increments the account security version, revokes refresh sessions, clears authentication cookies, immediately invalidates prior access JWTs, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CSRF_VALIDATION_FAILED\",\n    \"message\": \"Request origin is not allowed.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The requested resource was not found.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/change-password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "change-password"
+                  ]
+                },
+                "description": "Validates the current password, atomically increments the account security version, revokes refresh sessions, clears authentication cookies, immediately invalidates prior access JWTs, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"ADMIN_ACCOUNT_NOT_FOUND\",\n    \"message\": \"Administrator account was not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not application/json.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/change-password",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "change-password"
+                  ]
+                },
+                "description": "Validates the current password, atomically increments the account security version, revokes refresh sessions, clears authentication cookies, immediately invalidates prior access JWTs, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, prior access JWTs and refresh sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Unsupported media type.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Request administrator password recovery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password-recovery/request",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password-recovery",
+                "request"
+              ]
+            },
+            "description": "Accepts an administrator email and always returns the same acknowledgement shape for eligible, unknown, inactive, cooldown-limited, and rate-limited accounts. It includes a fresh opaque challenge UUID for the next verification request; that UUID is durable only when an eligible account receives a code. When eligible, a six-digit code is sent only to the account’s registered email. No code is returned by this API.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Generic recovery-request acceptance.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.invalid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "202 Generic recovery-request acceptance.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/request",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "request"
+                  ]
+                },
+                "description": "Accepts an administrator email and always returns the same acknowledgement shape for eligible, unknown, inactive, cooldown-limited, and rate-limited accounts. It includes a fresh opaque challenge UUID for the next verification request; that UUID is durable only when an eligible account receives a code. When eligible, a six-digit code is sent only to the account’s registered email. No code is returned by this API.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Generic recovery-request acceptance.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.invalid\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Documented Response",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"message\": \"If the account is eligible, recovery instructions have been sent.\",\n    \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\"\n  }\n}"
+            },
+            {
+              "name": "400 The request is invalid.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/request",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "request"
+                  ]
+                },
+                "description": "Accepts an administrator email and always returns the same acknowledgement shape for eligible, unknown, inactive, cooldown-limited, and rate-limited accounts. It includes a fresh opaque challenge UUID for the next verification request; that UUID is durable only when an eligible account receives a code. When eligible, a six-digit code is sent only to the account’s registered email. No code is returned by this API.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Generic recovery-request acceptance.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.invalid\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Invalid request.\",\n    \"details\": []\n  }\n}"
+            },
+            {
+              "name": "403 The request is forbidden due to permissions or origin validation.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/request",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "request"
+                  ]
+                },
+                "description": "Accepts an administrator email and always returns the same acknowledgement shape for eligible, unknown, inactive, cooldown-limited, and rate-limited accounts. It includes a fresh opaque challenge UUID for the next verification request; that UUID is durable only when an eligible account receives a code. When eligible, a six-digit code is sent only to the account’s registered email. No code is returned by this API.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Generic recovery-request acceptance.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1233,7 +2017,7 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{baseUrl}}/api/v1/auth/change-password",
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/request",
                   "host": [
                     "{{baseUrl}}"
                   ],
@@ -1241,13 +2025,14 @@
                     "api",
                     "v1",
                     "auth",
-                    "change-password"
+                    "password-recovery",
+                    "request"
                   ]
                 },
-                "description": "Validates the current password, updates it, revokes refresh sessions, clears authentication cookies, and requires a new login.\n\nAuthentication: HttpOnly access cookie managed by Postman.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password changed, sessions revoked, and cookies cleared.\n400: The request is invalid.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "description": "Accepts an administrator email and always returns the same acknowledgement shape for eligible, unknown, inactive, cooldown-limited, and rate-limited accounts. It includes a fresh opaque challenge UUID for the next verification request; that UUID is durable only when an eligible account receives a code. When eligible, a six-digit code is sent only to the account’s registered email. No code is returned by this API.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Generic recovery-request acceptance.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"{{newAdminPassword}}\"\n}",
+                  "raw": "{\n  \"email\": \"admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1266,6 +2051,824 @@
               ],
               "cookie": [],
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Unsupported media type.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Verify a password recovery code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password-recovery/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password-recovery",
+                "verify"
+              ]
+            },
+            "description": "Verifies a non-expired six-digit recovery code with durable attempt limits. On success, returns a short-lived single-use authorization required only by the reset endpoint.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Recovery code verified.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Recovery code verified.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/verify",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "verify"
+                  ]
+                },
+                "description": "Verifies a non-expired six-digit recovery code with durable attempt limits. On success, returns a short-lived single-use authorization required only by the reset endpoint.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Recovery code verified.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"resetAuthorization\": \"opaque-single-use-authorization\"\n  }\n}"
+            },
+            {
+              "name": "400 The request is invalid.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/verify",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "verify"
+                  ]
+                },
+                "description": "Verifies a non-expired six-digit recovery code with durable attempt limits. On success, returns a short-lived single-use authorization required only by the reset endpoint.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Recovery code verified.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Invalid request.\",\n    \"details\": []\n  }\n}"
+            },
+            {
+              "name": "403 The request is forbidden due to permissions or origin validation.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/verify",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "verify"
+                  ]
+                },
+                "description": "Verifies a non-expired six-digit recovery code with durable attempt limits. On success, returns a short-lived single-use authorization required only by the reset endpoint.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Recovery code verified.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CSRF_VALIDATION_FAILED\",\n    \"message\": \"Request origin is not allowed.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not application/json.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/verify",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "verify"
+                  ]
+                },
+                "description": "Verifies a non-expired six-digit recovery code with durable attempt limits. On success, returns a short-lived single-use authorization required only by the reset endpoint.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Recovery code verified.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"otp\": \"123456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Unsupported media type.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Reset an administrator password after recovery verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/password-recovery/reset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "password-recovery",
+                "reset"
+              ]
+            },
+            "description": "Consumes the short-lived recovery authorization exactly once, applies the normal password policy, atomically replaces the password through the shared session-revocation primitive, invalidates all outstanding recovery authorizations, and requires fresh login.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password reset and prior sessions revoked.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"resetAuthorization\": \"opaque-single-use-authorization\",\n  \"newPassword\": \"ChangedPassword456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Password reset and prior sessions revoked.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/reset",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "reset"
+                  ]
+                },
+                "description": "Consumes the short-lived recovery authorization exactly once, applies the normal password policy, atomically replaces the password through the shared session-revocation primitive, invalidates all outstanding recovery authorizations, and requires fresh login.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password reset and prior sessions revoked.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"resetAuthorization\": \"opaque-single-use-authorization\",\n  \"newPassword\": \"ChangedPassword456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {}\n}"
+            },
+            {
+              "name": "400 The request is invalid.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/reset",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "reset"
+                  ]
+                },
+                "description": "Consumes the short-lived recovery authorization exactly once, applies the normal password policy, atomically replaces the password through the shared session-revocation primitive, invalidates all outstanding recovery authorizations, and requires fresh login.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password reset and prior sessions revoked.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"resetAuthorization\": \"opaque-single-use-authorization\",\n  \"newPassword\": \"ChangedPassword456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"Invalid request.\",\n    \"details\": []\n  }\n}"
+            },
+            {
+              "name": "403 The request is forbidden due to permissions or origin validation.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/reset",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "reset"
+                  ]
+                },
+                "description": "Consumes the short-lived recovery authorization exactly once, applies the normal password policy, atomically replaces the password through the shared session-revocation primitive, invalidates all outstanding recovery authorizations, and requires fresh login.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password reset and prior sessions revoked.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"resetAuthorization\": \"opaque-single-use-authorization\",\n  \"newPassword\": \"ChangedPassword456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CSRF_VALIDATION_FAILED\",\n    \"message\": \"Request origin is not allowed.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not application/json.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/password-recovery/reset",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "password-recovery",
+                    "reset"
+                  ]
+                },
+                "description": "Consumes the short-lived recovery authorization exactly once, applies the normal password policy, atomically replaces the password through the shared session-revocation primitive, invalidates all outstanding recovery authorizations, and requires fresh login.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Password reset and prior sessions revoked.\n400: The request is invalid.\n403: The request is forbidden due to permissions or origin validation.\n415: The request body is not application/json.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"challengeId\": \"a4a2ec6a-c2e0-48ca-99e4-d11353120b20\",\n  \"resetAuthorization\": \"opaque-single-use-authorization\",\n  \"newPassword\": \"ChangedPassword456\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Unsupported media type.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Initiate password recovery for an administrator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/admin/users/:id/password-recovery",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "admin",
+                "users",
+                ":id",
+                "password-recovery"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{id}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "SUPER_ADMIN only. Sends recovery instructions only to the target account’s current registered email. The initiator never receives an OTP, reset authorization, password choice, or email content. The initiation is audited without secrets.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Recovery initiation accepted.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found."
+          },
+          "response": [
+            {
+              "name": "202 Recovery initiation accepted.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/admin/users/:id/password-recovery",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "admin",
+                    "users",
+                    ":id",
+                    "password-recovery"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Sends recovery instructions only to the target account’s current registered email. The initiator never receives an OTP, reset authorization, password choice, or email content. The initiation is audited without secrets.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Recovery initiation accepted.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found."
+              },
+              "status": "Documented Response",
+              "code": 202,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"message\": \"If the account is eligible, recovery instructions have been sent.\"\n  }\n}"
+            },
+            {
+              "name": "401 Authentication failed or is required.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/admin/users/:id/password-recovery",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "admin",
+                    "users",
+                    ":id",
+                    "password-recovery"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Sends recovery instructions only to the target account’s current registered email. The initiator never receives an OTP, reset authorization, password choice, or email content. The initiation is audited without secrets.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Recovery initiation accepted.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The request is forbidden due to permissions or origin validation.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/admin/users/:id/password-recovery",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "admin",
+                    "users",
+                    ":id",
+                    "password-recovery"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Sends recovery instructions only to the target account’s current registered email. The initiator never receives an OTP, reset authorization, password choice, or email content. The initiation is audited without secrets.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Recovery initiation accepted.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found."
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CSRF_VALIDATION_FAILED\",\n    \"message\": \"Request origin is not allowed.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The requested resource was not found.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/admin/users/:id/password-recovery",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "admin",
+                    "users",
+                    ":id",
+                    "password-recovery"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{id}}",
+                      "description": ""
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Sends recovery instructions only to the target account’s current registered email. The initiator never receives an OTP, reset authorization, password choice, or email content. The initiation is audited without secrets.\n\nAuthentication: none.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n202: Recovery initiation accepted.\n401: Authentication failed or is required.\n403: The request is forbidden due to permissions or origin validation.\n404: The requested resource was not found."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"ADMIN_ACCOUNT_NOT_FOUND\",\n    \"message\": \"Administrator account was not found.\",\n    \"details\": {}\n  }\n}"
             }
           ]
         }
@@ -25707,6 +27310,452 @@
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
             }
           ]
+        },
+        {
+          "name": "[MANUAL] Permanently delete a student application",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/applications/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "applications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{applicationId}}",
+                  "description": "Submission UUID."
+                }
+              ]
+            },
+            "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Application permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Application permanently deleted.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/applications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "applications",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{applicationId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Application permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation or related-record error.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/applications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "applications",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{applicationId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Application permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"privacyAccepted\": [\n          \"Invalid input: expected true\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/applications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "applications",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{applicationId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Application permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The browser origin is not allowed or the administrator lacks permission.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/applications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "applications",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{applicationId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Application permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Request is forbidden.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The requested submission was not found.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/applications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "applications",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{applicationId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Application permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"APPLICATION_NOT_FOUND\",\n    \"message\": \"Student application not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not JSON.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/applications/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "applications",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{applicationId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Application permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
         }
       ]
     },
@@ -26712,6 +28761,452 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"status\": \"RESOLVED\",\n  \"internalNote\": \"تم الرد على الاستفسار.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unsupported Media Type",
+              "code": 415,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"UNSUPPORTED_MEDIA_TYPE\",\n    \"message\": \"Content-Type must be application/json.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "[MANUAL] Permanently delete a general inquiry",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/inquiries/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "inquiries",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{inquiryId}}",
+                  "description": "Submission UUID."
+                }
+              ]
+            },
+            "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Inquiry permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 Inquiry permanently deleted.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/inquiries/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "inquiries",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{inquiryId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Inquiry permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"b2b21ee5-f955-46ca-972f-6b6b81aa4a3d\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation or related-record error.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/inquiries/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "inquiries",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{inquiryId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Inquiry permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"privacyAccepted\": [\n          \"Invalid input: expected true\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/inquiries/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "inquiries",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{inquiryId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Inquiry permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The browser origin is not allowed or the administrator lacks permission.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/inquiries/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "inquiries",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{inquiryId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Inquiry permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Request is forbidden.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The requested submission was not found.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/inquiries/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "inquiries",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{inquiryId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Inquiry permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"APPLICATION_NOT_FOUND\",\n    \"message\": \"Student application not found.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "415 The request body is not JSON.",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/inquiries/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "inquiries",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{inquiryId}}",
+                      "description": "Submission UUID."
+                    }
+                  ]
+                },
+                "description": "SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Inquiry permanently deleted.\n400: Validation or related-record error.\n401: Authentication is required.\n403: The browser origin is not allowed or the administrator lacks permission.\n404: The requested submission was not found.\n415: The request body is not JSON.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"confirmation\": \"DELETE\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -27931,7 +30426,7 @@
           ]
         },
         {
-          "name": "[MANUAL] Change an administrator role or activation state",
+          "name": "[MANUAL] Change an administrator identity, role, or activation state",
           "request": {
             "method": "PATCH",
             "header": [
@@ -27972,10 +30467,10 @@
                 }
               ]
             },
-            "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+            "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"isActive\": false\n}",
+              "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -28026,10 +30521,10 @@
                     }
                   ]
                 },
-                "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isActive\": false\n}",
+                  "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -28091,10 +30586,10 @@
                     }
                   ]
                 },
-                "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isActive\": false\n}",
+                  "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -28156,10 +30651,10 @@
                     }
                   ]
                 },
-                "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isActive\": false\n}",
+                  "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -28221,10 +30716,10 @@
                     }
                   ]
                 },
-                "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isActive\": false\n}",
+                  "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -28286,10 +30781,10 @@
                     }
                   ]
                 },
-                "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isActive\": false\n}",
+                  "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -28310,7 +30805,7 @@
               "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"ADMIN_ACCOUNT_NOT_FOUND\",\n    \"message\": \"Administrator account not found.\",\n    \"details\": {}\n  }\n}"
             },
             {
-              "name": "409 The requested change violates administrator safety invariants or changes nothing.",
+              "name": "409 The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -28351,10 +30846,10 @@
                     }
                   ]
                 },
-                "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isActive\": false\n}",
+                  "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -28372,7 +30867,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"LAST_ACTIVE_SUPER_ADMIN_REQUIRED\",\n    \"message\": \"At least one active SUPER_ADMIN account must remain.\",\n    \"details\": {}\n  }\n}"
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"ADMIN_EMAIL_ALREADY_EXISTS\",\n    \"message\": \"An administrator account already uses that email address.\",\n    \"details\": {}\n  }\n}"
             },
             {
               "name": "415 The request body is not JSON.",
@@ -28416,10 +30911,10 @@
                     }
                   ]
                 },
-                "description": "SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants or changes nothing.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for a SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Updated safe administrator account.\n400: The pagination, target identifier, or update body is invalid.\n401: Authentication is required.\n403: SUPER_ADMIN permission and a trusted Admin origin are required.\n404: The target administrator does not exist.\n409: The requested change violates administrator safety invariants, conflicts with an existing email, or changes nothing.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"isActive\": false\n}",
+                  "raw": "{\n  \"name\": \"Updated Admin Name\",\n  \"email\": \"updated.admin@example.invalid\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -28807,7 +31302,7 @@
                 "about"
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
+            "description": "SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
           },
           "response": [
             {
@@ -28833,7 +31328,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
+                "description": "SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
               },
               "status": "OK",
               "code": 200,
@@ -28870,7 +31365,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
+                "description": "SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
               },
               "status": "Unauthorized",
               "code": 401,
@@ -28907,7 +31402,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
+                "description": "SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
               },
               "status": "Forbidden",
               "code": 403,
@@ -28944,7 +31439,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
+                "description": "SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nRead-only operation.\n\nExpected responses:\n200: Editable About Us content.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n404: The singleton has not been created, or no published page exists."
               },
               "status": "Not Found",
               "code": 404,
@@ -28994,7 +31489,7 @@
                 "about"
               ]
             },
-            "description": "ADMIN or SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
+            "description": "SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"heroTitleAr\": \"عن أكاديمية طريق\",\n  \"heroSubtitleAr\": \"نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.\",\n  \"introTitleAr\": \"من نحن\",\n  \"introBodyAr\": \"نص تعريفي متعدد الأسطر.\\nيُحفظ كما هو.\",\n  \"status\": \"PUBLISHED\"\n}",
@@ -29040,7 +31535,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"heroTitleAr\": \"عن أكاديمية طريق\",\n  \"heroSubtitleAr\": \"نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.\",\n  \"introTitleAr\": \"من نحن\",\n  \"introBodyAr\": \"نص تعريفي متعدد الأسطر.\\nيُحفظ كما هو.\",\n  \"status\": \"PUBLISHED\"\n}",
@@ -29097,7 +31592,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"heroTitleAr\": \"عن أكاديمية طريق\",\n  \"heroSubtitleAr\": \"نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.\",\n  \"introTitleAr\": \"من نحن\",\n  \"introBodyAr\": \"نص تعريفي متعدد الأسطر.\\nيُحفظ كما هو.\",\n  \"status\": \"PUBLISHED\"\n}",
@@ -29154,7 +31649,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"heroTitleAr\": \"عن أكاديمية طريق\",\n  \"heroSubtitleAr\": \"نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.\",\n  \"introTitleAr\": \"من نحن\",\n  \"introBodyAr\": \"نص تعريفي متعدد الأسطر.\\nيُحفظ كما هو.\",\n  \"status\": \"PUBLISHED\"\n}",
@@ -29211,7 +31706,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"heroTitleAr\": \"عن أكاديمية طريق\",\n  \"heroSubtitleAr\": \"نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.\",\n  \"introTitleAr\": \"من نحن\",\n  \"introBodyAr\": \"نص تعريفي متعدد الأسطر.\\nيُحفظ كما هو.\",\n  \"status\": \"PUBLISHED\"\n}",
@@ -29268,7 +31763,7 @@
                     "about"
                   ]
                 },
-                "description": "ADMIN or SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
+                "description": "SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: About Us content created or updated.\n400: The request is invalid or the fully merged record cannot be published.\n401: Authentication is required.\n403: A trusted Admin origin and ADMIN or SUPER_ADMIN permission are required.\n415: The request body is not JSON.",
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"heroTitleAr\": \"عن أكاديمية طريق\",\n  \"heroSubtitleAr\": \"نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.\",\n  \"introTitleAr\": \"من نحن\",\n  \"introBodyAr\": \"نص تعريفي متعدد الأسطر.\\nيُحفظ كما هو.\",\n  \"status\": \"PUBLISHED\"\n}",

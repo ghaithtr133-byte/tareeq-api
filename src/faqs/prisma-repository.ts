@@ -1,4 +1,5 @@
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import type { FaqEntry, Prisma } from '../generated/prisma/client.js'
 import type { PublicationStatus } from '../content/types.js'
 import type {
@@ -117,7 +118,7 @@ export class PrismaFaqRepository implements FaqRepository {
 
   async create(input: FaqCreateInput, actorAdminId: string, now: Date) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${FAQ_MUTATION_LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, FAQ_MUTATION_LOCK)
       const maximum = await transaction.faqEntry.aggregate({
         where: parentWhere(input),
         _max: { displayOrder: true },
@@ -146,7 +147,7 @@ export class PrismaFaqRepository implements FaqRepository {
 
   async update(id: string, input: FaqUpdateInput, actorAdminId: string, now: Date) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${FAQ_MUTATION_LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, FAQ_MUTATION_LOCK)
       const current = await transaction.faqEntry.findUnique({ where: { id } })
       if (!current) return { outcome: 'NOT_FOUND' as const }
       const currentParent = { scope: current.scope as FaqScope, parentId: parentIdFor(current) }
@@ -209,7 +210,7 @@ export class PrismaFaqRepository implements FaqRepository {
 
   async delete(id: string, actorAdminId: string) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${FAQ_MUTATION_LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, FAQ_MUTATION_LOCK)
       const current = await transaction.faqEntry.findUnique({ where: { id } })
       if (!current) return { outcome: 'NOT_FOUND' as const }
       if (current.status === 'PUBLISHED') return { outcome: 'PUBLISHED' as const }
@@ -225,7 +226,7 @@ export class PrismaFaqRepository implements FaqRepository {
   async reorder(parent: FaqParent, orderedIds: string[], actorAdminId: string) {
     if (!await this.parentExists(parent)) return { outcome: 'PARENT_NOT_FOUND' as const }
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${FAQ_MUTATION_LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, FAQ_MUTATION_LOCK)
       const current = await transaction.faqEntry.findMany({
         where: { ...parentWhere(parent), status: { not: 'ARCHIVED' } },
         orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }],

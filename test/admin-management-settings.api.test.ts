@@ -190,6 +190,96 @@ describe('SUPER_ADMIN account management and site settings', () => {
     expect(multiple.status).toBe(400)
   })
 
+  it('lets a SUPER_ADMIN update a different administrator name and email without exposing sensitive data', async () => {
+    const updated = await request(
+      `/api/v1/admin/users/${TARGET_ID}`,
+      'super1',
+      'PATCH',
+      { name: '  Updated   Target  ', email: 'TARGET.UPDATED@Example.Invalid' },
+    )
+    expect(updated.status).toBe(200)
+    await expect(updated.json()).resolves.toEqual({
+      success: true,
+      data: {
+        id: TARGET_ID,
+        name: 'Updated Target',
+        email: 'target.updated@example.invalid',
+        role: 'ADMIN',
+        isActive: true,
+      },
+    })
+    expect(await authRepository.findAdminById(TARGET_ID)).toMatchObject({
+      name: 'Updated Target',
+      email: 'target.updated@example.invalid',
+      role: 'ADMIN',
+      isActive: true,
+    })
+    const event = audit.events.at(-1)
+    expect(event).toMatchObject({
+      actorAdminId: SUPER_ONE_ID,
+      action: 'admin_account.identity_updated',
+      resourceType: 'ADMIN_USER',
+      resourceId: TARGET_ID,
+      metadata: { changedFields: ['name', 'email'] },
+    })
+    expect(JSON.stringify(event)).not.toContain('target.updated@example.invalid')
+    expect(JSON.stringify(event)).not.toMatch(/password|token|hash|session/i)
+  })
+
+  it('rejects identity changes from anonymous or ADMIN callers and rejects forbidden or invalid fields', async () => {
+    expect((await app.request(`/api/v1/admin/users/${TARGET_ID}`, {
+      method: 'PATCH',
+      headers: { Origin: ORIGIN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Anonymous' }),
+    })).status).toBe(401)
+    expect((await request(
+      `/api/v1/admin/users/${TARGET_ID}`,
+      'admin',
+      'PATCH',
+      { name: 'Regular Admin Attempt' },
+    )).status).toBe(403)
+
+    for (const body of [
+      {},
+      { name: '' },
+      { email: 'not-an-email' },
+      { password: 'NeverAcceptedPassword123' },
+      { authVersion: 99 },
+      { name: 'Attempt', role: 'SUPER_ADMIN' },
+      { email: 'attempt@example.invalid', isActive: false },
+    ]) {
+      expect((await request(
+        `/api/v1/admin/users/${TARGET_ID}`,
+        'super1',
+        'PATCH',
+        body,
+      )).status).toBe(400)
+    }
+  })
+
+  it('rejects duplicate emails and serializes concurrent identity updates', async () => {
+    const duplicate = await request(
+      `/api/v1/admin/users/${TARGET_ID}`,
+      'super1',
+      'PATCH',
+      { email: 'REGULAR-ADMIN@example.invalid' },
+    )
+    expect(duplicate.status).toBe(409)
+    await expect(duplicate.json()).resolves.toMatchObject({
+      error: { code: 'ADMIN_EMAIL_ALREADY_EXISTS' },
+    })
+
+    const sharedEmail = 'shared@example.invalid'
+    const responses = await Promise.all([
+      request(`/api/v1/admin/users/${TARGET_ID}`, 'super1', 'PATCH', { email: sharedEmail }),
+      request(`/api/v1/admin/users/${ADMIN_ID}`, 'super2', 'PATCH', { email: sharedEmail }),
+    ])
+    expect(responses.map(({ status }) => status).sort()).toEqual([200, 409])
+    expect(authRepository.getUsers().filter(
+      (user) => user.email === sharedEmail,
+    )).toHaveLength(1)
+  })
+
   it('deactivates and reactivates accounts, revokes refresh sessions, and rejects existing access cookies', async () => {
     const refreshToken = 'target-existing-refresh-session'
     authRepository.seedSession({
@@ -230,7 +320,9 @@ describe('SUPER_ADMIN account management and site settings', () => {
       { isActive: true },
     )
     expect(reactivated.status).toBe(200)
-    expect((await request('/api/v1/admin/users', 'target')).status).toBe(403)
+    // Deactivation increments the security version, so reactivation cannot
+    // resurrect an access JWT issued before the deactivation.
+    expect((await request('/api/v1/admin/users', 'target')).status).toBe(401)
   })
 
   it('prevents unsafe self changes and preserves an active SUPER_ADMIN under concurrent requests', async () => {
@@ -297,6 +389,24 @@ describe('SUPER_ADMIN account management and site settings', () => {
     expect(failed.status).toBe(500)
     expect((await authRepository.findAdminById(TARGET_ID))?.isActive).toBe(true)
     expect(authRepository.getActiveSessionCount(TARGET_ID)).toBe(1)
+    expect(audit.events).toHaveLength(0)
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain('Simulated audit write failure')
+  })
+
+  it('rolls back an identity update when its audit entry cannot be persisted', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    audit.failNextWrite = true
+    const failed = await request(
+      `/api/v1/admin/users/${TARGET_ID}`,
+      'super1',
+      'PATCH',
+      { name: 'Should Not Persist', email: 'should-not-persist@example.invalid' },
+    )
+    expect(failed.status).toBe(500)
+    expect(await authRepository.findAdminById(TARGET_ID)).toMatchObject({
+      name: 'Target Admin',
+      email: 'target-admin@example.invalid',
+    })
     expect(audit.events).toHaveLength(0)
     expect(JSON.stringify(errorLog.mock.calls)).not.toContain('Simulated audit write failure')
   })

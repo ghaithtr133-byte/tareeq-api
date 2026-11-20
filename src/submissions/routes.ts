@@ -18,6 +18,8 @@ import {
   inquiryListQuerySchema,
   inquiryListResponseSchema,
   inquiryResponseSchema,
+  submissionDeleteResponseSchema,
+  submissionDeletionConfirmationSchema,
   studentApplicationCreateSchema,
   studentApplicationResponseSchema,
   submissionConfirmationResponseSchema,
@@ -160,6 +162,19 @@ const registerDocumentation = (routes: OpenAPIHono<AuthEnv>) => {
     },
   })
   routes.openAPIRegistry.registerPath({
+    method: 'delete',
+    path: '/admin/applications/{id}',
+    tags: ['Admin — Applications'],
+    summary: 'Permanently delete a student application',
+    description: 'SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The application and only its related EmailNotification outbox records are deleted atomically; scholarship, country, university, audit, and unrelated operational records are preserved. The deletion audit contains no student personal data.',
+    security: [{ accessCookie: [] }],
+    request: { params: submissionUuidParamSchema, body: { required: true, content: jsonContent(submissionDeletionConfirmationSchema, { confirmation: 'DELETE' }) } },
+    responses: {
+      200: { description: 'Application permanently deleted.', content: jsonContent(submissionDeleteResponseSchema, { success: true, data: { id: exampleId } }) },
+      400: submissionErrorResponses[400], 401: submissionErrorResponses[401], 403: submissionErrorResponses[403], 404: submissionErrorResponses[404], 415: submissionErrorResponses[415],
+    },
+  })
+  routes.openAPIRegistry.registerPath({
     method: 'post',
     path: '/inquiries',
     tags: ['Public — Inquiries'],
@@ -176,6 +191,19 @@ const registerDocumentation = (routes: OpenAPIHono<AuthEnv>) => {
       413: submissionErrorResponses[413],
       415: submissionErrorResponses[415],
       429: submissionErrorResponses[429],
+    },
+  })
+  routes.openAPIRegistry.registerPath({
+    method: 'delete',
+    path: '/admin/inquiries/{id}',
+    tags: ['Admin — Inquiries'],
+    summary: 'Permanently delete a general inquiry',
+    description: 'SUPER_ADMIN only. Requires the exact confirmation phrase DELETE. The inquiry and only its related EmailNotification outbox records are deleted atomically; audit and unrelated operational records are preserved. The deletion audit contains no inquirer personal data.',
+    security: [{ accessCookie: [] }],
+    request: { params: submissionUuidParamSchema, body: { required: true, content: jsonContent(submissionDeletionConfirmationSchema, { confirmation: 'DELETE' }) } },
+    responses: {
+      200: { description: 'Inquiry permanently deleted.', content: jsonContent(submissionDeleteResponseSchema, { success: true, data: { id: exampleId } }) },
+      400: submissionErrorResponses[400], 401: submissionErrorResponses[401], 403: submissionErrorResponses[403], 404: submissionErrorResponses[404], 415: submissionErrorResponses[415],
     },
   })
 
@@ -347,6 +375,16 @@ export const createSubmissionRoutes = (
     ), 200)
   })
 
+  adminRoutes.delete('/applications/:id', async (c) => {
+    const claims = c.get('authClaims')
+    if (claims.role !== 'SUPER_ADMIN') throw new ApiError(403, 'FORBIDDEN', 'SUPER_ADMIN permission is required.')
+    const { id } = parse(submissionUuidParamSchema, { id: c.req.param('id') })
+    parse(submissionDeletionConfirmationSchema, await readJson(c.req.raw))
+    return c.json(successResponse(
+      await submissionRuntime.getService().deleteApplication(id, claims.userId),
+    ), 200)
+  })
+
   adminRoutes.get('/inquiries', async (c) => {
     const query = parse(
       inquiryListQuerySchema,
@@ -376,6 +414,16 @@ export const createSubmissionRoutes = (
         input,
         c.get('authClaims').userId,
       ),
+    ), 200)
+  })
+
+  adminRoutes.delete('/inquiries/:id', async (c) => {
+    const claims = c.get('authClaims')
+    if (claims.role !== 'SUPER_ADMIN') throw new ApiError(403, 'FORBIDDEN', 'SUPER_ADMIN permission is required.')
+    const { id } = parse(submissionUuidParamSchema, { id: c.req.param('id') })
+    parse(submissionDeletionConfirmationSchema, await readJson(c.req.raw))
+    return c.json(successResponse(
+      await submissionRuntime.getService().deleteInquiry(id, claims.userId),
     ), 200)
   })
 

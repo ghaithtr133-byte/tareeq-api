@@ -1,5 +1,6 @@
 import type { Prisma } from '../generated/prisma/client.js'
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import {
   SITE_SETTINGS_ID,
   type SiteSettingsRecord,
@@ -34,9 +35,7 @@ export class PrismaSiteSettingsRepository implements SiteSettingsRepository {
 
   async update(actorAdminId: string, input: SiteSettingsUpdate) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`
-        SELECT pg_advisory_xact_lock(${ADMIN_MUTATION_LOCK})
-      `
+      await acquireTransactionAdvisoryLock(transaction, ADMIN_MUTATION_LOCK)
       const actor = await transaction.adminUser.findUnique({
         where: { id: actorAdminId },
         select: { role: true, isActive: true },

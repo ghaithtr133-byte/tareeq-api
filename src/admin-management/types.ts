@@ -21,6 +21,12 @@ export type AdminAccountListResult = {
 export type AdminAccountChange =
   | { isActive: boolean; role?: never }
   | { role: AdminRole; isActive?: never }
+  | {
+      name?: string
+      email?: string
+      role?: never
+      isActive?: never
+    }
 
 export type AdminAccountUpdateResult =
   | { outcome: 'UPDATED'; account: AdminAccount }
@@ -31,6 +37,7 @@ export type AdminAccountUpdateResult =
         | 'SELF_DEACTIVATION_FORBIDDEN'
         | 'SELF_DEMOTION_FORBIDDEN'
         | 'LAST_ACTIVE_SUPER_ADMIN'
+        | 'EMAIL_ALREADY_EXISTS'
         | 'UNCHANGED'
     }
 

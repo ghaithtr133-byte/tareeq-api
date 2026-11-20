@@ -1,4 +1,5 @@
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import { OptionCatalogType, type Prisma } from '../generated/prisma/client.js'
 import { ApiError } from '../shared/http.js'
 import type { AuditIntent } from '../audit/types.js'
@@ -493,7 +494,7 @@ export class PrismaContentRepository implements ContentRepository {
 
   async reorder(resource: ContentResource, orderedIds: string[], actorAdminId: string) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${9_000_040})`
+      await acquireTransactionAdvisoryLock(transaction, 9_000_040)
       const records = await ({
         countries: () => transaction.country.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),
         universities: () => transaction.university.findMany({ where: { status: { not: 'ARCHIVED' } }, orderBy: { id: 'asc' } }),

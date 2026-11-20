@@ -29,10 +29,14 @@ export const hashRefreshToken = (token: string) =>
   createHash('sha256').update(token, 'utf8').digest('hex')
 
 export const signAccessToken = async (
-  user: Pick<AdminRecord, 'id' | 'role'>,
+  user: Pick<AdminRecord, 'id' | 'role'> & Partial<Pick<AdminRecord, 'authVersion'>>,
   secret: string,
 ) =>
-  new SignJWT({ role: user.role })
+  new SignJWT(
+    user.authVersion === undefined
+      ? { role: user.role }
+      : { role: user.role, authVersion: user.authVersion },
+  )
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setSubject(user.id)
     .setIssuer(ACCESS_TOKEN_ISSUER)
@@ -51,9 +55,14 @@ export const verifyAccessToken = async (
     audience: ACCESS_TOKEN_AUDIENCE,
   })
 
+  const rawAuthVersion = payload.authVersion
   if (
     typeof payload.sub !== 'string' ||
-    (payload.role !== 'ADMIN' && payload.role !== 'SUPER_ADMIN')
+    (payload.role !== 'ADMIN' && payload.role !== 'SUPER_ADMIN') ||
+    (rawAuthVersion !== undefined &&
+      (typeof rawAuthVersion !== 'number' ||
+        !Number.isSafeInteger(rawAuthVersion) ||
+        rawAuthVersion < 0))
   ) {
     throw new Error('Invalid access-token claims.')
   }
@@ -61,5 +70,6 @@ export const verifyAccessToken = async (
   return {
     userId: payload.sub,
     role: payload.role,
+    authVersion: rawAuthVersion === undefined ? null : rawAuthVersion,
   }
 }

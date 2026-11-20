@@ -1,4 +1,5 @@
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import { ApiError } from '../shared/http.js'
 
 export const detailParents = ['COUNTRY_GUIDE', 'SERVICE', 'SCHOLARSHIP'] as const
@@ -74,7 +75,7 @@ export class ContentDetailsService {
     if (!await this.parentExists(parent, parentId)) throw parentNotFound()
     const prisma = getPrisma()
     return prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lock})`
+      await acquireTransactionAdvisoryLock(tx, lock)
       const max = await ({
         COUNTRY_GUIDE: () => tx.countryStudyGuideSection.aggregate({ where: { countryId: parentId }, _max: { displayOrder: true } }),
         SERVICE: () => tx.serviceDetailItem.aggregate({ where: { serviceId: parentId, kind: input.kind as 'STEP' | 'BENEFIT' }, _max: { displayOrder: true } }),
@@ -95,7 +96,7 @@ export class ContentDetailsService {
     this.validate(parent, input)
     const prisma = getPrisma()
     return prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lock})`
+      await acquireTransactionAdvisoryLock(tx, lock)
       const current = await ({ COUNTRY_GUIDE: () => tx.countryStudyGuideSection.findUnique({ where: { id } }), SERVICE: () => tx.serviceDetailItem.findUnique({ where: { id } }), SCHOLARSHIP: () => tx.scholarshipDetailItem.findUnique({ where: { id } }) })[parent]()
       if (!current) throw notFound()
       const row = await ({
@@ -111,7 +112,7 @@ export class ContentDetailsService {
   async remove(parent: DetailParent, id: string, actorAdminId: string) {
     const prisma = getPrisma()
     return prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lock})`
+      await acquireTransactionAdvisoryLock(tx, lock)
       const current = await ({ COUNTRY_GUIDE: () => tx.countryStudyGuideSection.findUnique({ where: { id } }), SERVICE: () => tx.serviceDetailItem.findUnique({ where: { id } }), SCHOLARSHIP: () => tx.scholarshipDetailItem.findUnique({ where: { id } }) })[parent]()
       if (!current) throw notFound()
       await ({ COUNTRY_GUIDE: () => tx.countryStudyGuideSection.delete({ where: { id } }), SERVICE: () => tx.serviceDetailItem.delete({ where: { id } }), SCHOLARSHIP: () => tx.scholarshipDetailItem.delete({ where: { id } }) })[parent]()
@@ -125,7 +126,7 @@ export class ContentDetailsService {
     if (!await this.parentExists(parent, parentId)) throw parentNotFound()
     const prisma = getPrisma()
     return prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(${lock})`
+      await acquireTransactionAdvisoryLock(tx, lock)
       const rows = await ({ COUNTRY_GUIDE: () => tx.countryStudyGuideSection.findMany({ where: { countryId: parentId }, orderBy: { id: 'asc' } }), SERVICE: () => tx.serviceDetailItem.findMany({ where: { serviceId: parentId, kind: kind as 'STEP' | 'BENEFIT' }, orderBy: { id: 'asc' } }), SCHOLARSHIP: () => tx.scholarshipDetailItem.findMany({ where: { scholarshipId: parentId, kind: kind as 'BENEFIT' | 'REQUIREMENT' | 'APPLICATION_STEP' }, orderBy: { id: 'asc' } }) })[parent]()
       if (rows.length !== orderedIds.length || new Set(orderedIds).size !== orderedIds.length || rows.some((row) => !orderedIds.includes(row.id))) throw orderMismatch()
       for (const [displayOrder, id] of orderedIds.entries()) await ({ COUNTRY_GUIDE: () => tx.countryStudyGuideSection.update({ where: { id }, data: { displayOrder } }), SERVICE: () => tx.serviceDetailItem.update({ where: { id }, data: { displayOrder } }), SCHOLARSHIP: () => tx.scholarshipDetailItem.update({ where: { id }, data: { displayOrder } }) })[parent]()

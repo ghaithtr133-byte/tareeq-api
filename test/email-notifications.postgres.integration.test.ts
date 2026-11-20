@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { disconnectPrisma, getPrisma } from '../src/database/client.js'
+import { verifyDisposableTestDatabase } from '../src/database/test-safety.js'
 import { EmailDispatcher } from '../src/email/dispatcher.js'
 import { PrismaEmailNotificationRepository } from '../src/email/prisma-repository.js'
 import {
@@ -69,6 +70,7 @@ describe.runIf(shouldRun)('email outbox PostgreSQL integration', () => {
   )
 
   beforeAll(async () => {
+    await verifyDisposableTestDatabase()
     const prisma = getPrisma()
     await prisma.$queryRaw`SELECT 1`
     baseline = {
@@ -98,6 +100,7 @@ describe.runIf(shouldRun)('email outbox PostgreSQL integration', () => {
           { id: { in: [...new Set(notificationIds)] } },
           { applicationId: { in: applicationIds } },
           { inquiryId: { in: inquiryIds } },
+          { adminUserId: inactiveAdminId },
         ],
       }
       await prisma.emailNotification.deleteMany({ where: exactNotificationFilter })

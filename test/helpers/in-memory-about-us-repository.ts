@@ -23,7 +23,7 @@ export class InMemoryAboutUsRepository implements AboutUsRepository {
     await previous
     try {
     const actor = await this.auth.findAdminById(actorAdminId)
-    if (!actor?.isActive || !['ADMIN', 'SUPER_ADMIN'].includes(actor.role)) return null
+    if (!actor?.isActive || actor.role !== 'SUPER_ADMIN') return null
     const current = this.record
     const nextStatus = input.status ?? current?.status ?? 'DRAFT'
     const now = this.now()

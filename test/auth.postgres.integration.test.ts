@@ -4,7 +4,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 
 import { decodeJwt, SignJWT } from 'jose'
 import { Hono } from 'hono'
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { createApp } from '../src/app.js'
 import {
@@ -25,6 +25,7 @@ import { AuthService } from '../src/auth/service.js'
 import type { AdminRole, AuthEnv } from '../src/auth/types.js'
 import type { AuthConfig } from '../src/config/env.js'
 import { disconnectPrisma, getPrisma } from '../src/database/client.js'
+import { getDisposableTestDatabaseTarget, verifyDisposableTestDatabase } from '../src/database/test-safety.js'
 
 const RUN_DATABASE_INTEGRATION = process.env.RUN_DATABASE_INTEGRATION === '1'
 const RUN_ID = `${Date.now()}-${randomUUID().slice(0, 8)}`
@@ -41,7 +42,7 @@ let usersCreated = 0
 let sessionsObserved = 0
 
 const config = (isProduction = false): AuthConfig => ({
-  databaseUrl: process.env.DATABASE_URL!,
+  databaseUrl: getDisposableTestDatabaseTarget().url,
   jwtSecret: process.env.JWT_SECRET!,
   allowedOrigins: [ORIGIN],
   publicAllowedOrigins: [PUBLIC_ORIGIN],
@@ -115,18 +116,25 @@ const collectSessions = async () => {
 
 const cleanupExactRecords = async () => {
   await collectSessions()
-  for (const sessionId of observedSessionIds) {
-    await getPrisma().refreshSession.deleteMany({ where: { id: sessionId } })
-  }
-  for (const userId of trackedUserIds) {
-    await getPrisma().adminUser.deleteMany({ where: { id: userId } })
-  }
-  const remainingUsers = await getPrisma().adminUser.count({
-    where: { id: { in: [...trackedUserIds] } },
+  const userIds = [...trackedUserIds]
+  const sessionIds = [...observedSessionIds]
+  const prisma = getPrisma()
+  await prisma.$transaction(async (transaction) => {
+    if (userIds.length > 0) {
+      await transaction.passwordRecoveryChallenge.deleteMany({ where: { adminUserId: { in: userIds } } })
+      await transaction.hardDeleteChallenge.deleteMany({ where: { actorAdminId: { in: userIds } } })
+      await transaction.emailNotification.deleteMany({ where: { adminUserId: { in: userIds } } })
+      await transaction.adminAuditLog.deleteMany({ where: { actorAdminId: { in: userIds } } })
+    }
+    if (sessionIds.length > 0) {
+      await transaction.refreshSession.deleteMany({ where: { id: { in: sessionIds } } })
+    }
+    if (userIds.length > 0) {
+      await transaction.adminUser.deleteMany({ where: { id: { in: userIds } } })
+    }
   })
-  const remainingSessions = await getPrisma().refreshSession.count({
-    where: { id: { in: [...observedSessionIds] } },
-  })
+  const remainingUsers = await prisma.adminUser.count({ where: { id: { in: userIds } } })
+  const remainingSessions = await prisma.refreshSession.count({ where: { id: { in: sessionIds } } })
   expect(remainingUsers).toBe(0)
   expect(remainingSessions).toBe(0)
   trackedUserIds.clear()
@@ -135,6 +143,10 @@ const cleanupExactRecords = async () => {
 
 describe.runIf(RUN_DATABASE_INTEGRATION)('PostgreSQL administrative authentication', () => {
   let app: ReturnType<typeof createApp>
+
+  beforeAll(async () => {
+    await verifyDisposableTestDatabase()
+  })
 
   beforeEach(() => {
     app = createApp({ authRuntime: runtime() })
@@ -145,11 +157,6 @@ describe.runIf(RUN_DATABASE_INTEGRATION)('PostgreSQL administrative authenticati
   })
 
   afterAll(async () => {
-    const leftovers = await getPrisma().adminUser.findMany({
-      where: { email: { startsWith: EMAIL_PREFIX } },
-      select: { id: true },
-    })
-    for (const { id } of leftovers) trackedUserIds.add(id)
     await cleanupExactRecords()
     console.log(
       `DATABASE_INTEGRATION_SUMMARY usersCreated=${usersCreated} sessionsObserved=${sessionsObserved} remainingUsers=0 remainingSessions=0`,
@@ -394,11 +401,17 @@ describe.runIf(RUN_DATABASE_INTEGRATION)('PostgreSQL administrative authenticati
       where: { id: user.id },
     })
     await expect(verifyPassword(updated.passwordHash, NEW_PASSWORD)).resolves.toBe(true)
+    expect(updated.authVersion).toBe(1)
     expect(
       await getPrisma().refreshSession.count({
         where: { userId: user.id, revokedAt: null },
       }),
     ).toBe(0)
+
+    const oldAccess = await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
+    })
+    expect(oldAccess.status).toBe(401)
 
     const oldRefresh = await app.request('/api/v1/auth/refresh', {
       method: 'POST',

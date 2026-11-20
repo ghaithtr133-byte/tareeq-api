@@ -55,12 +55,12 @@ export const createAboutUsRoutes = (runtime: AboutUsRuntime, authRuntime: AuthRu
   })
   routes.openAPIRegistry.registerPath({
     method: 'get', path: '/admin/about', tags: ['Admin — About Us'], summary: 'Get editable About Us content',
-    description: 'ADMIN or SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.', security: [{ accessCookie: [] }],
+    description: 'SUPER_ADMIN only. Returns the singleton in any publication state. If no record has been created, returns CONTENT_NOT_FOUND.', security: [{ accessCookie: [] }],
     responses: { 200: { description: 'Editable About Us content.', content: { 'application/json': { schema: aboutUsAdminResponseSchema, example: { success: true, data: example } } } }, 401: aboutUsErrorResponses[401], 403: aboutUsErrorResponses[403], 404: aboutUsErrorResponses[404] },
   })
   routes.openAPIRegistry.registerPath({
     method: 'patch', path: '/admin/about', tags: ['Admin — About Us'], summary: 'Create or update About Us content',
-    description: 'ADMIN or SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.', security: [{ accessCookie: [] }],
+    description: 'SUPER_ADMIN only. Creates the singleton on its first PATCH or merges supplied fields into it. Omitted fields are preserved. Publishing validates the fully merged record: heroTitleAr, heroSubtitleAr, introTitleAr, and introBodyAr are required. The first publishedAt timestamp is retained across later updates and unpublishing.', security: [{ accessCookie: [] }],
     request: { body: { required: true, content: { 'application/json': { schema: aboutUsUpdateSchema, example: { heroTitleAr: 'عن أكاديمية طريق', heroSubtitleAr: 'نساعد الطلاب على اتخاذ قرارات دراسية مستنيرة.', introTitleAr: 'من نحن', introBodyAr: 'نص تعريفي متعدد الأسطر.\nيُحفظ كما هو.', status: 'PUBLISHED' } } } } },
     responses: { 200: { description: 'About Us content created or updated.', content: { 'application/json': { schema: aboutUsAdminResponseSchema, example: { success: true, data: example } } } }, 400: aboutUsErrorResponses[400], 401: aboutUsErrorResponses[401], 403: aboutUsErrorResponses[403], 415: aboutUsErrorResponses[415] },
   })
@@ -69,7 +69,7 @@ export const createAboutUsRoutes = (runtime: AboutUsRuntime, authRuntime: AuthRu
   adminRoutes.use('/about', authCors(authRuntime))
   adminRoutes.use('/about', requireTrustedOrigin(authRuntime))
   adminRoutes.use('/about', requireAuthentication(authRuntime))
-  adminRoutes.use('/about', requireRole('ADMIN', 'SUPER_ADMIN'))
+  adminRoutes.use('/about', requireRole('SUPER_ADMIN'))
   publicRoutes.get('/about', async (c) => c.json(successResponse(await runtime.getService().getPublic()), 200))
   adminRoutes.get('/about', async (c) => c.json(successResponse(await runtime.getService().getAdmin()), 200))
   adminRoutes.patch('/about', async (c) => {

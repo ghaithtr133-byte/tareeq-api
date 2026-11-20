@@ -149,6 +149,13 @@ export const submissionUpdateSchema = z.object({
   message: 'At least one field must be provided.',
 }).openapi('SubmissionStatusUpdateRequest')
 
+export const submissionDeletionConfirmationSchema = z.object({
+  confirmation: z.literal('DELETE').openapi({
+    description: 'Exact irreversible-deletion confirmation phrase.',
+    example: 'DELETE',
+  }),
+}).strict().openapi('SubmissionDeletionConfirmationRequest')
+
 export const submissionConfirmationResponseSchema = successEnvelopeSchema(z.object({
   message: z.string(),
 })).openapi('SubmissionConfirmationResponse')
@@ -160,6 +167,10 @@ export const studentApplicationResponseSchema = successEnvelopeSchema(
 export const inquiryResponseSchema = successEnvelopeSchema(
   generalInquirySchema,
 ).openapi('GeneralInquiryResponse')
+
+export const submissionDeleteResponseSchema = successEnvelopeSchema(z.object({
+  id: z.uuid(),
+})).openapi('SubmissionDeleteResponse')
 
 const paginationSchema = z.object({
   page: z.number().int(),

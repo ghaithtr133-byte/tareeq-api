@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { PrismaContentRepository } from '../src/content/prisma-repository.js'
 import { disconnectPrisma, getPrisma } from '../src/database/client.js'
+import { verifyDisposableTestDatabase } from '../src/database/test-safety.js'
 import { PrismaUniversityDirectoryRepository } from '../src/university-directory/prisma-repository.js'
 
 const shouldRun = process.env.RUN_UNIVERSITY_DIRECTORY_DATABASE_INTEGRATION === '1'
@@ -21,15 +22,16 @@ describe.runIf(shouldRun)('University directory PostgreSQL integration', () => {
   }
 
   beforeAll(async () => {
+    await verifyDisposableTestDatabase()
     const prisma = getPrisma()
-    await prisma.country.create({ data: { id: ids.country, nameAr: 'بلد تكامل', nameEn: 'Integration Country', slug: `directory-country-${marker}`, introductionAr: 'مقدمة', detailsAr: 'تفاصيل', status: 'PUBLISHED', publishedAt: new Date() } })
+    await prisma.country.create({ data: { id: ids.country, nameAr: 'بلد تكامل', nameEn: 'Integration Country', slug: `directory-country-${marker}`, introductionAr: 'مقدمة', detailsAr: 'تفاصيل', imageUrl: 'https://example.edu/directory-country.jpg', imageAltAr: 'صورة بلد الدليل', status: 'PUBLISHED', publishedAt: new Date() } })
     await prisma.city.createMany({ data: [
       { id: ids.cityOne, countryId: ids.country, slug: `directory-city-one-${marker}`, nameAr: 'مدينة أولى', nameEn: 'City One' },
       { id: ids.cityTwo, countryId: ids.country, slug: `directory-city-two-${marker}`, nameAr: 'مدينة ثانية', nameEn: 'City Two' },
     ] })
     await prisma.academicMajor.createMany({ data: [
-      { id: ids.medicine, slug: `directory-medicine-${marker}`, nameAr: 'طب تكامل', nameEn: 'Integration Medicine' },
-      { id: ids.engineering, slug: `directory-engineering-${marker}`, nameAr: 'هندسة تكامل', nameEn: 'Integration Engineering' },
+      { id: ids.medicine, slug: `directory-medicine-${marker}`, nameAr: `طب تكامل ${marker}`, nameEn: `Integration Medicine ${marker}` },
+      { id: ids.engineering, slug: `directory-engineering-${marker}`, nameAr: `هندسة تكامل ${marker}`, nameEn: `Integration Engineering ${marker}` },
     ] })
     await prisma.university.createMany({ data: [
       { id: ids.universityOne, countryId: ids.country, cityId: ids.cityOne, universityType: 'PUBLIC', nameAr: 'جامعة أولى', officialName: 'First Integration University', slug: `directory-university-one-${marker}`, cityAr: 'مدينة أولى', overviewAr: 'نظرة', status: 'PUBLISHED', publishedAt: new Date() },
@@ -39,8 +41,8 @@ describe.runIf(shouldRun)('University directory PostgreSQL integration', () => {
     await prisma.universityProgram.create({ data: { id: ids.engineeringMasters, universityId: ids.universityOne, academicMajorId: ids.engineering, studyLevel: 'MASTERS', status: 'PUBLISHED', officialSourceUrl: 'https://example.edu/engineering-masters', verifiedAt: new Date(), publishedAt: new Date(), languages: { create: [{ language: 'GERMAN' }] } } })
     await prisma.universityProgram.create({ data: { id: ids.medicineMasters, universityId: ids.universityTwo, academicMajorId: ids.medicine, studyLevel: 'MASTERS', status: 'PUBLISHED', officialSourceUrl: 'https://example.edu/medicine-masters', verifiedAt: new Date(), publishedAt: new Date(), languages: { create: [{ language: 'ENGLISH' }] } } })
     await prisma.scholarship.createMany({ data: [
-      { id: ids.scholarshipOne, titleAr: 'منحة الجامعة الأولى', slug: `directory-scholarship-one-${marker}`, countryId: ids.country, universityId: ids.universityOne, studyLevel: 'BACHELORS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', applicationStatus: 'OPEN', verifiedDeadline: new Date('2099-01-01T00:00:00.000Z'), officialSourceUrl: 'https://example.edu/scholarship-one', status: 'PUBLISHED', publishedAt: new Date() },
-      { id: ids.scholarshipTwo, titleAr: 'منحة الجامعة الثانية', slug: `directory-scholarship-two-${marker}`, countryId: ids.country, universityId: ids.universityTwo, studyLevel: 'MASTERS', fundingType: 'PARTIAL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', applicationStatus: 'CLOSED', officialSourceUrl: 'https://example.edu/scholarship-two', status: 'PUBLISHED', publishedAt: new Date() },
+      { id: ids.scholarshipOne, titleAr: 'منحة الجامعة الأولى', slug: `directory-scholarship-one-${marker}`, countryId: ids.country, universityId: ids.universityOne, studyLevel: 'BACHELORS', fundingType: 'FULL', summaryAr: 'ملخص المنحة الأولى', requirementsAr: 'متطلبات', descriptionAr: 'وصف', applicationStatus: 'OPEN', verifiedDeadline: new Date('2099-01-01T00:00:00.000Z'), officialSourceUrl: 'https://example.edu/scholarship-one', status: 'PUBLISHED', publishedAt: new Date() },
+      { id: ids.scholarshipTwo, titleAr: 'منحة الجامعة الثانية', slug: `directory-scholarship-two-${marker}`, countryId: ids.country, universityId: ids.universityTwo, studyLevel: 'MASTERS', fundingType: 'PARTIAL', summaryAr: 'ملخص المنحة الثانية', requirementsAr: 'متطلبات', descriptionAr: 'وصف', applicationStatus: 'CLOSED', officialSourceUrl: 'https://example.edu/scholarship-two', status: 'PUBLISHED', publishedAt: new Date() },
       { id: ids.draftScholarship, titleAr: 'منحة مسودة', slug: `directory-scholarship-draft-${marker}`, countryId: ids.country, universityId: ids.universityOne, studyLevel: 'BACHELORS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT' },
     ] })
   }, 30_000)
@@ -48,6 +50,7 @@ describe.runIf(shouldRun)('University directory PostgreSQL integration', () => {
   afterAll(async () => {
     const prisma = getPrisma()
     await prisma.scholarship.deleteMany({ where: { id: { in: [ids.scholarshipOne, ids.scholarshipTwo, ids.draftScholarship] } } })
+    await prisma.universityProgramLanguage.deleteMany({ where: { programId: { in: [ids.medicineBachelors, ids.engineeringMasters, ids.medicineMasters] } } })
     await prisma.universityProgram.deleteMany({ where: { id: { in: [ids.medicineBachelors, ids.engineeringMasters, ids.medicineMasters] } } })
     await prisma.university.deleteMany({ where: { id: { in: [ids.universityOne, ids.universityTwo] } } })
     await prisma.academicMajor.deleteMany({ where: { id: { in: [ids.medicine, ids.engineering] } } })

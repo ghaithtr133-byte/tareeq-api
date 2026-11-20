@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { disconnectPrisma, getPrisma } from '../src/database/client.js'
+import { verifyDisposableTestDatabase } from '../src/database/test-safety.js'
 import { PrismaContentRepository } from '../src/content/prisma-repository.js'
 import { ContentService } from '../src/content/service.js'
 import type { ContentResource } from '../src/content/types.js'
@@ -26,6 +27,7 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
   }
 
   beforeAll(async () => {
+    await verifyDisposableTestDatabase()
     await getPrisma().$queryRaw`SELECT 1`
     await getPrisma().adminUser.create({
       data: {
@@ -41,6 +43,14 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
   afterAll(async () => {
     const prisma = getPrisma()
     await prisma.adminAuditLog.deleteMany({ where: { actorAdminId } })
+    await prisma.articleScholarship.deleteMany({
+      where: {
+        OR: [
+          { articleId: { in: createdIds.get('articles') ?? [] } },
+          { scholarshipId: { in: createdIds.get('scholarships') ?? [] } },
+        ],
+      },
+    })
     await prisma.article.deleteMany({ where: { id: { in: createdIds.get('articles') ?? [] } } })
     await prisma.scholarship.deleteMany({ where: { id: { in: createdIds.get('scholarships') ?? [] } } })
     await prisma.university.deleteMany({ where: { id: { in: createdIds.get('universities') ?? [] } } })
@@ -62,16 +72,17 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
   it('persists relationships, enforces unique slugs, filters publication state, and updates records', async () => {
     const country = track('countries', await service.create('countries', {
       nameAr: 'بلد اختبار التكامل', slug: slug('country'), introductionAr: 'مقدمة', detailsAr: 'تفاصيل',
+      imageUrl: 'https://example.edu/integration-country.jpg', imageAltAr: 'صورة بلد اختبار التكامل',
       featured: true, status: 'PUBLISHED',
     }, actorAdminId))
     const university = track('universities', await service.create('universities', {
       nameAr: 'جامعة اختبار التكامل', officialName: 'Integration University', slug: slug('university'),
-      countryId: country.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'PUBLISHED', featured: false,
+      countryId: country.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة', status: 'PUBLISHED', featured: false,
     }, actorAdminId))
     const scholarship = track('scholarships', await service.create('scholarships', {
       titleAr: 'منحة اختبار التكامل', slug: slug('scholarship'), countryId: country.id,
       universityId: university.id, studyLevel: 'MASTERS', fundingType: 'FULL',
-      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/integration',
+      summaryAr: 'ملخص المنحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/integration',
       applicationStatus: 'OPEN', status: 'PUBLISHED', featured: true,
     }, actorAdminId))
     const draftService = track('services', await service.create('services', {
@@ -122,11 +133,21 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
       metadata: { status: 'DRAFT' },
     })).rejects.toMatchObject({ code: 'RELATIONSHIP_INVALID' })
 
+    const universityCountry = track('countries', await service.create('countries', {
+      nameAr: 'بلد الجامعة المستقلة', slug: slug('university-country'), introductionAr: 'مقدمة', detailsAr: 'تفاصيل',
+      imageUrl: 'https://example.edu/integration-university-country.jpg', imageAltAr: 'صورة بلد الجامعة المستقلة',
+      status: 'PUBLISHED',
+    }, actorAdminId))
+    const independentUniversity = track('universities', await service.create('universities', {
+      nameAr: 'جامعة مستقلة', officialName: 'Independent Integration University', slug: slug('independent-university'),
+      countryId: universityCountry.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص الجامعة المستقلة',
+      status: 'PUBLISHED', featured: false,
+    }, actorAdminId))
     const secondCountry = track('countries', await service.create('countries', {
       nameAr: 'بلد ثان', slug: slug('second-country'), introductionAr: 'مقدمة', detailsAr: 'تفاصيل',
     }, actorAdminId))
-    const firstUniversity = await repository.findBySlug('universities', slug('university'), false)
-    expect(firstUniversity).not.toBeNull()
+    const firstUniversity = await repository.findBySlug('universities', independentUniversity.slug, false)
+    expect(firstUniversity?.id).toBe(independentUniversity.id)
     await expect(service.create('scholarships', {
       titleAr: 'منحة غير متسقة', slug: slug('invalid-scholarship'), countryId: secondCountry.id,
       universityId: firstUniversity?.id, studyLevel: 'MASTERS', fundingType: 'FULL',
@@ -137,12 +158,12 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
   it('persists ordered Article Scholarship links and rolls them back with a failed audit write', async () => {
     const open = track('scholarships', await service.create('scholarships', {
       titleAr: 'منحة مفتوحة مرتبطة', slug: slug('related-open'), studyLevel: 'MASTERS', fundingType: 'FULL',
-      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/related-open',
+      summaryAr: 'ملخص المنحة المفتوحة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/related-open',
       applicationStatus: 'OPEN', status: 'PUBLISHED',
     }, actorAdminId))
     const closed = track('scholarships', await service.create('scholarships', {
       titleAr: 'منحة مغلقة مرتبطة', slug: slug('related-closed'), studyLevel: 'MASTERS', fundingType: 'FULL',
-      requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/related-closed',
+      summaryAr: 'ملخص المنحة المغلقة', requirementsAr: 'متطلبات', descriptionAr: 'وصف', officialSourceUrl: 'https://example.edu/related-closed',
       applicationStatus: 'OPEN', verifiedDeadline: '2000-01-01T00:00:00.000Z', status: 'PUBLISHED',
     }, actorAdminId))
     const draft = track('scholarships', await service.create('scholarships', {

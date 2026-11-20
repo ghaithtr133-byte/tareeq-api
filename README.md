@@ -48,6 +48,7 @@ The local server defaults to `http://localhost:3000`:
 | `DATABASE_URL` | Runtime required | Backend-only pooled PostgreSQL URL |
 | `DIRECT_DATABASE_URL` | Migration workflow required | Direct URL for the same database; Prisma falls back to `DATABASE_URL` |
 | `JWT_SECRET` | Authentication required | Private string of at least 32 characters |
+| `PASSWORD_RECOVERY_SECRET` | Password recovery required | Different server-only random string of at least 32 characters; keyed OTP/authorization hashing |
 | `AUTH_ALLOWED_ORIGINS` | Authentication/Admin required | Comma-separated exact origins for credentialed CORS and CSRF trust |
 | `PUBLIC_ALLOWED_ORIGINS` | Optional; needed for Public Website browser access | Comma-separated exact origins for non-credentialed public content reads and the approved application/inquiry submissions |
 | `RESEND_API_KEY` | Email delivery only | Server-only Resend API key; never expose to Frontend code |
@@ -63,10 +64,10 @@ Production uses:
 
 ```dotenv
 AUTH_ALLOWED_ORIGINS=https://admin.tareeq-academy.com
-PUBLIC_ALLOWED_ORIGINS=https://tareeq-academy.com
+PUBLIC_ALLOWED_ORIGINS=https://tareeq-academy.com,https://www.tareeq-academy.com,http://localhost:3000
 ```
 
-Origins must contain only scheme, host, and optional port—no path, query, or fragment. Never use `*` for credentialed requests. Public content CORS remains read-only; only the separately reviewed application and inquiry routes allow non-credentialed `POST`. Public CORS does not grant Admin access or CSRF trust. Server-to-server calls are not restricted by browser CORS.
+Origins must contain only scheme, host, and optional port—no path, query, or fragment. Each value is exact: the apex, `www`, and localhost are distinct origins. Never use `*` for credentialed requests. Public content CORS remains read-only; only the separately reviewed application and inquiry routes allow non-credentialed `POST`. Public CORS does not grant Admin access or CSRF trust. Server-to-server calls are not restricted by browser CORS.
 
 Bootstrap and `INITIAL_*` variables are documented in `.env.example` beside sanitized placeholders. Keep real values only in `.env`.
 
@@ -108,6 +109,7 @@ Leadership approved one Neon PostgreSQL database for development and eventual pr
 - Never reset it, rewrite migration history, or run broad cleanup.
 - Do not use real records as test fixtures.
 - Database integration tests require separate authorization, unique fixtures, and exact-ID cleanup.
+- PostgreSQL integration tests additionally require the fail-closed disposable-target marker workflow in [docs/database-integration-testing.md](docs/database-integration-testing.md). They never fall back to `DATABASE_URL` or `DIRECT_DATABASE_URL`.
 - Default tests and the read-only verifier do not create content or accounts.
 - Do not access Neon or Vercel management consoles through agents.
 
@@ -117,7 +119,7 @@ The gated suites use `RUN_DATABASE_INTEGRATION=1` and `RUN_CONTENT_DATABASE_INTE
 
 Authentication uses host-only HttpOnly cookies: a signed 15-minute access JWT and a rotating seven-day refresh credential. Production cookies are `Secure` and use `SameSite=Lax`. Tokens are never returned in JSON and must not be stored in browser storage.
 
-State-changing Authentication/Admin requests require an exact trusted `Origin`. Both `ADMIN` and `SUPER_ADMIN` can manage the five content resources, their FAQs, and review applications/inquiries. Only `SUPER_ADMIN` can read the administrator audit trail, manage existing Admin roles/activation, and update public site settings. Protected requests verify that the account remains active and use its current database role, so deactivation and role changes take effect for already-issued access cookies. Public application and inquiry submissions use a separate non-credentialed CORS policy, explicit consent, a honeypot, bounded inputs, and a PostgreSQL-backed rate limit.
+State-changing Authentication/Admin requests require an exact trusted `Origin`. Both `ADMIN` and `SUPER_ADMIN` can manage the five content resources, their FAQs, and review applications/inquiries. Only `SUPER_ADMIN` can read the administrator audit trail, manage existing Admin identity/role/activation, and update public site settings. Protected requests verify that the account remains active and use its current database role, so deactivation and role changes take effect for already-issued access cookies. Public application and inquiry submissions use a separate non-credentialed CORS policy, explicit consent, a honeypot, bounded inputs, and a PostgreSQL-backed rate limit.
 
 ## Content image uploads
 
@@ -125,7 +127,7 @@ State-changing Authentication/Admin requests require an exact trusted `Origin`. 
 
 ## About Us page
 
-`GET /api/v1/about` returns the singleton page only when it is PUBLISHED; a missing, DRAFT, or ARCHIVED singleton responds with `404 CONTENT_NOT_FOUND`. Its public response includes `publishedAt` and `updatedAt`, while the Admin-only `status` and `createdAt` fields remain private. ADMIN and SUPER_ADMIN use `GET` and `PATCH /api/v1/admin/about`. The first PATCH creates the singleton and later PATCH requests merge only supplied fields. Publishing requires non-empty Arabic Hero title/subtitle and Introduction title/body; the original `publishedAt` is retained through future edits and unpublishing. Updates create an atomic `ABOUT_US` audit event. Hero and Introduction image URLs may be supplied from the existing `resource=about` upload flow; no image is required to publish. These locally implemented endpoints require owner review, migration deployment, and Backend deployment before Frontend production use.
+`GET /api/v1/about` returns the singleton page only when it is PUBLISHED; a missing, DRAFT, or ARCHIVED singleton responds with `404 CONTENT_NOT_FOUND`. Its public response includes `publishedAt` and `updatedAt`, while the Admin-only `status` and `createdAt` fields remain private. Only SUPER_ADMIN uses `GET` and `PATCH /api/v1/admin/about`. The first PATCH creates the singleton and later PATCH requests merge only supplied fields. Publishing requires non-empty Arabic Hero title/subtitle and Introduction title/body; the original `publishedAt` is retained through future edits and unpublishing. Updates create an atomic `ABOUT_US` audit event. Hero and Introduction image URLs may be supplied from the existing `resource=about` upload flow; no image is required to publish. These locally implemented endpoints require owner review, migration deployment, and Backend deployment before Frontend production use.
 
 ## Directory presentation and marketing images
 
@@ -143,9 +145,15 @@ Successful Admin content creation and updates, publication transitions, and appl
 
 ## Admin account management
 
-`GET /api/v1/admin/users` and `PATCH /api/v1/admin/users/{id}` are restricted to `SUPER_ADMIN`. Listing returns only `id`, `name`, `email`, `role`, and `isActive`. Updates accept exactly one field: `role` (`ADMIN` or `SUPER_ADMIN`) or `isActive`. There is no public registration, Admin creation, deletion, password reset, or credential-management API.
+`GET /api/v1/admin/users` and `PATCH /api/v1/admin/users/{id}` are restricted to `SUPER_ADMIN`. Listing returns only `id`, `name`, `email`, `role`, and `isActive`. A PATCH accepts exactly one update group: `role` (`ADMIN` or `SUPER_ADMIN`), `isActive`, or one/both of normalized `name` and `email`. Identity changes are audited only with changed-field names; they do not return credentials or invalidate sessions because the account UUID, not email, identifies an authenticated session. The existing case-insensitive database unique constraint rejects duplicate emails atomically. There is no public registration, Admin creation, deletion, or credential-management API.
 
-Account mutations are serialized and recheck the acting account inside the transaction. Self-deactivation, self-demotion, and any transition that would remove the last active SUPER_ADMIN are rejected. Deactivation revokes every active refresh session. Because protected requests resolve current activation and role from PostgreSQL, an existing access cookie is rejected immediately after deactivation and uses the new role immediately after a role change. Each successful mutation and its audit event commit atomically.
+Account mutations are serialized and recheck the acting account inside the transaction. Self-deactivation, self-demotion, and any transition that would remove the last active SUPER_ADMIN are rejected. Deactivation revokes every active refresh session and increments the account security version, so a pre-deactivation access JWT remains invalid even after reactivation. Because protected requests resolve current activation and role from PostgreSQL, an existing access cookie is rejected immediately after deactivation and uses the new role immediately after a role change. Each successful mutation and its audit event commit atomically.
+
+`POST /api/v1/auth/change-password` atomically replaces the password hash, increments the same security version, and revokes all active refresh sessions. Every protected request compares its signed access-token version with the current account version; prior access JWTs therefore fail on their next request without waiting for their 15-minute expiry. Signed legacy JWTs without a version are accepted only while the account remains at version `0`; no legacy credential can bypass a later security-version increment.
+
+Password recovery uses `POST /api/v1/auth/password-recovery/request`, `/verify`, and `/reset`. Request acceptance is deliberately identical for known, unknown, inactive, cooldown-limited, and rate-limited emails. Every request response includes a freshly generated opaque `challengeId`: it is durable only when an eligible account receives a code, but has the same UUID shape otherwise, so the browser can always make the verification request without account enumeration. A six-digit cryptographically random OTP and the later reset authorization are stored only as keyed hashes in `PasswordRecoveryChallenge`; neither is added to the durable email outbox, logs, API audit metadata, or responses other than the authorization returned after successful OTP verification. OTPs expire after 10 minutes, have five durable verification attempts, and a successful verification issues a 10-minute single-use authorization. Reset reuses the shared password-replacement/session-revocation transaction, invalidates all recovery challenges, and requires fresh login. The direct Resend delivery is intentionally best-effort without persisted retry, so a provider failure invalidates the challenge rather than risking an ambiguously delivered code. In Vercel Functions, the IP bucket uses the platform-overwritten forwarded IP; elsewhere, untrusted forwarding headers are ignored and share a conservative fallback bucket. `POST /api/v1/auth/admin/users/{id}/password-recovery` is SUPER_ADMIN-only, audits the initiation, and sends only to the target’s registered email; it never returns the OTP or reset authorization to the initiator.
+
+`AdminUser` cannot be physically deleted: `AdminAuditLog.actor`, `HardDeleteChallenge.actor`, `PasswordRecoveryChallenge.adminUser`, and `EmailNotification.adminUser` are restrictive historical references. Deactivation is the supported removal-of-access mechanism until a separately approved tombstone/anonymization policy exists.
 
 ## Public site settings
 
@@ -265,4 +273,4 @@ The PowerShell verifier is read-only by default. Authenticated mode performs the
 
 `src/index.ts` is the Vercel Hono entrypoint and `src/server.ts` is the local Node entrypoint. The Project Owner manages Git publishing, deployment, and management consoles.
 
-The local generated API contains exactly 132 operations. Phase B adds SUPER_ADMIN-only challenge-confirmed hard deletion for Countries, Universities, Scholarships, Services, and Articles, with explicit approved editorial child deletion/unlinking and protected history blockers. Active study-language choices are public at `/api/v1/study-languages`; ADMIN can manage catalog labels, ordering, and activation without altering existing Program codes. Admin account creation/deletion, password recovery, Cloudinary asset deletion, a standalone media library, public analytics reporting, tuition-range filtering, exchange-rate conversion, scheduled-job management, student accounts, and payments are not available endpoints.
+The local generated API contains exactly 143 operations. Phase B adds SUPER_ADMIN-only challenge-confirmed hard deletion for Countries, Universities, Scholarships, Services, and Articles, with explicit approved editorial child deletion/unlinking and protected history blockers. Active study-language choices are public at `/api/v1/study-languages`; ADMIN can manage catalog labels, ordering, and activation without altering existing Program codes. Admin account creation/deletion, Cloudinary asset deletion, a standalone media library, public analytics reporting, tuition-range filtering, exchange-rate conversion, scheduled-job management, student accounts, and payments are not available endpoints.

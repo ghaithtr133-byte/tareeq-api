@@ -196,6 +196,36 @@ export class InMemorySubmissionRepository implements SubmissionRepository, Email
     return record
   }
 
+  async deleteApplication(id: string, audit: AuditIntent) {
+    const index = this.applications.findIndex((record) => record.id === id)
+    if (index < 0) return { outcome: 'NOT_FOUND' as const }
+    const emailNotificationCount = this.emailNotifications.filter((notification) => notification.application?.id === id).length
+    await this.audit.append({
+      ...audit,
+      metadata: { ...audit.metadata, emailNotificationCount },
+    }, id)
+    this.applications.splice(index, 1)
+    for (let notificationIndex = this.emailNotifications.length - 1; notificationIndex >= 0; notificationIndex -= 1) {
+      if (this.emailNotifications[notificationIndex]?.application?.id === id) this.emailNotifications.splice(notificationIndex, 1)
+    }
+    return { outcome: 'DELETED' as const, id, emailNotificationCount }
+  }
+
+  async deleteInquiry(id: string, audit: AuditIntent) {
+    const index = this.inquiries.findIndex((record) => record.id === id)
+    if (index < 0) return { outcome: 'NOT_FOUND' as const }
+    const emailNotificationCount = this.emailNotifications.filter((notification) => notification.inquiry?.id === id).length
+    await this.audit.append({
+      ...audit,
+      metadata: { ...audit.metadata, emailNotificationCount },
+    }, id)
+    this.inquiries.splice(index, 1)
+    for (let notificationIndex = this.emailNotifications.length - 1; notificationIndex >= 0; notificationIndex -= 1) {
+      if (this.emailNotifications[notificationIndex]?.inquiry?.id === id) this.emailNotifications.splice(notificationIndex, 1)
+    }
+    return { outcome: 'DELETED' as const, id, emailNotificationCount }
+  }
+
   async claimPending(limit: number, now: Date, leaseUntil: Date) {
     const eligible = this.emailNotifications.filter((notification) => {
       if (notification.retryUntil <= now) {

@@ -1,5 +1,6 @@
 import type { Prisma } from '../generated/prisma/client.js'
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import { marketingPageIds, type MarketingPageImageRecord, type MarketingPageImageRepository, type MarketingPageImageUpdate, type MarketingPageKey } from './types.js'
 
 const LOCK = 9_000_012
@@ -12,7 +13,7 @@ export class PrismaMarketingPageImageRepository implements MarketingPageImageRep
   }
   async update(actorAdminId: string, pageKey: MarketingPageKey, input: MarketingPageImageUpdate) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, LOCK)
       const actor = await transaction.adminUser.findUnique({ where: { id: actorAdminId }, select: { isActive: true, role: true } })
       if (!actor?.isActive || (actor.role !== 'ADMIN' && actor.role !== 'SUPER_ADMIN')) return null
       const value = await transaction.marketingPageImage.upsert({ where: { pageKey }, create: { id: marketingPageIds[pageKey], pageKey, ...input }, update: input })

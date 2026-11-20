@@ -1,5 +1,6 @@
 import { OptionCatalogType, Prisma, type AcademicMajor, type City, type UniversityProgram } from '../generated/prisma/client.js'
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import type { PublicationStatus } from '../content/types.js'
 import type {
   AcademicMajorRecord,
@@ -175,7 +176,7 @@ export class PrismaUniversityDirectoryRepository implements UniversityDirectoryR
   async createProgram(input: ProgramCreateInput, actorAdminId: string, now: Date) {
     try {
       return await getPrisma().$transaction(async (transaction) => {
-        await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${PROGRAM_LOCK})`
+        await acquireTransactionAdvisoryLock(transaction, PROGRAM_LOCK)
         if (await transaction.university.count({ where: { id: input.universityId } }) !== 1) return { outcome: 'UNIVERSITY_NOT_FOUND' as const }
         if (await transaction.academicMajor.count({ where: { id: input.academicMajorId } }) !== 1) return { outcome: 'MAJOR_NOT_FOUND' as const }
         if (await transaction.optionCatalog.count({ where: { type: OptionCatalogType.STUDY_LANGUAGE, isActive: true, code: { in: input.languages } } }) !== input.languages.length) return { outcome: 'CONFLICT' as const }
@@ -217,7 +218,7 @@ export class PrismaUniversityDirectoryRepository implements UniversityDirectoryR
   async updateProgram(id: string, input: ProgramUpdateInput, actorAdminId: string, now: Date) {
     try {
       return await getPrisma().$transaction(async (transaction) => {
-        await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${PROGRAM_LOCK})`
+        await acquireTransactionAdvisoryLock(transaction, PROGRAM_LOCK)
         const current = await transaction.universityProgram.findUnique({ where: { id }, include: includeProgram })
         if (!current) return { outcome: 'NOT_FOUND' as const }
         if (input.academicMajorId && await transaction.academicMajor.count({ where: { id: input.academicMajorId } }) !== 1) return { outcome: 'MAJOR_NOT_FOUND' as const }

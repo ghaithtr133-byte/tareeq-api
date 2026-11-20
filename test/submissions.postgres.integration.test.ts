@@ -5,6 +5,7 @@ import { createHmac, randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { disconnectPrisma, getPrisma } from '../src/database/client.js'
+import { verifyDisposableTestDatabase } from '../src/database/test-safety.js'
 import { PrismaSubmissionRepository } from '../src/submissions/prisma-repository.js'
 import {
   PUBLIC_SUBMISSION_LIMIT,
@@ -30,6 +31,7 @@ describe.runIf(shouldRun)('submission PostgreSQL integration', () => {
   const actorAdminId = randomUUID()
 
   beforeAll(async () => {
+    await verifyDisposableTestDatabase()
     await getPrisma().$queryRaw`SELECT 1`
     await getPrisma().adminUser.create({
       data: {
@@ -45,6 +47,15 @@ describe.runIf(shouldRun)('submission PostgreSQL integration', () => {
   afterAll(async () => {
     const prisma = getPrisma()
     await prisma.adminAuditLog.deleteMany({ where: { actorAdminId } })
+    await prisma.emailNotification.deleteMany({
+      where: {
+        OR: [
+          { applicationId: { in: createdApplicationIds } },
+          { inquiryId: { in: createdInquiryIds } },
+          { adminUserId: actorAdminId },
+        ],
+      },
+    })
     if (createdApplicationIds.length > 0) {
       await prisma.studentApplication.deleteMany({
         where: { id: { in: createdApplicationIds } },
@@ -185,8 +196,12 @@ describe.runIf(shouldRun)('submission PostgreSQL integration', () => {
     const identifierHash = createHmac('sha256', secret)
       .update(`public-submission-rate-limit:v1:${clientIdentifier}`)
       .digest('hex')
+    // This test exercises repository cleanup, which compares expiry with
+    // PostgreSQL NOW(). Keep one shared, future bucket rather than the suite's
+    // fixed historical submission timestamp.
+    const rateLimitNow = new Date(Date.now() + 60_000)
     const windowStartedAt = new Date(
-      Math.floor(fixedNow.getTime() / PUBLIC_SUBMISSION_WINDOW_MS) * PUBLIC_SUBMISSION_WINDOW_MS,
+      Math.floor(rateLimitNow.getTime() / PUBLIC_SUBMISSION_WINDOW_MS) * PUBLIC_SUBMISSION_WINDOW_MS,
     )
     const expiresAt = new Date(windowStartedAt.getTime() + PUBLIC_SUBMISSION_WINDOW_MS)
     rateLimitKeys.push({ scope, identifierHash, windowStartedAt })
@@ -202,5 +217,9 @@ describe.runIf(shouldRun)('submission PostgreSQL integration', () => {
     ))
     expect(results.filter(Boolean)).toHaveLength(PUBLIC_SUBMISSION_LIMIT)
     expect(results.filter((allowed) => !allowed)).toHaveLength(1)
+    await expect(getPrisma().publicSubmissionRateLimit.findUnique({
+      where: { scope_identifierHash_windowStartedAt: { scope, identifierHash, windowStartedAt } },
+      select: { count: true, expiresAt: true },
+    })).resolves.toMatchObject({ count: 6, expiresAt })
   }, 30_000)
 })

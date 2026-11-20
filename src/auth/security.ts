@@ -18,7 +18,7 @@ export const authCors = (runtime: AuthRuntime): MiddlewareHandler<AuthEnv> =>
         isAllowedOrigin(origin, c.req.url, runtime.getConfig().allowedOrigins)
           ? origin
           : '',
-      allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+      allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type'],
       credentials: true,
       maxAge: 600,

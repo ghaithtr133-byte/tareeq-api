@@ -143,6 +143,32 @@ export class SubmissionService {
     })
   }
 
+  async deleteApplication(id: string, actorAdminId: string) {
+    const result = await this.repository.deleteApplication(id, {
+      actorAdminId,
+      action: 'student_application.deleted',
+      resourceType: 'STUDENT_APPLICATION',
+      metadata: { deletionMode: 'SUPER_ADMIN_CONFIRMED' },
+    })
+    if (result.outcome === 'NOT_FOUND') {
+      throw new ApiError(404, 'APPLICATION_NOT_FOUND', 'Student application not found.')
+    }
+    return { id: result.id }
+  }
+
+  async deleteInquiry(id: string, actorAdminId: string) {
+    const result = await this.repository.deleteInquiry(id, {
+      actorAdminId,
+      action: 'general_inquiry.deleted',
+      resourceType: 'GENERAL_INQUIRY',
+      metadata: { deletionMode: 'SUPER_ADMIN_CONFIRMED' },
+    })
+    if (result.outcome === 'NOT_FOUND') {
+      throw new ApiError(404, 'INQUIRY_NOT_FOUND', 'General inquiry not found.')
+    }
+    return { id: result.id }
+  }
+
   private paginated<T>(result: { items: T[]; total: number }, query: SubmissionListQuery) {
     return {
       items: result.items,

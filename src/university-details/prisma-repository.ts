@@ -6,6 +6,7 @@ import type {
 } from '../generated/prisma/client.js'
 
 import { getPrisma } from '../database/client.js'
+import { acquireTransactionAdvisoryLock } from '../database/advisory-lock.js'
 import type { PublicationStatus } from '../content/types.js'
 import type { ProgramStudyLevel } from '../university-directory/types.js'
 import type {
@@ -124,7 +125,7 @@ export class PrismaUniversityDetailsRepository implements UniversityDetailsRepos
 
   async createGalleryImage(universityId: string, input: GalleryImageInput, actorAdminId: string, now: Date) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${GALLERY_MUTATION_LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, GALLERY_MUTATION_LOCK)
       if (await transaction.university.count({ where: { id: universityId } }) !== 1) return { outcome: 'UNIVERSITY_NOT_FOUND' as const }
       const activeCount = await transaction.universityGalleryImage.count({ where: { universityId, status: { not: 'ARCHIVED' } } })
       if (input.status !== 'ARCHIVED' && activeCount >= MAX_ACTIVE_GALLERY_IMAGES) return { outcome: 'GALLERY_LIMIT_REACHED' as const }
@@ -140,7 +141,7 @@ export class PrismaUniversityDetailsRepository implements UniversityDetailsRepos
 
   async updateGalleryImage(id: string, input: GalleryImageUpdate, actorAdminId: string, now: Date) {
     return getPrisma().$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(${GALLERY_MUTATION_LOCK})`
+      await acquireTransactionAdvisoryLock(transaction, GALLERY_MUTATION_LOCK)
       const current = await transaction.universityGalleryImage.findUnique({ where: { id } })
       if (!current) return { outcome: 'NOT_FOUND' as const }
       const nextStatus = input.status ?? current.status

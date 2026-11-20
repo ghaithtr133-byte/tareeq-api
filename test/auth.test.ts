@@ -13,6 +13,7 @@ import { hashPassword, hashRefreshToken, signAccessToken } from '../src/auth/cry
 import { requireAuthentication, requireRole } from '../src/auth/middleware.js'
 import type { AuthRuntime } from '../src/auth/runtime.js'
 import { AuthService } from '../src/auth/service.js'
+import type { PasswordRecoveryEmail } from '../src/auth/recovery-email.js'
 import type { AuthEnv } from '../src/auth/types.js'
 import type { AuthConfig } from '../src/config/env.js'
 import { InMemoryAuthRepository } from './helpers/in-memory-auth-repository.js'
@@ -69,6 +70,9 @@ describe('administrative authentication', () => {
   let service: AuthService
   let runtime: AuthRuntime
   let app: ReturnType<typeof createApp>
+  let superAccessToken: string
+  let recoveryEmails: PasswordRecoveryEmail[]
+  let recoveryDeliveryFails: boolean
 
   beforeAll(async () => {
     passwordHash = await hashPassword(CURRENT_PASSWORD)
@@ -81,12 +85,32 @@ describe('administrative authentication', () => {
       passwordHash,
       isActive: true,
     })
-    service = new AuthService(repository, JWT_SECRET)
+    repository.addUser({
+      id: SUPER_USER_ID,
+      name: 'Super Admin',
+      email: 'super@example.com',
+      passwordHash,
+      role: 'SUPER_ADMIN',
+      isActive: true,
+    })
+    recoveryEmails = []
+    recoveryDeliveryFails = false
+    service = new AuthService(repository, JWT_SECRET, JWT_SECRET, {
+      available: true,
+      async sendPasswordRecovery(email) {
+        if (recoveryDeliveryFails) throw new Error('simulated provider failure')
+        recoveryEmails.push(email)
+      },
+    })
     runtime = {
       getConfig: () => config,
       getService: () => service,
     }
     app = createApp({ authRuntime: runtime })
+  })
+
+  beforeEach(async () => {
+    superAccessToken = await signAccessToken({ id: SUPER_USER_ID, role: 'SUPER_ADMIN' }, JWT_SECRET)
   })
 
   const login = async (email = '  ADMIN@EXAMPLE.COM  ', password = CURRENT_PASSWORD) =>
@@ -117,6 +141,7 @@ describe('administrative authentication', () => {
     await expect(service.verifyAccessToken(accessToken!)).resolves.toEqual({
       userId: USER_ID,
       role: 'ADMIN',
+      authVersion: 0,
     })
     expect(repository.getActiveSessionCount(USER_ID)).toBe(1)
   })
@@ -198,6 +223,39 @@ describe('administrative authentication', () => {
       headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, expired]) },
     })
     expect(expiredResponse.status).toBe(401)
+  })
+
+  it('updates only the authenticated active administrator name and returns a safe profile', async () => {
+    const loginResponse = await login()
+    const accessToken = getCookieValue(getSetCookies(loginResponse), ACCESS_COOKIE_NAME)
+    const patch = async (body: unknown, token: string | null = accessToken ?? null) => app.request('/api/v1/auth/me', {
+      method: 'PATCH',
+      headers: {
+        Origin: ORIGIN,
+        'Content-Type': 'application/json',
+        ...(token ? { Cookie: cookieHeader([ACCESS_COOKIE_NAME, token]) } : {}),
+      },
+      body: JSON.stringify(body),
+    })
+
+    expect((await patch({ name: '  Updated   Admin  ' })).status).toBe(200)
+    await expect((await patch({ name: 'Super Admin Updated' }, superAccessToken)).json()).resolves.toEqual({
+      success: true,
+      data: { user: { id: SUPER_USER_ID, name: 'Super Admin Updated', email: 'super@example.com', role: 'SUPER_ADMIN' } },
+    })
+    await expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
+    })).json()).resolves.toEqual({
+      success: true,
+      data: { user: { ...publicUser, name: 'Updated Admin' } },
+    })
+
+    for (const body of [{}, { name: '' }, { name: 'Admin', role: 'SUPER_ADMIN' }, { name: 'Admin', email: 'other@example.com' }]) {
+      expect((await patch(body)).status).toBe(400)
+    }
+    expect((await patch({ name: 'Anonymous' }, null)).status).toBe(401)
+    expect((await repository.findAdminById(USER_ID))?.name).toBe('Updated Admin')
+    expect((await repository.findAdminById(USER_ID))?.email).toBe(publicUser.email)
   })
 
   it('rotates refresh credentials and rejects reuse of the consumed credential', async () => {
@@ -337,7 +395,13 @@ describe('administrative authentication', () => {
 
     expect(changed.status).toBe(200)
     expect(repository.getActiveSessionCount(USER_ID)).toBe(0)
+    expect((await repository.findAdminById(USER_ID))?.authVersion).toBe(1)
     expect(getSetCookies(changed)).toHaveLength(2)
+
+    const staleAccess = await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
+    })
+    expect(staleAccess.status).toBe(401)
 
     const revokedRefresh = await app.request('/api/v1/auth/refresh', {
       method: 'POST',
@@ -349,6 +413,94 @@ describe('administrative authentication', () => {
     expect(revokedRefresh.status).toBe(401)
     expect((await login()).status).toBe(401)
     expect((await login('admin@example.com', NEW_PASSWORD)).status).toBe(200)
+  })
+
+  it('accepts a signed legacy JWT only at security version zero and rejects malformed version claims', async () => {
+    const legacy = await signAccessToken({ id: USER_ID, role: 'ADMIN' }, JWT_SECRET)
+    expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, legacy]) },
+    })).status).toBe(200)
+
+    const malformed = await new SignJWT({ role: 'ADMIN', authVersion: 'zero' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject(USER_ID)
+      .setIssuer(ACCESS_TOKEN_ISSUER)
+      .setAudience(ACCESS_TOKEN_AUDIENCE)
+      .setIssuedAt()
+      .setExpirationTime('900s')
+      .sign(new TextEncoder().encode(JWT_SECRET))
+    expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, malformed]) },
+    })).status).toBe(401)
+
+    const loginResponse = await login()
+    const accessToken = getCookieValue(getSetCookies(loginResponse), ACCESS_COOKIE_NAME)
+    expect((await app.request(
+      '/api/v1/auth/change-password',
+      jsonRequest(
+        { currentPassword: CURRENT_PASSWORD, newPassword: NEW_PASSWORD },
+        cookieHeader([ACCESS_COOKIE_NAME, accessToken]),
+      ),
+    )).status).toBe(200)
+    expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, legacy]) },
+    })).status).toBe(401)
+  })
+
+  it('allows one concurrent password change and leaves no valid old credential', async () => {
+    const loginResponse = await login()
+    const accessToken = getCookieValue(getSetCookies(loginResponse), ACCESS_COOKIE_NAME)
+    const change = (password: string) => app.request(
+      '/api/v1/auth/change-password',
+      jsonRequest(
+        { currentPassword: CURRENT_PASSWORD, newPassword: password },
+        cookieHeader([ACCESS_COOKIE_NAME, accessToken]),
+      ),
+    )
+
+    const [first, second] = await Promise.all([
+      change('ConcurrentPassword456'),
+      change('OtherConcurrentPassword789'),
+    ])
+    expect([first.status, second.status].sort()).toEqual([200, 401])
+    expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
+    })).status).toBe(401)
+    expect(repository.getActiveSessionCount(USER_ID)).toBe(0)
+    expect((await repository.findAdminById(USER_ID))?.authVersion).toBe(1)
+  })
+
+  it('revokes a refresh credential created while a password change is racing', async () => {
+    const loginResponse = await login()
+    const accessToken = getCookieValue(getSetCookies(loginResponse), ACCESS_COOKIE_NAME)
+    const refreshToken = getCookieValue(getSetCookies(loginResponse), REFRESH_COOKIE_NAME)!
+    const changing = app.request(
+      '/api/v1/auth/change-password',
+      jsonRequest(
+        { currentPassword: CURRENT_PASSWORD, newPassword: NEW_PASSWORD },
+        cookieHeader([ACCESS_COOKIE_NAME, accessToken]),
+      ),
+    )
+    const refreshing = app.request('/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: {
+        Origin: ORIGIN,
+        Cookie: cookieHeader([REFRESH_COOKIE_NAME, refreshToken]),
+      },
+    })
+    const [changed, refreshed] = await Promise.all([changing, refreshing])
+
+    expect(changed.status).toBe(200)
+    if (refreshed.status === 200) {
+      const replacement = getCookieValue(getSetCookies(refreshed), REFRESH_COOKIE_NAME)!
+      expect((await app.request('/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { Origin: ORIGIN, Cookie: cookieHeader([REFRESH_COOKIE_NAME, replacement]) },
+      })).status).toBe(401)
+    } else {
+      expect(refreshed.status).toBe(401)
+    }
+    expect(repository.getActiveSessionCount(USER_ID)).toBe(0)
   })
 
   it('rejects an incorrect current password without revoking the active session', async () => {
@@ -365,6 +517,219 @@ describe('administrative authentication', () => {
 
     expect(response.status).toBe(401)
     expect(repository.getActiveSessionCount(USER_ID)).toBe(1)
+    expect((await repository.findAdminById(USER_ID))?.authVersion).toBe(0)
+  })
+
+  it('keeps credentials intact when the password-revocation transaction fails', async () => {
+    const loginResponse = await login()
+    const accessToken = getCookieValue(getSetCookies(loginResponse), ACCESS_COOKIE_NAME)
+    repository.replacePasswordAndRevokeSessions = async () => {
+      throw new Error('simulated transaction failure')
+    }
+
+    const response = await app.request(
+      '/api/v1/auth/change-password',
+      jsonRequest(
+        { currentPassword: CURRENT_PASSWORD, newPassword: NEW_PASSWORD },
+        cookieHeader([ACCESS_COOKIE_NAME, accessToken]),
+      ),
+    )
+    expect(response.status).toBe(500)
+    expect(repository.getActiveSessionCount(USER_ID)).toBe(1)
+    expect((await repository.findAdminById(USER_ID))?.authVersion).toBe(0)
+    expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
+    })).status).toBe(200)
+  })
+
+  it('provides generic recovery requests, hashes OTPs, and atomically resets credentials after verification', async () => {
+    const requestRecovery = (email: string, client = '198.51.100.10') => app.request(
+      '/api/v1/auth/password-recovery/request',
+      {
+        method: 'POST',
+        headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'X-Forwarded-For': client },
+        body: JSON.stringify({ email }),
+      },
+    )
+    const known = await requestRecovery('ADMIN@example.com')
+    const unknown = await requestRecovery('unknown@example.com', '198.51.100.11')
+    expect(known.status).toBe(202)
+    expect(unknown.status).toBe(202)
+    const knownBody = await known.json() as { data: { message: string; challengeId: string } }
+    const unknownBody = await unknown.json() as { data: { message: string; challengeId: string } }
+    expect(unknownBody.data.message).toBe(knownBody.data.message)
+    expect(knownBody.data.challengeId).toMatch(/^[0-9a-f-]{36}$/i)
+    expect(unknownBody.data.challengeId).toMatch(/^[0-9a-f-]{36}$/i)
+    expect(unknownBody.data.challengeId).not.toBe(knownBody.data.challengeId)
+    expect(recoveryEmails).toHaveLength(1)
+    expect(recoveryEmails[0]?.to).toBe('admin@example.com')
+    const [challenge] = repository.getPasswordRecoveryChallenges()
+    expect(knownBody.data.challengeId).toBe(challenge?.id)
+    expect(challenge?.otpHash).not.toContain(recoveryEmails[0]!.otp)
+    expect(JSON.stringify(challenge)).not.toContain(recoveryEmails[0]!.otp)
+
+    const loginResponse = await login()
+    const accessToken = getCookieValue(getSetCookies(loginResponse), ACCESS_COOKIE_NAME)!
+    const refreshToken = getCookieValue(getSetCookies(loginResponse), REFRESH_COOKIE_NAME)!
+    const verification = await app.request('/api/v1/auth/password-recovery/verify', jsonRequest({
+      challengeId: knownBody.data.challengeId, otp: recoveryEmails[0]!.otp,
+    }))
+    expect(verification.status).toBe(200)
+    const { data } = await verification.json() as { data: { resetAuthorization: string } }
+    const reset = await app.request('/api/v1/auth/password-recovery/reset', jsonRequest({
+      challengeId: knownBody.data.challengeId,
+      resetAuthorization: data.resetAuthorization,
+      newPassword: NEW_PASSWORD,
+    }))
+    expect(reset.status).toBe(200)
+    expect((await repository.findAdminById(USER_ID))?.authVersion).toBe(1)
+    expect(repository.getActiveSessionCount(USER_ID)).toBe(0)
+    expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
+    })).status).toBe(401)
+    expect((await app.request('/api/v1/auth/refresh', {
+      method: 'POST', headers: { Origin: ORIGIN, Cookie: cookieHeader([REFRESH_COOKIE_NAME, refreshToken]) },
+    })).status).toBe(401)
+    expect((await login('admin@example.com', NEW_PASSWORD)).status).toBe(200)
+    expect((await app.request('/api/v1/auth/password-recovery/reset', jsonRequest({
+      challengeId: knownBody.data.challengeId, resetAuthorization: data.resetAuthorization, newPassword: 'AnotherPassword456',
+    }))).status).toBe(400)
+    expect((await app.request('/api/v1/auth/password-recovery/verify', jsonRequest({
+      challengeId: unknownBody.data.challengeId, otp: '123456',
+    }))).status).toBe(400)
+  })
+
+  it('rejects invalid, expired, replayed, and excessive recovery-code attempts without leaking a reset authorization', async () => {
+    const requestRecovery = async (client: string) => {
+      await app.request('/api/v1/auth/password-recovery/request', {
+        method: 'POST',
+        headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'X-Forwarded-For': client },
+        body: JSON.stringify({ email: 'admin@example.com' }),
+      })
+      return repository.getPasswordRecoveryChallenges().at(-1)!
+    }
+    const first = await requestRecovery('198.51.100.12')
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const response = await app.request('/api/v1/auth/password-recovery/verify', jsonRequest({
+        challengeId: first.id, otp: '000000',
+      }))
+      expect(response.status).toBe(400)
+      expect(JSON.stringify(await response.json())).not.toMatch(/authorization|otp|token/i)
+    }
+    expect((await app.request('/api/v1/auth/password-recovery/verify', jsonRequest({
+      challengeId: first.id, otp: recoveryEmails[0]!.otp,
+    }))).status).toBe(400)
+
+    // A fresh repository avoids the one-minute resend cooldown for this expiry check.
+    repository.setPasswordRecoveryChallengeExpiration(first.id, new Date(Date.now() - 1))
+    const second = await requestRecovery('198.51.100.13')
+    repository.setPasswordRecoveryChallengeExpiration(second.id, new Date(Date.now() - 1))
+    expect((await app.request('/api/v1/auth/password-recovery/verify', jsonRequest({
+      challengeId: second.id, otp: recoveryEmails.at(-1)!.otp,
+    }))).status).toBe(400)
+  })
+
+  it('allows only one concurrent recovery reset to consume an authorization', async () => {
+    await app.request('/api/v1/auth/password-recovery/request', {
+      method: 'POST',
+      headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'X-Forwarded-For': '198.51.100.18' },
+      body: JSON.stringify({ email: 'admin@example.com' }),
+    })
+    const challenge = repository.getPasswordRecoveryChallenges()[0]!
+    const verified = await app.request('/api/v1/auth/password-recovery/verify', jsonRequest({
+      challengeId: challenge.id,
+      otp: recoveryEmails[0]!.otp,
+    }))
+    const { data } = await verified.json() as { data: { resetAuthorization: string } }
+    const reset = () => app.request('/api/v1/auth/password-recovery/reset', jsonRequest({
+      challengeId: challenge.id,
+      resetAuthorization: data.resetAuthorization,
+      newPassword: NEW_PASSWORD,
+    }))
+    const results = await Promise.all([reset(), reset()])
+    expect(results.map(({ status }) => status).sort()).toEqual([200, 400])
+    expect((await repository.findAdminById(USER_ID))?.authVersion).toBe(1)
+    expect(repository.getActiveSessionCount(USER_ID)).toBe(0)
+  })
+
+  it('enforces recovery request rate limits and invalidates outstanding challenges after email change or failed delivery', async () => {
+    const recover = (email: string, client: string) => app.request('/api/v1/auth/password-recovery/request', {
+      method: 'POST',
+      headers: { Origin: ORIGIN, 'Content-Type': 'application/json', 'X-Forwarded-For': client },
+      body: JSON.stringify({ email }),
+    })
+    await recover('admin@example.com', '198.51.100.14')
+    const original = repository.getPasswordRecoveryChallenges()[0]!
+    expect((await repository.update(
+      SUPER_USER_ID,
+      USER_ID,
+      { email: 'changed-admin@example.com' },
+      new Date(),
+    )).outcome).toBe('UPDATED')
+    expect((await app.request('/api/v1/auth/password-recovery/verify', jsonRequest({
+      challengeId: original.id, otp: recoveryEmails[0]!.otp,
+    }))).status).toBe(400)
+
+    recoveryDeliveryFails = true
+    await recover('changed-admin@example.com', '198.51.100.15')
+    expect(repository.getPasswordRecoveryChallenges().at(-1)?.invalidatedAt).toBeInstanceOf(Date)
+    recoveryDeliveryFails = false
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await recover('unknown@example.com', '198.51.100.16')
+    }
+    expect(recoveryEmails).toHaveLength(1)
+  })
+
+  it('does not trust browser-supplied forwarded IP headers outside the Vercel proxy boundary', async () => {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const response = await app.request('/api/v1/auth/password-recovery/request', {
+        method: 'POST',
+        headers: {
+          Origin: ORIGIN,
+          'Content-Type': 'application/json',
+          'X-Forwarded-For': `198.51.100.${attempt}`,
+        },
+        body: JSON.stringify({ email: `unknown-${attempt}@example.com` }),
+      })
+      expect(response.status).toBe(202)
+    }
+
+    const response = await app.request('/api/v1/auth/password-recovery/request', {
+      method: 'POST',
+      headers: {
+        Origin: ORIGIN,
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': '203.0.113.99',
+      },
+      body: JSON.stringify({ email: 'admin@example.com' }),
+    })
+    expect(response.status).toBe(202)
+    expect(recoveryEmails).toHaveLength(0)
+  })
+
+  it('allows only SUPER_ADMIN to initiate another administrator recovery without exposing the recovery secret', async () => {
+    const initiate = (token?: string) => app.request(`/api/v1/auth/admin/users/${USER_ID}/password-recovery`, {
+      method: 'POST',
+      headers: {
+        Origin: ORIGIN,
+        ...(token ? { Cookie: cookieHeader([ACCESS_COOKIE_NAME, token]) } : {}),
+      },
+    })
+    expect((await initiate()).status).toBe(401)
+    const adminAccess = await signAccessToken({ id: USER_ID, role: 'ADMIN' }, JWT_SECRET)
+    expect((await initiate(adminAccess)).status).toBe(403)
+    const initiated = await initiate(superAccessToken)
+    expect(initiated.status).toBe(202)
+    expect(JSON.stringify(await initiated.json())).not.toMatch(/otp|authorization|token/i)
+    expect(recoveryEmails).toHaveLength(1)
+    expect(recoveryEmails[0]?.to).toBe('admin@example.com')
+    expect(repository.audit.events.at(-1)).toMatchObject({
+      actorAdminId: SUPER_USER_ID,
+      action: 'admin_account.password_recovery_initiated',
+      resourceType: 'ADMIN_USER',
+      resourceId: USER_ID,
+      metadata: { delivery: 'requested' },
+    })
   })
 
   it('enforces trusted origins, credentialed CORS, and preflight handling', async () => {
@@ -457,9 +822,12 @@ describe('administrative authentication', () => {
     }
     expect(document.paths['/api/v1/auth/login']?.post?.security).toBeUndefined()
     expect(document.paths['/api/v1/auth/me']?.get?.security).toEqual([{ accessCookie: [] }])
+    expect(document.paths['/api/v1/auth/me']?.patch?.security).toEqual([{ accessCookie: [] }])
     expect(document.paths['/api/v1/auth/refresh']?.post?.security).toEqual([{ refreshCookie: [] }])
     expect(document.paths['/api/v1/auth/logout']?.post?.security).toEqual([{}, { refreshCookie: [] }])
     expect(document.paths['/api/v1/auth/change-password']?.post?.security).toEqual([{ accessCookie: [] }])
+    expect(document.paths['/api/v1/auth/password-recovery/request']?.post?.security).toBeUndefined()
+    expect(document.paths['/api/v1/auth/admin/users/{id}/password-recovery']?.post?.security).toEqual([{ accessCookie: [] }])
 
     expect(response.status).toBe(200)
     for (const path of [
@@ -468,6 +836,10 @@ describe('administrative authentication', () => {
       '/api/v1/auth/logout',
       '/api/v1/auth/me',
       '/api/v1/auth/change-password',
+      '/api/v1/auth/password-recovery/request',
+      '/api/v1/auth/password-recovery/verify',
+      '/api/v1/auth/password-recovery/reset',
+      '/api/v1/auth/admin/users/{id}/password-recovery',
     ]) {
       expect(document.paths[path]).toBeDefined()
     }

@@ -164,6 +164,7 @@ model AdminUser {
   name               String
   email              String              @unique @db.Citext
   passwordHash       String
+  authVersion        Int                 @default(0)
   role               AdminRole
   isActive           Boolean             @default(true)
   createdAt          DateTime            @default(now()) @db.Timestamptz(3)
@@ -172,6 +173,42 @@ model AdminUser {
   emailNotifications EmailNotification[]
   auditLogs          AdminAuditLog[]
   hardDeleteChallenges HardDeleteChallenge[]
+  passwordRecoveryChallenges PasswordRecoveryChallenge[]
+}
+
+model PasswordRecoveryChallenge {
+  id                   String    @id @db.Uuid
+  adminUserId          String    @db.Uuid
+  email                String    @db.Citext
+  otpHash              String    @db.Char(64)
+  resetAuthorizationHash String? @db.Char(64)
+  expiresAt            DateTime  @db.Timestamptz(3)
+  verifiedAt           DateTime? @db.Timestamptz(3)
+  authorizationExpiresAt DateTime? @db.Timestamptz(3)
+  consumedAt           DateTime? @db.Timestamptz(3)
+  invalidatedAt        DateTime? @db.Timestamptz(3)
+  attemptCount         Int       @default(0)
+  lastAttemptAt        DateTime? @db.Timestamptz(3)
+  createdAt            DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(3)
+  adminUser            AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Restrict)
+
+  @@index([adminUserId, createdAt(sort: Desc), id])
+  @@index([email, createdAt(sort: Desc), id])
+  @@index([expiresAt])
+  @@index([authorizationExpiresAt])
+}
+
+model PasswordRecoveryRateLimit {
+  scope           String   @db.VarChar(64)
+  identifierHash  String   @db.Char(64)
+  windowStartedAt DateTime @db.Timestamptz(3)
+  count           Int
+  expiresAt       DateTime @db.Timestamptz(3)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(3)
+
+  @@id([scope, identifierHash, windowStartedAt])
+  @@index([expiresAt])
 }
 
 model AdminAuditLog {

@@ -1,6 +1,7 @@
 import type { AuthConfig } from '../config/env.js'
-import { getAuthConfig } from '../config/env.js'
+import { getAuthConfig, getEmailConfig } from '../config/env.js'
 import { PrismaAuthRepository } from './prisma-repository.js'
+import { createPasswordRecoveryEmailSender } from './recovery-email.js'
 import { AuthService } from './service.js'
 
 export interface AuthRuntime {
@@ -15,7 +16,12 @@ export const productionAuthRuntime: AuthRuntime = {
   getService: () => {
     if (!productionService) {
       const config = getAuthConfig()
-      productionService = new AuthService(new PrismaAuthRepository(), config.jwtSecret)
+      productionService = new AuthService(
+        new PrismaAuthRepository(),
+        config.jwtSecret,
+        config.passwordRecoverySecret,
+        createPasswordRecoveryEmailSender(getEmailConfig()),
+      )
     }
     return productionService
   },

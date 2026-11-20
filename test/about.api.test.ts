@@ -46,7 +46,7 @@ describe('About Us singleton API', () => {
     app = createApp({ authRuntime, aboutUsRuntime })
   })
 
-  const adminRequest = (path: string, method = 'GET', body?: unknown, token = adminToken) => app.request(path, {
+  const adminRequest = (path: string, method = 'GET', body?: unknown, token = superToken) => app.request(path, {
     method,
     headers: { Origin: ORIGIN, Cookie: `${ACCESS_COOKIE_NAME}=${token}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -60,9 +60,11 @@ describe('About Us singleton API', () => {
     expect((await app.request('/api/v1/about')).status).toBe(404)
   })
 
-  it('allows ADMIN and SUPER_ADMIN to create and edit a singleton, while anonymous access is rejected', async () => {
+  it('allows only SUPER_ADMIN to read and edit a singleton, while anonymous and ADMIN access are rejected', async () => {
     expect((await app.request('/api/v1/admin/about')).status).toBe(401)
-    const created = await adminRequest('/api/v1/admin/about', 'PATCH', { heroTitleAr: 'عنوان مسودة' })
+    expect((await adminRequest('/api/v1/admin/about', 'GET', undefined, adminToken)).status).toBe(403)
+    expect((await adminRequest('/api/v1/admin/about', 'PATCH', { heroTitleAr: 'مرفوض' }, adminToken)).status).toBe(403)
+    const created = await adminRequest('/api/v1/admin/about', 'PATCH', { heroTitleAr: 'عنوان مسودة' }, superToken)
     expect(created.status).toBe(200)
     expect((await adminRequest('/api/v1/admin/about', 'GET', undefined, superToken)).status).toBe(200)
     await expect(created.json()).resolves.toMatchObject({ data: { status: 'DRAFT', heroTitleAr: 'عنوان مسودة', introTitleAr: null } })

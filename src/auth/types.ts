@@ -5,15 +5,18 @@ export type AdminRecord = {
   name: string
   email: string
   passwordHash: string
+  authVersion: number
   role: AdminRole
   isActive: boolean
 }
 
-export type PublicAdmin = Omit<AdminRecord, 'passwordHash' | 'isActive'>
+export type PublicAdmin = Omit<AdminRecord, 'passwordHash' | 'isActive' | 'authVersion'>
 
 export type AccessClaims = {
   userId: string
   role: AdminRole
+  /** `null` identifies a signed legacy JWT issued before TA-92. */
+  authVersion: number | null
 }
 
 export type IssuedCredentials = {

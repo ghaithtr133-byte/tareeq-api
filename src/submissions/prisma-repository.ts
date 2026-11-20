@@ -1,5 +1,5 @@
 import { getPrisma } from '../database/client.js'
-import type { Prisma } from '../generated/prisma/client.js'
+import { Prisma } from '../generated/prisma/client.js'
 import type { AuditIntent } from '../audit/types.js'
 import type {
   AvailableScholarshipReference,
@@ -56,28 +56,22 @@ export class PrismaSubmissionRepository implements SubmissionRepository {
         LIMIT 100
       )
     `
-    const bucket = await prisma.publicSubmissionRateLimit.upsert({
-      where: {
-        scope_identifierHash_windowStartedAt: {
-          scope,
-          identifierHash,
-          windowStartedAt,
-        },
-      },
-      create: {
-        scope,
-        identifierHash,
-        windowStartedAt,
-        count: 1,
-        expiresAt,
-      },
-      update: {
-        count: { increment: 1 },
-        expiresAt,
-      },
-      select: { count: true },
-    })
-    return bucket.count <= limit
+    const buckets = await prisma.$queryRaw<Array<{ count: number | bigint }>>(
+      Prisma.sql`
+        INSERT INTO "PublicSubmissionRateLimit" (
+          "scope", "identifierHash", "windowStartedAt", "count", "expiresAt", "updatedAt"
+        ) VALUES (
+          ${scope}, ${identifierHash}, ${windowStartedAt}, 1, ${expiresAt}, NOW()
+        )
+        ON CONFLICT ("scope", "identifierHash", "windowStartedAt")
+        DO UPDATE SET
+          "count" = "PublicSubmissionRateLimit"."count" + 1,
+          "expiresAt" = EXCLUDED."expiresAt",
+          "updatedAt" = NOW()
+        RETURNING "count"
+      `,
+    )
+    return Number(buckets[0]?.count ?? limit + 1) <= limit
   }
 
   async findPublishedCountry(id: string) {
@@ -249,6 +243,34 @@ export class PrismaSubmissionRepository implements SubmissionRepository {
       })
       await transaction.adminAuditLog.create({ data: auditData(audit, id) })
       return asInquiry(record)
+    })
+  }
+
+  async deleteApplication(id: string, audit: AuditIntent) {
+    return getPrisma().$transaction(async (transaction) => {
+      const existing = await transaction.studentApplication.findUnique({ where: { id }, select: { id: true } })
+      if (!existing) return { outcome: 'NOT_FOUND' as const }
+      const notifications = await transaction.emailNotification.deleteMany({ where: { applicationId: id } })
+      await transaction.studentApplication.delete({ where: { id } })
+      await transaction.adminAuditLog.create({ data: auditData({
+        ...audit,
+        metadata: { ...audit.metadata, emailNotificationCount: notifications.count },
+      }, id) })
+      return { outcome: 'DELETED' as const, id, emailNotificationCount: notifications.count }
+    })
+  }
+
+  async deleteInquiry(id: string, audit: AuditIntent) {
+    return getPrisma().$transaction(async (transaction) => {
+      const existing = await transaction.generalInquiry.findUnique({ where: { id }, select: { id: true } })
+      if (!existing) return { outcome: 'NOT_FOUND' as const }
+      const notifications = await transaction.emailNotification.deleteMany({ where: { inquiryId: id } })
+      await transaction.generalInquiry.delete({ where: { id } })
+      await transaction.adminAuditLog.create({ data: auditData({
+        ...audit,
+        metadata: { ...audit.metadata, emailNotificationCount: notifications.count },
+      }, id) })
+      return { outcome: 'DELETED' as const, id, emailNotificationCount: notifications.count }
     })
   }
 }

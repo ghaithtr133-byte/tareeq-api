@@ -99,15 +99,15 @@ export const createAdminManagementRoutes = (
     method: 'patch',
     path: '/admin/users/{id}',
     tags: ['Admin — Account Management'],
-    summary: 'Change an administrator role or activation state',
-    description: 'SUPER_ADMIN only. Accepts exactly one change: `role` or `isActive`. Self-deactivation, self-demotion, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and existing access cookies become unusable on their next authenticated request.',
+    summary: 'Change an administrator identity, role, or activation state',
+    description: 'SUPER_ADMIN only. Accepts exactly one update group: `role`, `isActive`, or one/both of `name` and `email`. Identity updates normalize name whitespace and email casing, preserve credentials and sessions, and write a safe audit event without identity values. Self-deactivation, self-demotion, duplicate emails, and removal of the last active SUPER_ADMIN are rejected atomically. Deactivation revokes refresh sessions and invalidates existing access cookies.',
     security: [{ accessCookie: [] }],
     request: {
       params: adminAccountIdParamSchema,
       body: { required: true, content: {
         'application/json': {
           schema: adminAccountUpdateSchema,
-          example: { isActive: false },
+          example: { name: 'Updated Admin Name', email: 'updated.admin@example.invalid' },
         },
       } },
     },

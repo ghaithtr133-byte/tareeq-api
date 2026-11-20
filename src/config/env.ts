@@ -9,6 +9,7 @@ export const env = envSchema.parse(process.env)
 const authEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
+  PASSWORD_RECOVERY_SECRET: z.string().min(32),
   AUTH_ALLOWED_ORIGINS: z
     .string()
     .transform((value) => value.split(',').map((origin) => origin.trim()).filter(Boolean))
@@ -32,6 +33,7 @@ const authEnvSchema = z.object({
 export type AuthConfig = {
   databaseUrl: string
   jwtSecret: string
+  passwordRecoverySecret?: string
   allowedOrigins: string[]
   publicAllowedOrigins: string[]
   isProduction: boolean
@@ -63,6 +65,7 @@ export const getAuthConfig = (): AuthConfig => {
   cachedAuthConfig = {
     databaseUrl: parsed.DATABASE_URL,
     jwtSecret: parsed.JWT_SECRET,
+    passwordRecoverySecret: parsed.PASSWORD_RECOVERY_SECRET,
     allowedOrigins: parsed.AUTH_ALLOWED_ORIGINS,
     publicAllowedOrigins: parsed.PUBLIC_ALLOWED_ORIGINS,
     isProduction: parsed.NODE_ENV === 'production',

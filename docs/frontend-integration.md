@@ -51,11 +51,12 @@ console.log(response.data.success) // true
 
 ## Public Website vs Admin Dashboard
 
-- Public content `GET` and the approved application/inquiry `POST` requests require no authentication cookies. Browser requests are allowed from the configured `PUBLIC_ALLOWED_ORIGINS`; server-to-server requests are not governed by browser CORS.
+- Public content `GET` and the approved application/inquiry `POST` requests require no authentication cookies. Browser requests are allowed from the configured `PUBLIC_ALLOWED_ORIGINS`; the approved Public Website origins are `https://tareeq-academy.com`, `https://www.tareeq-academy.com`, and `http://localhost:3000`. Server-to-server requests are not governed by browser CORS.
 - Admin and Authentication requests use exact trusted origins. Set `withCredentials: true` so the browser stores and sends the API host's cookies.
 - Login credentials come from authorized users. The Frontend learns the authoritative role from `GET /auth/me`.
 - Access and refresh credentials remain in host-only HttpOnly cookies. Never copy them into `localStorage`, `sessionStorage`, JavaScript state, or Authorization headers.
 - CSRF origin checks remain active for state-changing Authentication and Admin requests. Public CORS does not grant Admin permission.
+- A successful password change clears local cookies and immediately invalidates every prior access and refresh credential for that account. Send the user to login; do not attempt a refresh or retry with the old cookies.
 - Public content CORS remains read-only. Applications and inquiries have a separate, narrowly scoped non-credentialed `POST`/`OPTIONS` policy; future public mutations still require individual security review.
 
 ### Local authenticated development
@@ -70,12 +71,13 @@ For real authenticated browser testing, use the shared-site production domains o
 | --- | ---: | ---: | ---: |
 | Health and published-content reads | Yes | Yes | Yes |
 | Start an Admin session | Authorized Admin credentials required | Yes | Yes |
-| Use `/auth/me`, refresh, logout, or change password | No | Yes | Yes |
+| Use `/auth/me`, update own profile name, refresh, logout, or change password | No | Yes | Yes |
 | List, create, update, publish, unpublish, archive, or reorder top-level content | No | Yes | Yes |
 | Submit an application or inquiry | Yes | Yes | Yes |
 | Review applications/inquiries and update workflow status or internal notes | No | Yes | Yes |
+| Permanently delete an application or inquiry with explicit confirmation | No | No | Yes |
 | Upload an image for an existing content workflow | No | Yes | Yes |
-| Read or edit the singleton About Us page | Public: published only | Yes | Yes |
+| Read or edit the singleton About Us page | Public: published only | No | Yes |
 | Read administrator audit logs | No | No | Yes |
 | List and change existing administrator roles/activation | No | No | Yes |
 | Read public site settings | Yes | Yes | Yes |
@@ -88,25 +90,25 @@ For real authenticated browser testing, use the shared-site production domains o
 | Manage University programs, admission requirements, gallery, Majors, Cities, and University type | No | Yes | Yes |
 | Create or delete administrator accounts | No | No endpoint | No endpoint |
 
-`ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, site-settings updates, and analytics reporting are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
+`ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, About Us editing, site-settings updates, analytics reporting, and permanent submission deletion are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
 
-The local generated OpenAPI contains exactly 136 operations:
+The local generated OpenAPI contains exactly 143 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
 | System | 1 | Public health check |
-| Authentication | 5 | Login plus cookie-session operations |
+| Authentication | 10 | Login, recovery, profile-name update, and cookie-session operations |
 | Public Content | 11 | List and slug detail for five resources plus Scholarship filter options |
 | Admin Content | 50 | Core content CRUD/reorder, guarded hard-delete preflight and SUPER_ADMIN confirmation, plus Country, Service, and Scholarship detail sections |
 | Public Submissions | 2 | Create an application or general inquiry |
-| Admin Submissions | 6 | List, UUID detail, and workflow update |
+| Admin Submissions | 8 | List, UUID detail, workflow update, and SUPER_ADMIN-confirmed deletion |
 | Admin Media | 1 | Authenticated Cloudinary image upload |
 | Admin Audit Logs | 1 | SUPER_ADMIN-only read access |
 | Admin Account Management | 2 | SUPER_ADMIN-only list and update |
 | Public Site Settings | 1 | Public read |
 | Admin Site Settings | 1 | SUPER_ADMIN-only update |
 | Public About Us | 1 | Published singleton read |
-| Admin About Us | 2 | ADMIN/SUPER_ADMIN singleton read and update |
+| Admin About Us | 2 | SUPER_ADMIN-only singleton read and update |
 | Public Marketing Images | 1 | HOME/DESTINATIONS Hero and CTA image read |
 | Admin Marketing Images | 2 | ADMIN/SUPER_ADMIN image read and update |
 | Public Statistics | 1 | Published-content statistics |
@@ -128,6 +130,7 @@ Resources are `countries`, `universities`, `scholarships`, `services`, and `arti
 GET  /health
 
 POST /auth/login                 GET  /auth/me
+PATCH /auth/me                   # authenticated: { "name": "Admin Name" }
 POST /auth/refresh               POST /auth/logout
 POST /auth/change-password
 
@@ -143,6 +146,8 @@ GET  /admin/applications         GET   /admin/inquiries
 GET  /admin/applications/{id}    GET   /admin/inquiries/{id}
 PATCH /admin/applications/{id}/status
 PATCH /admin/inquiries/{id}/status
+DELETE /admin/applications/{id}  # SUPER_ADMIN; JSON { "confirmation": "DELETE" }
+DELETE /admin/inquiries/{id}     # SUPER_ADMIN; JSON { "confirmation": "DELETE" }
 
 POST /admin/uploads/images
 GET  /admin/audit-logs
@@ -177,7 +182,7 @@ All paths above are relative to `https://api.tareeq-academy.com/api/v1`. Publica
 
 Authentication endpoints are implemented even when an anonymous request correctly returns `401`. For example, `GET /auth/me` requires a valid access cookie.
 
-Admin creation/deletion, password recovery, image deletion, a standalone media library, public analytics reporting, and student accounts are not implemented. Audit records have no update or deletion endpoint.
+Admin creation/deletion, image deletion, a standalone media library, public analytics reporting, and student accounts are not implemented. Audit records have no update or deletion endpoint.
 
 ## Practical Requests
 
@@ -222,7 +227,7 @@ The Public Website reads `GET /about` after the reviewed About Us migration and 
 const about = await publicApi.get('/about')
 ```
 
-ADMIN and SUPER_ADMIN use the singleton Admin routes. `GET /admin/about` returns `404 CONTENT_NOT_FOUND` before the first save. `PATCH /admin/about` creates on first use and otherwise merges only supplied fields; do not send placeholders for fields that should remain unchanged. A PUBLISHED update requires Arabic `heroTitleAr`, `heroSubtitleAr`, `introTitleAr`, and `introBodyAr` in the fully merged record. Drafts may be incomplete.
+Only SUPER_ADMIN uses the singleton Admin routes. `GET /admin/about` returns `404 CONTENT_NOT_FOUND` before the first save. `PATCH /admin/about` creates on first use and otherwise merges only supplied fields; do not send placeholders for fields that should remain unchanged. A PUBLISHED update requires Arabic `heroTitleAr`, `heroSubtitleAr`, `introTitleAr`, and `introBodyAr` in the fully merged record. Drafts may be incomplete.
 
 ```ts
 await adminApi.patch('/admin/about', {
@@ -247,6 +252,8 @@ await adminApi.post('/auth/login', { email, password })
 
 const me = await adminApi.get('/auth/me')
 console.log(me.data.data.user.role) // ADMIN or SUPER_ADMIN
+
+await adminApi.patch('/auth/me', { name: 'Admin Name' })
 
 await adminApi.post('/auth/refresh')
 ```
@@ -417,6 +424,20 @@ await adminApi.patch(`/admin/applications/${id}/status`, {
   internalNote: 'تمت مراجعة الطلب.',
 })
 ```
+
+Only a `SUPER_ADMIN` may permanently delete a submission. After the Dashboard's explicit destructive-action dialog is confirmed, send the exact JSON body below through the existing authenticated `adminApi` client (cookies and trusted `Origin` remain required), then refresh the affected list:
+
+```ts
+await adminApi.delete(`/admin/applications/${id}`, {
+  data: { confirmation: 'DELETE' },
+})
+
+await adminApi.delete(`/admin/inquiries/${id}`, {
+  data: { confirmation: 'DELETE' },
+})
+```
+
+Both operations return `{ success: true, data: { id } }`. `400` means the UUID or literal confirmation is invalid, `403` means the active role is not `SUPER_ADMIN`, and `404` means the record no longer exists. The server atomically deletes only the selected submission and its direct `EmailNotification` outbox records; it never deletes the related Scholarship/Country/University, unrelated submissions, or audit history. Do not offer an optimistic UI removal before the `200` response.
 
 The same list/detail/status pattern exists under `/admin/inquiries`. Allowed workflow statuses are `NEW`, `IN_REVIEW`, `RESOLVED`, and `CLOSED`. Internal notes are private Admin fields.
 
@@ -698,11 +719,41 @@ await adminApi.patch(`/admin/users/${targetAdminId}`, {
 await adminApi.patch(`/admin/users/${targetAdminId}`, {
   role: 'SUPER_ADMIN',
 })
+
+await adminApi.patch(`/admin/users/${targetAdminId}`, {
+  name: 'Updated Admin Name',
+  email: 'updated.admin@example.invalid',
+})
 ```
 
-Send exactly one of `isActive` or `role` per update. The response exposes only `id`, `name`, `email`, `role`, and `isActive`. Never expect password hashes, session records, refresh credentials, or token material.
+Send exactly one update group per request: `isActive`, `role`, or one/both of `name` and `email`. Never combine identity fields with role or activation fields. Name whitespace is normalized; email is trimmed/lowercased and must be unique. `409 ADMIN_EMAIL_ALREADY_EXISTS` means another account already owns the email. The response exposes only `id`, `name`, `email`, `role`, and `isActive`. Never expect password hashes, session records, refresh credentials, or token material.
 
-Self-deactivation and self-demotion return `409`. The Backend also preserves at least one active SUPER_ADMIN under concurrent requests. Deactivation revokes refresh sessions, and existing access cookies stop authorizing requests because each protected request checks current account state. A role change also takes effect without waiting for the access JWT to expire.
+Self-deactivation and self-demotion return `409`. The Backend also preserves at least one active SUPER_ADMIN under concurrent requests. Deactivation revokes refresh sessions and advances the account security version, so access cookies issued before deactivation remain invalid even after a later reactivation. A role change also takes effect without waiting for the access JWT to expire. An identity-only email change does not revoke sessions because cookies identify the immutable account UUID; the new email is used at the next login and invalidates outstanding recovery challenges. Do not offer account deletion UI.
+
+## Password Recovery
+
+Use the three unauthenticated Auth operations in sequence. All request bodies require the approved Admin origin and `Content-Type: application/json`; do not put OTPs or reset authorizations in URLs, analytics, logs, or browser storage.
+
+```ts
+const requested = await adminApi.post('/auth/password-recovery/request', { email })
+// Always show the same success message. Do not infer whether the account exists.
+const { challengeId } = requested.data.data
+
+const verified = await adminApi.post('/auth/password-recovery/verify', {
+  challengeId,
+  otp: sixDigitCode,
+})
+
+await adminApi.post('/auth/password-recovery/reset', {
+  challengeId,
+  resetAuthorization: verified.data.data.resetAuthorization,
+  newPassword,
+})
+```
+
+The request response is always `202` with the same generic message and an opaque UUID `challengeId`. It is returned for every valid request—even if the address is unknown, inactive, cooldown-limited, or rate-limited—so its presence and format do not reveal account existence. Keep `challengeId` and `resetAuthorization` only in short-lived component memory, clear them on failure/navigation, and send the user to login after reset. OTPs expire after 10 minutes, allow five verification attempts, and the reset authorization is single-use for 10 minutes. A successful reset invalidates all prior access/refresh sessions and outstanding recovery challenges. Browser clients must not attempt to supply a client-IP header; Vercel determines the IP rate-limit bucket at the trusted platform boundary.
+
+SUPER_ADMIN may request recovery delivery for another active account with `POST /auth/admin/users/{id}/password-recovery`. Show only the same generic acknowledgement and refresh the audit view if permitted; never render or request an OTP, reset authorization, temporary password, or target email override. ADMIN must not see this control.
 
 ## Public Site Settings
 
@@ -895,7 +946,7 @@ Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 136 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 143 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

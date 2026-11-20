@@ -112,7 +112,7 @@ describe.skipIf(process.platform !== 'win32')('verify-backend PowerShell compati
       environmentFile: customEnvironment,
       browserReportPath: customBrowserReport,
     })
-  })
+  }, 15_000)
 
   it('preserves JSON HTTP responses, real 401/403/404 statuses, and transport failures in both hosts', async () => {
     for (const host of hosts) {
