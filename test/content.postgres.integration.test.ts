@@ -11,6 +11,10 @@ import { ContentService } from '../src/content/service.js'
 import type { ContentResource } from '../src/content/types.js'
 
 const shouldRun = process.env.RUN_CONTENT_DATABASE_INTEGRATION === '1'
+// These two scenarios deliberately perform a broad relationship graph and a
+// complete-set reorder against remote PostgreSQL. Keep the allowance local to
+// the integration test; production transaction limits remain unchanged.
+const remoteContentScenarioTimeoutMs = 60_000
 describe.runIf(shouldRun)('content PostgreSQL integration', () => {
   const repository = new PrismaContentRepository()
   const service = new ContentService(repository)
@@ -38,7 +42,7 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
         role: 'ADMIN',
       },
     })
-  }, 30_000)
+  }, remoteContentScenarioTimeoutMs)
 
   afterAll(async () => {
     const prisma = getPrisma()
@@ -67,7 +71,7 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
     expect(remaining).toEqual([0, 0, 0, 0, 0])
     await prisma.adminUser.delete({ where: { id: actorAdminId } })
     await disconnectPrisma()
-  }, 30_000)
+  }, remoteContentScenarioTimeoutMs)
 
   it('persists relationships, enforces unique slugs, filters publication state, and updates records', async () => {
     const country = track('countries', await service.create('countries', {
@@ -89,11 +93,29 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
       titleAr: 'خدمة اختبار التكامل', slug: slug('service'), summaryAr: 'ملخص',
       descriptionAr: 'وصف', status: 'DRAFT', featured: false,
     }, actorAdminId))
-    track('articles', await service.create('articles', {
+    const publishedService = track('services', await service.create('services', {
+      titleAr: 'خدمة منشورة لاختبار التكامل', slug: slug('published-service'), summaryAr: 'ملخص',
+      descriptionAr: 'وصف', status: 'PUBLISHED', featured: false,
+    }, actorAdminId))
+    const article = track('articles', await service.create('articles', {
       titleAr: 'مقال اختبار التكامل', slug: slug('article'), summaryAr: 'ملخص',
       bodyAr: [{ type: 'paragraph', text: 'نص' }], countryId: country.id,
       universityId: university.id, scholarshipId: scholarship.id, status: 'PUBLISHED', featured: true,
     }, actorAdminId))
+
+    // The route-level schema test proves omitted status stays absent. These
+    // real PostgreSQL writes prove the resulting partial update preserves the
+    // persisted publication state and first publication time for every model.
+    for (const [resource, id, data, publishedAt] of [
+      ['countries', country.id, { imageUrl: 'https://example.edu/updated-country.jpg' }, country.publishedAt],
+      ['universities', university.id, { imageUrl: 'https://example.edu/updated-university.jpg' }, university.publishedAt],
+      ['scholarships', scholarship.id, { imageUrl: 'https://example.edu/updated-scholarship.jpg' }, scholarship.publishedAt],
+      ['services', publishedService.id, { imageUrl: 'https://example.edu/updated-service.jpg' }, publishedService.publishedAt],
+      ['articles', article.id, { coverImageUrl: 'https://example.edu/updated-article.jpg' }, article.publishedAt],
+    ] as const) {
+      const updated = await service.update(resource, id, data, actorAdminId)
+      expect(updated).toMatchObject({ status: 'PUBLISHED', publishedAt })
+    }
 
     await expect(service.create('countries', {
       nameAr: 'تكرار', slug: country.slug, introductionAr: 'مقدمة', detailsAr: 'تفاصيل',
@@ -119,7 +141,7 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
     expect(updated.status).toBe('PUBLISHED')
     expect(updated.publishedAt).toBeInstanceOf(Date)
     expect(await repository.findBySlug('services', draftService.slug, true)).not.toBeNull()
-  }, 30_000)
+  }, remoteContentScenarioTimeoutMs)
 
   it('rejects real foreign-key and cross-country relationship violations', async () => {
     await expect(repository.create('universities', {
@@ -234,5 +256,5 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
     expect(incomplete).toEqual({ outcome: 'ORDER_SET_MISMATCH' })
     const after = await getPrisma().service.findMany({ where: { id: { in: [legacy.id, current.id] } }, orderBy: { id: 'asc' } })
     expect(after.map(({ manualOrder }) => manualOrder)).toEqual(before.map((item) => item.id === current.id ? 0 : item.id === legacy.id ? 1 : item.manualOrder))
-  }, 30_000)
+  }, remoteContentScenarioTimeoutMs)
 })

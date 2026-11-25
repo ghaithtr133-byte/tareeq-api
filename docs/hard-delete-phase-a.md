@@ -40,7 +40,7 @@ Hard deletion never calls Cloudinary, Resend, a scheduler, or any external provi
 
 ## Schema safeguards and future policy
 
-The pending migrations add `HardDeleteChallenge` and change Country Study Guide, Service Detail, Scholarship Detail, University Program Language, University Program Tuition, and Article–Scholarship foreign keys to `RESTRICT`. This removes hidden database cascades; Phase B explicitly deletes each approved child in FK-safe order.
+The versioned migration adds `HardDeleteChallenge` and changes Country Study Guide, Service Detail, Scholarship Detail, University Program Language, University Program Tuition, and Article–Scholarship foreign keys to `RESTRICT`. On a target where it remains unapplied, it must be reviewed before release. This removes hidden database cascades; Phase B explicitly deletes each approved child in FK-safe order.
 
 Future expansion still requires Project Leadership approval for:
 

@@ -82,7 +82,7 @@ npm start                      # Run compiled local server
 npm test                       # Safe default Vitest suite
 npm run test:api               # Isolated health/auth/content/submission/media/audit/settings/analytics/FAQ/directory regression
 npm run postman:generate       # Regenerate Postman artifacts from OpenAPI
-npm run postman:check          # Verify all 87 Collection operations
+npm run postman:check          # Verify all 143 Collection operations
 npm run verify:production:readonly # Timestamped safe production/API/Neon readiness report
 npm run verify:production:live # Non-mutating controlled-live-test plan and safety-gate report
 npm run notifications:dispatch # Safely retry pending email outbox records
@@ -113,11 +113,11 @@ Leadership approved one Neon PostgreSQL database for development and eventual pr
 - Default tests and the read-only verifier do not create content or accounts.
 - Do not access Neon or Vercel management consoles through agents.
 
-The gated suites use `RUN_DATABASE_INTEGRATION=1` and `RUN_CONTENT_DATABASE_INTEGRATION=1`; do not enable them without current authorization.
+The gated suites are enabled only by `npm run test:db:integration` after the disposable-target marker preflight. It currently enables seven suite flags; do not set them manually or run PostgreSQL tests without current authorization.
 
 ## Authentication and CORS
 
-Authentication uses host-only HttpOnly cookies: a signed 15-minute access JWT and a rotating seven-day refresh credential. Production cookies are `Secure` and use `SameSite=Lax`. Tokens are never returned in JSON and must not be stored in browser storage.
+Authentication uses host-only HttpOnly cookies: a signed 15-minute access JWT and a rotating seven-day refresh credential. Production cookies are `Secure` and use `SameSite=Lax`. Tokens are never returned in JSON and must not be stored in browser storage. Public submission rate limiting uses Vercel-overwritten forwarded-IP headers only in Vercel Functions; other runtimes use a conservative shared bucket rather than trusting browser-supplied forwarding headers.
 
 State-changing Authentication/Admin requests require an exact trusted `Origin`. Both `ADMIN` and `SUPER_ADMIN` can manage the five content resources, their FAQs, and review applications/inquiries. Only `SUPER_ADMIN` can read the administrator audit trail, manage existing Admin identity/role/activation, and update public site settings. Protected requests verify that the account remains active and use its current database role, so deactivation and role changes take effect for already-issued access cookies. Public application and inquiry submissions use a separate non-credentialed CORS policy, explicit consent, a honeypot, bounded inputs, and a PostgreSQL-backed rate limit.
 
@@ -127,7 +127,7 @@ State-changing Authentication/Admin requests require an exact trusted `Origin`. 
 
 ## About Us page
 
-`GET /api/v1/about` returns the singleton page only when it is PUBLISHED; a missing, DRAFT, or ARCHIVED singleton responds with `404 CONTENT_NOT_FOUND`. Its public response includes `publishedAt` and `updatedAt`, while the Admin-only `status` and `createdAt` fields remain private. Only SUPER_ADMIN uses `GET` and `PATCH /api/v1/admin/about`. The first PATCH creates the singleton and later PATCH requests merge only supplied fields. Publishing requires non-empty Arabic Hero title/subtitle and Introduction title/body; the original `publishedAt` is retained through future edits and unpublishing. Updates create an atomic `ABOUT_US` audit event. Hero and Introduction image URLs may be supplied from the existing `resource=about` upload flow; no image is required to publish. These locally implemented endpoints require owner review, migration deployment, and Backend deployment before Frontend production use.
+`GET /api/v1/about` returns the singleton page only when it is PUBLISHED; a missing, DRAFT, or ARCHIVED singleton responds with `404 CONTENT_NOT_FOUND`. Its public response includes `publishedAt` and `updatedAt`, while the Admin-only `status` and `createdAt` fields remain private. Only SUPER_ADMIN uses `GET` and `PATCH /api/v1/admin/about`. The first PATCH creates the singleton and later PATCH requests merge only supplied fields. Publishing requires non-empty Arabic Hero title/subtitle and Introduction title/body; the original `publishedAt` is retained through future edits and unpublishing. Updates create an atomic `ABOUT_US` audit event. Hero and Introduction image URLs may be supplied from the existing `resource=about` upload flow; no image is required to publish. Confirm migration status and deployed OpenAPI before enabling the feature in a production Frontend.
 
 ## Directory presentation and marketing images
 
@@ -159,7 +159,7 @@ Password recovery uses `POST /api/v1/auth/password-recovery/request`, `/verify`,
 
 `GET /api/v1/site-settings` publicly returns the allowlisted Academy name, contact email/phone, address, and Facebook, Instagram, LinkedIn, and YouTube links. Before initialization, all fields and `updatedAt` return `null`. `PATCH /api/v1/admin/site-settings` is restricted to `SUPER_ADMIN`, accepts only documented fields, validates contact values and HTTPS social domains, and uses `null` to clear a field. Arbitrary keys, environment variables, API keys, credentials, and infrastructure configuration are rejected.
 
-`SiteSettings` uses the fixed UUID `00000000-0000-4000-8000-000000000009`; the database check constraint and atomic upsert enforce a single row under concurrent updates. Settings updates and their safe `site_settings.updated` audit event commit together. The Task #9 migration `20261101000000_add_admin_management_site_settings` depends on the pending Task #8 audit migration and must remain after it in deployment order.
+`SiteSettings` uses the fixed UUID `00000000-0000-4000-8000-000000000009`; the database check constraint and atomic upsert enforce a single row under concurrent updates. Settings updates and their safe `site_settings.updated` audit event commit together. Migration `20261101000000_add_admin_management_site_settings` is ordered after the audit-log migration and must retain that order on any target where migrations remain unapplied.
 
 ## Visitor analytics and student journeys
 
@@ -169,7 +169,7 @@ The Public Website is responsible for applying its consent policy before emittin
 
 `GET /api/v1/admin/analytics/summary` and `GET /api/v1/admin/analytics/journeys` are restricted to SUPER_ADMIN. Summary reports use indexed, UTC, maximum-366-day ranges and include traffic totals, top pages, acquisition sources, CTA engagement, event-stage funnels, and daily/weekly/monthly trends. Browser-reported conversions are deduplicated by anonymous session and remain explicitly separate from server-verified `StudentApplication` and `GeneralInquiry` counts. Journey pages contain at most 100 allowlisted steps per session and no personal information.
 
-The additive migration `20261102000000_create_visitor_analytics` creates the analytics enums, constrained event table, and reporting indexes. It must follow the pending Task #7–#9 migrations. A practical production retention target is 13 months; cleanup should later be implemented as an owner-approved, bounded scheduled deletion using `occurredAt`, not as request-time work.
+The additive migration `20261102000000_create_visitor_analytics` creates the analytics enums, constrained event table, and reporting indexes. It is ordered after the preceding Task #7–#9 migrations. A practical production retention target is 13 months; cleanup should later be implemented as an owner-approved, bounded scheduled deletion using `occurredAt`, not as request-time work.
 
 ## Reusable FAQ management
 
@@ -177,7 +177,7 @@ The public API exposes published Homepage FAQs at `GET /api/v1/faqs?scope=GLOBAL
 
 `ADMIN` and `SUPER_ADMIN` use `GET`/`POST /api/v1/admin/faqs`, `PATCH`/`DELETE /api/v1/admin/faqs/{id}`, and `PATCH /api/v1/admin/faqs/order`. PATCH can atomically relink an FAQ by supplying both `scope` and `parentId`; old-group order is compacted and the FAQ appends to the new group. Arabic question/answer fields are required; English fields are optional but must be provided or cleared together. Only DRAFT and ARCHIVED FAQs can be deleted; PUBLISHED FAQs must be archived first. Reorder requests are atomic and must submit every non-archived UUID for exactly one parent.
 
-FAQ creates, edits, publication changes, archival, and changed order positions write safe `FAQ_ENTRY` audit events atomically with the mutation. Audit metadata contains identifiers, status transitions, changed field names, and order positions—not question/answer text. The additive migration `20261102010000_create_faq_entries` adds the enum, table, relationship/check constraints, indexes, and audit resource type. It must remain after the pending Task #10 migration and requires Project Owner review before deployment.
+FAQ creates, edits, publication changes, archival, and changed order positions write safe `FAQ_ENTRY` audit events atomically with the mutation. Audit metadata contains identifiers, status transitions, changed field names, and order positions—not question/answer text. The additive migration `20261102010000_create_faq_entries` adds the enum, table, relationship/check constraints, indexes, and audit resource type. It must remain after the Task #10 analytics migration in chronological deployment order.
 
 ## University programs and directory filters
 
@@ -207,7 +207,7 @@ Admin Article create and update requests accept an ordered `scholarshipIds` UUID
 
 `GET /api/v1/articles/{slug}` returns `relatedScholarships` in Admin-selected order. Only PUBLISHED Scholarships appear publicly; a published Scholarship whose effective application status is `CLOSED` remains visible and is marked accordingly. Each card contains `id`, `slug`, `titleAr`, nullable `imageUrl`, nullable Country summary, and `effectiveApplicationStatus`. Article list responses are unchanged.
 
-The additive migration `20261102140000_add_article_scholarships` creates the ordered join table without removing the legacy column. It safely backfills each existing non-null `Article.scholarshipId` at position zero with conflict protection and must be owner-reviewed and applied only after the preceding pending migrations.
+The additive migration `20261102140000_add_article_scholarships` creates the ordered join table without removing the legacy column. It safely backfills each existing non-null `Article.scholarshipId` at position zero with conflict protection and must be owner-reviewed and applied only after its preceding versioned migrations.
 
 Successful application and inquiry responses confirm database persistence, not email delivery. The same transaction stores notification intents for the student and currently active ADMIN/SUPER_ADMIN recipients. A best-effort dispatch is awaited after the commit; missing configuration, a terminated request, or provider failure leaves bounded, idempotent retry state in PostgreSQL. Retries use stable Resend idempotency keys, at most four attempts, short exponential delays, a two-minute claim lease, and a 23-hour retry window that stays inside Resend's documented 24-hour provider retention.
 

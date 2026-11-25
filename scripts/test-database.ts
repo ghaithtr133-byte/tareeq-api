@@ -48,10 +48,13 @@ if (command === 'migrate') {
   await run(resolve('node_modules/vitest/vitest.mjs'), [
     'run',
     '--no-file-parallelism',
+    '--maxWorkers', '1',
     '--testTimeout', '30000',
     '--hookTimeout', '30000',
     'test/auth.postgres.integration.test.ts',
+    'test/auth-recovery.postgres.integration.test.ts',
     'test/content.postgres.integration.test.ts',
+    'test/deletion.postgres.integration.test.ts',
     'test/email-notifications.postgres.integration.test.ts',
     'test/submissions.postgres.integration.test.ts',
     'test/university-directory.postgres.integration.test.ts',

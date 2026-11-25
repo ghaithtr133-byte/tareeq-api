@@ -135,10 +135,15 @@ const readJson = async (request: Request) => {
 }
 
 const clientIdentifier = (request: Request) => {
-  const forwarded = request.headers.get('x-forwarded-for')
-    ?.split(',')[0]
-    ?.trim()
-  return forwarded || request.headers.get('x-real-ip')?.trim() || 'unknown-client'
+  // Vercel replaces these headers before invoking a Function. In every other
+  // runtime they are browser-controlled input, so accepting them would let a
+  // visitor select a new rate-limit bucket for every submission.
+  if (process.env.VERCEL === '1') {
+    return request.headers.get('x-vercel-forwarded-for')?.trim()
+      || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || 'vercel-client-unavailable'
+  }
+  return 'untrusted-client'
 }
 
 const registerDocumentation = (routes: OpenAPIHono<AuthEnv>) => {

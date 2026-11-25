@@ -47,12 +47,16 @@ npm run test:db:migrate
 npm run test:db:integration
 ```
 
-`preflight` opens a read-only connection and verifies `current_database()` plus the database-resident marker. `migrate` and `integration` perform that same verification first, then force Prisma and all five suites to use `TEST_DATABASE_URL`. Do not invoke `prisma migrate deploy` or an integration suite directly for this workflow.
+`preflight` opens a read-only connection and verifies `current_database()` plus the database-resident marker. `migrate` and `integration` perform that same verification first, then force Prisma and all seven suites to use `TEST_DATABASE_URL`. Do not invoke `prisma migrate deploy` or an integration suite directly for this workflow.
 
-The test wrapper enables all five suite flags only after verification:
+The test wrapper enables all seven suite flags only after verification:
 
 - `RUN_DATABASE_INTEGRATION`
+- `RUN_AUTH_RECOVERY_DATABASE_INTEGRATION`
 - `RUN_CONTENT_DATABASE_INTEGRATION`
+- `RUN_DELETION_DATABASE_INTEGRATION`
 - `RUN_EMAIL_DATABASE_INTEGRATION`
 - `RUN_SUBMISSION_DATABASE_INTEGRATION`
 - `RUN_UNIVERSITY_DIRECTORY_DATABASE_INTEGRATION`
+
+The initial five suites previously passed 20/20 tests. The two added security/deletion suites add five tests, for an expected **25 tests across seven suites**. Those five additions are pending their first guarded disposable-target execution; a skipped local suite is not a passing database test.

@@ -9,7 +9,6 @@ import type {
   ContentRepository,
   ContentResource,
   ContentWriteData,
-  PublicationStatus,
   ScholarshipOption,
   ScholarshipOptionType,
 } from './types.js'
@@ -331,9 +330,19 @@ export class ContentService {
       )
     }
 
+    const enteringPublication = input.status === 'PUBLISHED' && current.status !== 'PUBLISHED'
+    const validatesPublishedScholarshipSource =
+      resource === 'scholarships' &&
+      Object.prototype.hasOwnProperty.call(input, 'officialSourceUrl')
     const next = { ...current, ...input } as ContentWriteData
     this.normalizeDates(next)
-    await this.validateWrite(resource, next, input.status === 'PUBLISHED' && current.status !== 'PUBLISHED', resource === 'scholarships' && (input.studyLevel !== undefined || input.fundingType !== undefined))
+    await this.validateWrite(
+      resource,
+      next,
+      enteringPublication,
+      resource === 'scholarships' && (input.studyLevel !== undefined || input.fundingType !== undefined),
+      validatesPublishedScholarshipSource,
+    )
     if (typeof input.slug === 'string' && input.slug !== current.slug) {
       await this.ensureUniqueSlug(resource, input.slug, id)
     }
@@ -411,15 +420,20 @@ export class ContentService {
     }
   }
 
-  private async validateWrite(resource: ContentResource, data: ContentWriteData, enteringPublication = false, validateScholarshipOptions = true) {
+  private async validateWrite(
+    resource: ContentResource,
+    data: ContentWriteData,
+    enteringPublication = false,
+    validateScholarshipOptions = true,
+    validatesPublishedScholarshipSource = false,
+  ) {
     if (resource === 'scholarships' && validateScholarshipOptions) {
       if (typeof data.studyLevel === 'string' && !await this.repository.activeScholarshipOptionExists('STUDY_LEVEL', data.studyLevel)) throw relationError('studyLevel', 'Select an active study-level option.')
       if (typeof data.fundingType === 'string' && !await this.repository.activeScholarshipOptionExists('FUNDING_TYPE', data.fundingType)) throw relationError('fundingType', 'Select an active funding-type option.')
     }
-    const status = data.status as PublicationStatus | undefined
     if (
       resource === 'scholarships' &&
-      status === 'PUBLISHED' &&
+      (enteringPublication || validatesPublishedScholarshipSource) &&
       !data.officialSourceUrl
     ) {
       throw new ApiError(

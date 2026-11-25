@@ -328,10 +328,10 @@ const registerDocumentation = (
     tags: [names.adminTag],
     summary: `Update ${names.article} ${names.singular}`,
     description: resource === 'articles'
-      ? 'ADMIN or SUPER_ADMIN only. Omitted scholarship association fields preserve links; scholarshipIds replaces them in order, [] clears them, and legacy scholarshipId alone maps to zero or one link. Supports publication transitions while preserving first publication time and published slugs.'
+      ? 'ADMIN or SUPER_ADMIN only. Every omitted field, including status, preserves its persisted value. Omitted scholarship association fields preserve links; scholarshipIds replaces them in order, [] clears them, and legacy scholarshipId alone maps to zero or one link. Supports explicit publication transitions while preserving first publication time and published slugs.'
       : resource === 'universities' || resource === 'scholarships'
-        ? 'ADMIN or SUPER_ADMIN only. Supports publication transitions; the first publication timestamp and any previously published slug are preserved. Moving a DRAFT or ARCHIVED record to PUBLISHED requires a non-empty Arabic summaryAr. Existing PUBLISHED legacy records without one remain editable until a later publication transition.'
-      : 'ADMIN or SUPER_ADMIN only. Supports publication transitions; the first publication timestamp and any previously published slug are preserved.',
+        ? 'ADMIN or SUPER_ADMIN only. Every omitted field, including status, preserves its persisted value. Supports explicit publication transitions; the first publication timestamp and any previously published slug are preserved. Moving a DRAFT or ARCHIVED record to PUBLISHED requires a non-empty Arabic summaryAr. Existing PUBLISHED legacy records without one remain editable until a later publication transition.'
+      : 'ADMIN or SUPER_ADMIN only. Every omitted field, including status, preserves its persisted value. Supports explicit publication transitions; the first publication timestamp and any previously published slug are preserved.',
     security: [{ accessCookie: [] }],
     request: {
       params: uuidParamSchema,

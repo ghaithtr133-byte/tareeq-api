@@ -260,6 +260,15 @@ describe('student applications and inquiries APIs', () => {
     })
   })
 
+  it('does not trust browser-supplied forwarded-IP headers outside Vercel', async () => {
+    const responses = []
+    for (let index = 0; index < 6; index += 1) {
+      responses.push(await submit('/api/v1/inquiries', inquiryInput(), `198.51.100.${index}`))
+    }
+    expect(responses.map(({ status }) => status)).toEqual([201, 201, 201, 201, 201, 429])
+    expect(repository.inquiries).toHaveLength(5)
+  })
+
   it('allows the approved public origins to preflight inquiry POST without credentials or redirects', async () => {
     for (const origin of [APEX_PUBLIC_ORIGIN, WWW_PUBLIC_ORIGIN, LOCAL_PUBLIC_ORIGIN]) {
       const preflight = await app.request('/api/v1/inquiries', {

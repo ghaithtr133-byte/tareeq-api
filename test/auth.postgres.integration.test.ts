@@ -385,9 +385,15 @@ describe.runIf(RUN_DATABASE_INTEGRATION)('PostgreSQL administrative authenticati
       '/api/v1/auth/login',
       jsonRequest({ email: user.email, password: CURRENT_PASSWORD }),
     )
+    const secondLogin = await app.request(
+      '/api/v1/auth/login',
+      jsonRequest({ email: user.email, password: CURRENT_PASSWORD }),
+    )
     const cookies = getSetCookies(login)
     const accessToken = getCookieValue(cookies, ACCESS_COOKIE_NAME)!
     const refreshToken = getCookieValue(cookies, REFRESH_COOKIE_NAME)!
+    const secondAccessToken = getCookieValue(getSetCookies(secondLogin), ACCESS_COOKIE_NAME)!
+    const secondRefreshToken = getCookieValue(getSetCookies(secondLogin), REFRESH_COOKIE_NAME)!
     const changed = await app.request(
       '/api/v1/auth/change-password',
       jsonRequest(
@@ -408,19 +414,22 @@ describe.runIf(RUN_DATABASE_INTEGRATION)('PostgreSQL administrative authenticati
       }),
     ).toBe(0)
 
-    const oldAccess = await app.request('/api/v1/auth/me', {
-      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
-    })
-    expect(oldAccess.status).toBe(401)
-
-    const oldRefresh = await app.request('/api/v1/auth/refresh', {
-      method: 'POST',
-      headers: {
-        Origin: ORIGIN,
-        Cookie: cookieHeader([REFRESH_COOKIE_NAME, refreshToken]),
-      },
-    })
-    expect(oldRefresh.status).toBe(401)
+    for (const oldAccessToken of [accessToken, secondAccessToken]) {
+      const oldAccess = await app.request('/api/v1/auth/me', {
+        headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, oldAccessToken]) },
+      })
+      expect(oldAccess.status).toBe(401)
+    }
+    for (const oldRefreshToken of [refreshToken, secondRefreshToken]) {
+      const oldRefresh = await app.request('/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: {
+          Origin: ORIGIN,
+          Cookie: cookieHeader([REFRESH_COOKIE_NAME, oldRefreshToken]),
+        },
+      })
+      expect(oldRefresh.status).toBe(401)
+    }
     const oldLogin = await app.request(
       '/api/v1/auth/login',
       jsonRequest({ email: user.email, password: CURRENT_PASSWORD }),
@@ -431,6 +440,46 @@ describe.runIf(RUN_DATABASE_INTEGRATION)('PostgreSQL administrative authenticati
       jsonRequest({ email: user.email, password: NEW_PASSWORD }),
     )
     expect(freshLogin.status).toBe(200)
+  })
+
+  it('leaves no usable refresh session when a refresh races with a password change', async () => {
+    const user = await createAdmin('password-change-refresh-race')
+    const login = await app.request(
+      '/api/v1/auth/login',
+      jsonRequest({ email: user.email, password: CURRENT_PASSWORD }),
+    )
+    const accessToken = getCookieValue(getSetCookies(login), ACCESS_COOKIE_NAME)!
+    const refreshToken = getCookieValue(getSetCookies(login), REFRESH_COOKIE_NAME)!
+    const change = app.request(
+      '/api/v1/auth/change-password',
+      jsonRequest(
+        { currentPassword: CURRENT_PASSWORD, newPassword: NEW_PASSWORD },
+        cookieHeader([ACCESS_COOKIE_NAME, accessToken]),
+      ),
+    )
+    const refresh = app.request('/api/v1/auth/refresh', {
+      method: 'POST',
+      headers: { Origin: ORIGIN, Cookie: cookieHeader([REFRESH_COOKIE_NAME, refreshToken]) },
+    })
+
+    const [changed, refreshed] = await Promise.all([change, refresh])
+    expect(changed.status).toBe(200)
+    if (refreshed.status === 200) {
+      const replacement = getCookieValue(getSetCookies(refreshed), REFRESH_COOKIE_NAME)!
+      const replayAfterChange = await app.request('/api/v1/auth/refresh', {
+        method: 'POST',
+        headers: { Origin: ORIGIN, Cookie: cookieHeader([REFRESH_COOKIE_NAME, replacement]) },
+      })
+      expect(replayAfterChange.status).toBe(401)
+    } else {
+      expect(refreshed.status).toBe(401)
+    }
+    await expect(getPrisma().refreshSession.count({
+      where: { userId: user.id, revokedAt: null },
+    })).resolves.toBe(0)
+    expect((await app.request('/api/v1/auth/me', {
+      headers: { Cookie: cookieHeader([ACCESS_COOKIE_NAME, accessToken]) },
+    })).status).toBe(401)
   })
 
   it('enforces ADMIN and SUPER_ADMIN authorization with standardized 401 and 403 errors', async () => {

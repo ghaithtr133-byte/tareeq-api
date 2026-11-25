@@ -205,8 +205,17 @@ export const articleCreateSchema = z
   .superRefine(articleAssociationRules)
   .openapi('ArticleCreateRequest')
 
-const nonEmptyPatch = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) =>
-  schema.partial().refine((value) => Object.keys(value).length > 0, {
+// PATCH must not inherit create-time defaults. In particular, a missing status
+// must stay missing so the service can preserve the persisted publication state.
+const commonPatchOverrides = {
+  featured: z.boolean().optional(),
+  status: publicationStatusSchema.optional(),
+}
+
+const nonEmptyPatch = <T extends z.ZodRawShape>(
+  schema: z.ZodObject<T>,
+  overrides: z.ZodRawShape = commonPatchOverrides,
+) => schema.partial().extend(overrides).refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field must be provided.',
   })
 
@@ -221,9 +230,12 @@ export const contentCreateSchemas = {
 export const contentPatchSchemas = {
   countries: nonEmptyPatch(countryCreateSchema).openapi('CountryPatchRequest'),
   universities: nonEmptyPatch(universityCreateSchema).openapi('UniversityPatchRequest'),
-  scholarships: nonEmptyPatch(scholarshipCreateSchema).openapi('ScholarshipPatchRequest'),
+  scholarships: nonEmptyPatch(scholarshipCreateSchema, {
+    ...commonPatchOverrides,
+    applicationStatus: applicationStatusSchema.optional(),
+  }).openapi('ScholarshipPatchRequest'),
   services: nonEmptyPatch(serviceCreateSchema).openapi('ServicePatchRequest'),
-  articles: z.object(articleFields).partial().strict()
+  articles: z.object(articleFields).partial().extend(commonPatchOverrides).strict()
     .refine((value) => Object.keys(value).length > 0, { message: 'At least one field must be provided.' })
     .superRefine(articleAssociationRules)
     .openapi('ArticlePatchRequest'),

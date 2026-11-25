@@ -148,12 +148,17 @@ const handleWriteError = (error: unknown): never => {
 
 type DatabaseClient = ReturnType<typeof getPrisma> | Prisma.TransactionClient
 type CountAndSamples = { count: number; sampleIds: string[] }
+const hardDeleteTransactionOptions = { maxWait: 15_000, timeout: 20_000 } as const
 
 const countAndSamples = async (
   count: Promise<number>,
-  samples: Promise<Array<{ id: string }>>,
+  samples: Promise<Array<{ id: string }>> | (() => Promise<Array<{ id: string }>>),
 ): Promise<CountAndSamples> => {
-  const [total, records] = await Promise.all([count, samples])
+  // Prisma query objects are lazy. Defer the sample query until a relationship
+  // exists, avoiding an otherwise redundant query for every empty dependency.
+  const total = await count
+  if (total === 0) return { count: 0, sampleIds: [] }
+  const records = await (typeof samples === 'function' ? samples() : samples)
   return { count: total, sampleIds: records.map(({ id }) => id) }
 }
 
@@ -186,7 +191,7 @@ export class PrismaContentRepository implements ContentRepository {
         expiresAt,
       } })
       return { outcome: 'ISSUED', impact, challenge: { id: challenge.id, expiresAt: challenge.expiresAt } }
-    })
+    }, hardDeleteTransactionOptions)
   }
 
   async confirmHardDelete(
@@ -232,7 +237,7 @@ export class PrismaContentRepository implements ContentRepository {
           },
         } })
         return { outcome: 'DELETED' as const, id, impact }
-      })
+      }, hardDeleteTransactionOptions)
     } catch (error) {
       const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined
       if (code === 'P2003') {
@@ -266,7 +271,7 @@ export class PrismaContentRepository implements ContentRepository {
           metadata: { deletionMode: 'SAFE_INITIAL', previousStatus: impact.target.status },
         } })
         return { outcome: 'DELETED' as const, id, impact }
-      })
+      }, hardDeleteTransactionOptions)
     } catch (error) {
       const code = typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : undefined
       if (code === 'P2003') {
@@ -280,13 +285,15 @@ export class PrismaContentRepository implements ContentRepository {
   }
 
   private async lockTarget(transaction: Prisma.TransactionClient, resource: ContentResource, id: string) {
-    const locked = await ({
-      countries: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Country" WHERE "id" = ${id} FOR UPDATE`,
-      universities: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "University" WHERE "id" = ${id} FOR UPDATE`,
-      scholarships: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Scholarship" WHERE "id" = ${id} FOR UPDATE`,
-      services: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Service" WHERE "id" = ${id} FOR UPDATE`,
-      articles: () => transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Article" WHERE "id" = ${id} FOR UPDATE`,
-    })[resource]()
+    const locked = await (async () => {
+      switch (resource) {
+        case 'countries': return transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Country" WHERE "id" = ${id} FOR UPDATE`
+        case 'universities': return transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "University" WHERE "id" = ${id} FOR UPDATE`
+        case 'scholarships': return transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Scholarship" WHERE "id" = ${id} FOR UPDATE`
+        case 'services': return transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Service" WHERE "id" = ${id} FOR UPDATE`
+        case 'articles': return transaction.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "Article" WHERE "id" = ${id} FOR UPDATE`
+      }
+    })()
     return locked.length > 0
   }
 
@@ -340,7 +347,7 @@ export class PrismaContentRepository implements ContentRepository {
             countAndSamples(database.faqEntry.count({ where: { countryId: id } }), database.faqEntry.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.countryStudyGuideSection.count({ where: { countryId: id } }), database.countryStudyGuideSection.findMany({ where: { countryId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.universityProgram.count({ where: { university: { countryId: id } } }), database.universityProgram.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
-            countAndSamples(database.universityProgramLanguage.count({ where: { program: { university: { countryId: id } } } }), database.universityProgramLanguage.findMany({ where: { program: { university: { countryId: id } } }, select: { programId: true }, take: 5 }).then((rows) => rows.map(({ programId }) => ({ id: programId })))),
+            countAndSamples(database.universityProgramLanguage.count({ where: { program: { university: { countryId: id } } } }), () => database.universityProgramLanguage.findMany({ where: { program: { university: { countryId: id } } }, select: { programId: true }, take: 5 }).then((rows) => rows.map(({ programId }) => ({ id: programId })))),
             countAndSamples(database.universityProgramTuition.count({ where: { program: { university: { countryId: id } } } }), database.universityProgramTuition.findMany({ where: { program: { university: { countryId: id } } }, select: { id: true }, take: 5 })),
             countAndSamples(database.universityAdmissionRequirement.count({ where: { university: { countryId: id } } }), database.universityAdmissionRequirement.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
             countAndSamples(database.universityGalleryImage.count({ where: { university: { countryId: id } } }), database.universityGalleryImage.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
@@ -349,7 +356,7 @@ export class PrismaContentRepository implements ContentRepository {
             countAndSamples(database.studentApplication.count({ where: { university: { countryId: id } } }), database.studentApplication.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
             countAndSamples(database.faqEntry.count({ where: { university: { countryId: id } } }), database.faqEntry.findMany({ where: { university: { countryId: id } }, select: { id: true }, take: 5 })),
             countAndSamples(database.scholarshipDetailItem.count({ where: { scholarship: { countryId: id } } }), database.scholarshipDetailItem.findMany({ where: { scholarship: { countryId: id } }, select: { id: true }, take: 5 })),
-            countAndSamples(database.articleScholarship.count({ where: { scholarship: { countryId: id } } }), database.articleScholarship.findMany({ where: { scholarship: { countryId: id } }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
+            countAndSamples(database.articleScholarship.count({ where: { scholarship: { countryId: id } } }), () => database.articleScholarship.findMany({ where: { scholarship: { countryId: id } }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
             countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'COUNTRY', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'COUNTRY', resourceId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
           ])
@@ -381,7 +388,7 @@ export class PrismaContentRepository implements ContentRepository {
           if (!target) return null
           const [programs, languages, tuitionFees, admissions, galleries, scholarships, articles, applications, faqs, scholarshipDetails, scholarshipLinks, audits, analytics] = await Promise.all([
             countAndSamples(database.universityProgram.count({ where: { universityId: id } }), database.universityProgram.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
-            countAndSamples(database.universityProgramLanguage.count({ where: { program: { universityId: id } } }), database.universityProgramLanguage.findMany({ where: { program: { universityId: id } }, select: { programId: true }, take: 5 }).then((rows) => rows.map(({ programId }) => ({ id: programId })))),
+            countAndSamples(database.universityProgramLanguage.count({ where: { program: { universityId: id } } }), () => database.universityProgramLanguage.findMany({ where: { program: { universityId: id } }, select: { programId: true }, take: 5 }).then((rows) => rows.map(({ programId }) => ({ id: programId })))),
             countAndSamples(database.universityProgramTuition.count({ where: { program: { universityId: id } } }), database.universityProgramTuition.findMany({ where: { program: { universityId: id } }, select: { id: true }, take: 5 })),
             countAndSamples(database.universityAdmissionRequirement.count({ where: { universityId: id } }), database.universityAdmissionRequirement.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.universityGalleryImage.count({ where: { universityId: id } }), database.universityGalleryImage.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
@@ -390,7 +397,7 @@ export class PrismaContentRepository implements ContentRepository {
             countAndSamples(database.studentApplication.count({ where: { universityId: id } }), database.studentApplication.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.faqEntry.count({ where: { universityId: id } }), database.faqEntry.findMany({ where: { universityId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.scholarshipDetailItem.count({ where: { scholarship: { universityId: id } } }), database.scholarshipDetailItem.findMany({ where: { scholarship: { universityId: id } }, select: { id: true }, take: 5 })),
-            countAndSamples(database.articleScholarship.count({ where: { scholarship: { universityId: id } } }), database.articleScholarship.findMany({ where: { scholarship: { universityId: id } }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
+            countAndSamples(database.articleScholarship.count({ where: { scholarship: { universityId: id } } }), () => database.articleScholarship.findMany({ where: { scholarship: { universityId: id } }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
             countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'UNIVERSITY', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'UNIVERSITY', resourceId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
           ])
@@ -416,7 +423,7 @@ export class PrismaContentRepository implements ContentRepository {
           const [details, legacyArticles, articleLinks, applications, faqs, audits, analytics] = await Promise.all([
             countAndSamples(database.scholarshipDetailItem.count({ where: { scholarshipId: id } }), database.scholarshipDetailItem.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.article.count({ where: { scholarshipId: id } }), database.article.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
-            countAndSamples(database.articleScholarship.count({ where: { scholarshipId: id } }), database.articleScholarship.findMany({ where: { scholarshipId: id }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
+            countAndSamples(database.articleScholarship.count({ where: { scholarshipId: id } }), () => database.articleScholarship.findMany({ where: { scholarshipId: id }, select: { articleId: true }, take: 5 }).then((rows) => rows.map(({ articleId }) => ({ id: articleId })))),
             countAndSamples(database.studentApplication.count({ where: { scholarshipId: id } }), database.studentApplication.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.faqEntry.count({ where: { scholarshipId: id } }), database.faqEntry.findMany({ where: { scholarshipId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'SCHOLARSHIP', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'SCHOLARSHIP', resourceId: id }, select: { id: true }, take: 5 })),
@@ -452,7 +459,7 @@ export class PrismaContentRepository implements ContentRepository {
           const target = await database.article.findUnique({ where: { id }, select: { id: true, slug: true, status: true } })
           if (!target) return null
           const [links, audits, analytics] = await Promise.all([
-            countAndSamples(database.articleScholarship.count({ where: { articleId: id } }), database.articleScholarship.findMany({ where: { articleId: id }, select: { scholarshipId: true }, take: 5 }).then((rows) => rows.map(({ scholarshipId }) => ({ id: scholarshipId })))),
+            countAndSamples(database.articleScholarship.count({ where: { articleId: id } }), () => database.articleScholarship.findMany({ where: { articleId: id }, select: { scholarshipId: true }, take: 5 }).then((rows) => rows.map(({ scholarshipId }) => ({ id: scholarshipId })))),
             countAndSamples(database.adminAuditLog.count({ where: { resourceType: 'ARTICLE', resourceId: id } }), database.adminAuditLog.findMany({ where: { resourceType: 'ARTICLE', resourceId: id }, select: { id: true }, take: 5 })),
             countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
           ])
