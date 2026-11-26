@@ -1,6 +1,6 @@
 # Guarded hard deletion — Phases A and B
 
-Phase A evaluates and executes a safe initial hard deletion for a DRAFT or ARCHIVED Country, University, Scholarship, Service, or Article when the freshly evaluated impact graph contains no destructive or protected dependency. Phase B adds a `SUPER_ADMIN`-only, database-backed, short-lived, one-time confirmation challenge for a PUBLISHED target or approved editorial effects. The graph is always locked and evaluated again inside the final transaction.
+Phase A evaluates and executes an ADMIN-or-SUPER_ADMIN hard deletion for a Country, University, Scholarship, Service, or Article when the freshly evaluated impact graph contains no protected dependency and no deletion of an additional dependent record. Publication status alone never elevates permission. Explicit association-row removal and nullable relationship unlinking preserve the independently managed content and remain part of the standard deletion. Phase B adds a `SUPER_ADMIN`-only, database-backed, short-lived, one-time confirmation challenge only when an approved deletion would remove additional dependent records. The graph is always locked and evaluated again inside the final transaction.
 
 `DELETE /api/v1/admin/{resource}/{id}` and `POST /api/v1/admin/{resource}/{id}/hard-delete/confirm` are implemented for `countries`, `universities`, `scholarships`, `services`, and `articles`.
 
@@ -8,8 +8,8 @@ Phase A evaluates and executes a safe initial hard deletion for a DRAFT or ARCHI
 
 | Outcome | HTTP | Meaning |
 | --- | ---: | --- |
-| `SAFE` | 200 | The non-published target has no destructive/protected dependency and is deleted with an audit record. The standard success envelope returns the verified `data.impact` with `outcome: "SAFE"`. |
-| `REQUIRES_CONFIRMATION` | 409 `DELETE_REQUIRES_CONFIRMATION` | The target is PUBLISHED or has an approved explicit `DELETE`/`UNLINK` effect. A SUPER_ADMIN receives a five-minute actor-bound challenge and must use the confirmation endpoint. |
+| `SAFE` | 200 | The target has no protected dependency and no additional dependent record to delete. A PUBLISHED target and association-only unlinking are included here. The target is deleted with an audit record and the standard envelope returns the verified `data.impact` with `outcome: "SAFE"`. |
+| `REQUIRES_CONFIRMATION` | 409 `DELETE_REQUIRES_CONFIRMATION` | The operation would explicitly delete one or more additional dependent records. A SUPER_ADMIN receives a five-minute actor-bound challenge and must use the confirmation endpoint. |
 | `BLOCKED` | 409 `DELETE_BLOCKED` | The graph contains a protected, RESTRICT, demo-owned, or unknown/incomplete dependency. No delete occurs. |
 
 Every 409 includes `error.details.impact`. Items identify the resource type, relationship path, effect, count, bounded safe IDs, code, and whether it is confirmable or blocked. A SUPER_ADMIN challenge is stored server-side with its actor, target, impact digest, expiry, and one-time consumption state. Results are not a client-controlled authorization mechanism: no `force` or cascade flag is accepted.
@@ -22,7 +22,7 @@ Every 409 includes `error.details.impact`. Items identify the resource type, rel
 | University | University Programs, Program Languages/Tuition, Admission Requirements, Gallery images, Scholarships, Articles, Student Applications, FAQs | Programs and their Language/Tuition children, Admissions, and Gallery items are explicit `DELETE`; optional Scholarship and Article university links are explicit `UNLINK`; Student Applications and FAQs are `BLOCK`. |
 | Scholarship | Scholarship detail items; legacy Article relation; Article–Scholarship links; Student Applications; FAQs | Detail items are explicit `DELETE`; legacy Article and join-table links are explicit `UNLINK`; Student Applications and FAQs are `BLOCK`. |
 | Service | Service detail items; FAQs | Detail items are explicit `DELETE`; FAQs are `BLOCK`. |
-| Article | Article–Scholarship links | Relation rows are explicit `DELETE`; no Scholarship, audit, analytics, or other shared record is deleted. |
+| Article | Article–Scholarship links; optional Country, University, Scholarship references | Relation rows are explicitly `UNLINK`ed; linked Country, University, and Scholarship records are preserved. No audit, analytics, or other shared record is deleted. |
 
 For all five targets, matching immutable Admin audit history and Analytics Events are reported as `PRESERVE` and are not removed. A fixture-like `demo-e2e-` target slug is blocked as a defense-in-depth safeguard. This repository currently has no schema-level fixture ownership field, so a future deletion expansion must use the seed manifest or add authoritative ownership metadata rather than relying solely on a naming convention.
 
@@ -33,7 +33,7 @@ Hard deletion never calls Cloudinary, Resend, a scheduler, or any external provi
 ## Confirmation protocol
 
 1. The Frontend calls `DELETE` first and renders the returned impact.
-2. Only a `SUPER_ADMIN` receives `details.confirmation.challengeId` and `expiresAt` for an eligible impact.
+2. Only a `SUPER_ADMIN` receives `details.confirmation.challengeId` and `expiresAt` when the eligible impact deletes additional dependent records. Association-only and PUBLISHED-target deletion has no challenge requirement.
 3. The Frontend submits `{ "challengeId": "uuid" }` to the confirmation endpoint without adding any browser-computed effect list.
 4. The transaction locks the target, recomputes the digest, rejects stale/expired/used/wrong-actor challenges with an updated 409 impact, then explicitly executes only the policy-listed operations.
 5. Target deletion, child delete/unlink operations, challenge consumption, and the append-only audit record are atomic.

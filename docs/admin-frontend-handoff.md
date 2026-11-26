@@ -118,7 +118,7 @@ DELETE /admin/{resource}/{id}
 POST   /admin/{resource}/{id}/hard-delete/confirm  { challengeId }
 ```
 
-The first call is a non-mutating impact preflight. A `409 DELETE_REQUIRES_CONFIRMATION` for SUPER_ADMIN includes `error.details.confirmation.challengeId` and an impact matrix. Render the impact, then submit the challenge within its short lifetime. The Backend locks and recalculates the graph; stale, changed, expired, cross-actor, or reused challenges return an updated `409`. Never invent a `force` flag. Some protected historical relationships produce `409 DELETE_BLOCKED` and must be resolved by policy, not bypassed in the UI.
+Call `DELETE` first. Both ADMIN and SUPER_ADMIN can delete a DRAFT, PUBLISHED, or ARCHIVED target when its impact contains only the target, preserved history, and association unlinking. Article deletion preserves linked Countries, Universities, and Scholarships while removing its relationship rows. A `409 DELETE_REQUIRES_CONFIRMATION` is reserved for SUPER_ADMIN operations that would delete additional dependent records; it includes `error.details.confirmation.challengeId` and an impact matrix. Render the impact, then submit that challenge within its short lifetime. The Backend locks and recalculates the graph; stale, changed, expired, cross-actor, or reused challenges return an updated `409`. Never invent a `force` flag. Some protected historical relationships produce `409 DELETE_BLOCKED` and must be resolved by policy, not bypassed in the UI.
 
 ## Backend-ready versus Frontend work
 

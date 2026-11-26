@@ -918,7 +918,7 @@ describe('content management APIs', () => {
     expect(byDeadline.data.items.map(({ id }) => id)).toEqual([regular.id, featured.id])
   })
 
-  it('safely hard deletes only independent non-published records and reports relationship impacts', async () => {
+  it('lets an ADMIN delete safe content regardless of publication status and reports protected impacts', async () => {
     const safe = await contentService.create('services', {
       titleAr: 'خدمة مستقلة', slug: 'independent-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
     }, ADMIN_ID)
@@ -946,9 +946,38 @@ describe('content management APIs', () => {
       titleAr: 'خدمة منشورة', slug: 'published-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
     }, ADMIN_ID)
     const publishedDelete = await adminRequest(`/api/v1/admin/services/${published.id}`, 'DELETE')
-    expect(publishedDelete.status).toBe(409)
-    await expect(publishedDelete.json()).resolves.toMatchObject({ error: { code: 'DELETE_REQUIRES_CONFIRMATION', details: { impact: { outcome: 'REQUIRES_CONFIRMATION', target: { id: published.id, status: 'PUBLISHED' } } } } })
-    expect((await adminRequest(`/api/v1/admin/services/${published.id}`)).status).toBe(200)
+    expect(publishedDelete.status).toBe(200)
+    await expect(publishedDelete.json()).resolves.toMatchObject({ success: true, data: { id: published.id, impact: { outcome: 'SAFE', target: { id: published.id, status: 'PUBLISHED' } } } })
+    expect((await adminRequest(`/api/v1/admin/services/${published.id}`)).status).toBe(404)
+
+    const archivedArticle = await contentService.create('articles', {
+      titleAr: 'مقال مؤرشف', slug: 'archived-article', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'ARCHIVED',
+    }, ADMIN_ID)
+    expect((await adminRequest(`/api/v1/admin/articles/${archivedArticle.id}`, 'DELETE')).status).toBe(200)
+
+    const linkedCountry = await contentService.create('countries', {
+      nameAr: 'بلد المقال', slug: 'article-link-country', introductionAr: 'مقدمة', detailsAr: 'تفاصيل', status: 'DRAFT',
+    }, ADMIN_ID)
+    const linkedUniversity = await contentService.create('universities', {
+      nameAr: 'جامعة المقال', officialName: 'Article Link University', slug: 'article-link-university', countryId: linkedCountry.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'DRAFT',
+    }, ADMIN_ID)
+    const linkedScholarship = await contentService.create('scholarships', {
+      titleAr: 'منحة المقال', slug: 'article-link-scholarship', studyLevel: 'MASTERS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    }, ADMIN_ID)
+    const linkedArticle = await contentService.create('articles', {
+      titleAr: 'مقال مرتبط', slug: 'published-linked-article', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }],
+      countryId: linkedCountry.id, universityId: linkedUniversity.id, scholarshipIds: [linkedScholarship.id], status: 'PUBLISHED',
+    }, ADMIN_ID)
+    contentRepository.setDeletionImpact('articles', linkedArticle.id, [
+      impactItem('ARTICLE_SCHOLARSHIP', 'UNLINK', 1, 'article.relatedScholarships', 'ARTICLE_SCHOLARSHIP_LINKS_UNLINK', { sampleIds: [linkedScholarship.id] }),
+    ])
+    const linkedArticleDelete = await adminRequest(`/api/v1/admin/articles/${linkedArticle.id}`, 'DELETE')
+    expect(linkedArticleDelete.status).toBe(200)
+    await expect(linkedArticleDelete.json()).resolves.toMatchObject({ success: true, data: { id: linkedArticle.id, impact: { outcome: 'SAFE', items: expect.arrayContaining([expect.objectContaining({ effect: 'UNLINK', resourceType: 'ARTICLE_SCHOLARSHIP' })]) } } })
+    expect((await adminRequest(`/api/v1/admin/articles/${linkedArticle.id}`)).status).toBe(404)
+    expect((await adminRequest(`/api/v1/admin/countries/${linkedCountry.id}`)).status).toBe(200)
+    expect((await adminRequest(`/api/v1/admin/universities/${linkedUniversity.id}`)).status).toBe(200)
+    expect((await adminRequest(`/api/v1/admin/scholarships/${linkedScholarship.id}`)).status).toBe(200)
 
     const nestedService = await contentService.create('services', {
       titleAr: 'خدمة تفاصيل', slug: 'service-with-details', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
@@ -1098,15 +1127,12 @@ describe('content management APIs', () => {
       titleAr: 'مقال للحذف', slug: 'confirmed-article-delete', summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
     }, ADMIN_ID)
     contentRepository.setDeletionImpact('articles', article.id, [
-      impactItem('ARTICLE_SCHOLARSHIP', 'DELETE', 1, 'article.relatedScholarships', 'ARTICLE_SCHOLARSHIP_LINKS_EXPLICIT_DELETE'),
+      impactItem('ARTICLE_SCHOLARSHIP', 'UNLINK', 1, 'article.relatedScholarships', 'ARTICLE_SCHOLARSHIP_LINKS_UNLINK'),
     ])
-    const articlePreflight = await adminRequest(`/api/v1/admin/articles/${article.id}`, 'DELETE', undefined, 'SUPER_ADMIN')
-    expect(articlePreflight.status).toBe(409)
-    const articleChallenge = (await articlePreflight.json() as { error: { details: { confirmation: { challengeId: string } } } }).error.details.confirmation.challengeId
-    expect((await adminRequest(`/api/v1/admin/articles/${article.id}/hard-delete/confirm`, 'POST', { challengeId: articleChallenge }, 'SUPER_ADMIN')).status).toBe(200)
+    expect((await adminRequest(`/api/v1/admin/articles/${article.id}`, 'DELETE')).status).toBe(200)
     expect((await adminRequest(`/api/v1/admin/articles/${article.id}`)).status).toBe(404)
     expect(contentRepository.audit.events).toEqual(expect.arrayContaining([
-      expect.objectContaining({ actorAdminId: SUPER_ADMIN_ID, action: 'content.articles.hard_deleted', resourceId: article.id }),
+      expect.objectContaining({ actorAdminId: ADMIN_ID, action: 'content.articles.hard_deleted', resourceId: article.id }),
     ]))
 
     const stale = await contentService.create('services', {

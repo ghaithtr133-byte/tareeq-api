@@ -256,13 +256,11 @@ export class PrismaContentRepository implements ContentRepository {
         if (!impact) return { outcome: 'NOT_FOUND' as const }
         if (impact.outcome === 'BLOCKED') return { outcome: 'BLOCKED' as const, impact }
         if (impact.outcome === 'REQUIRES_CONFIRMATION') return { outcome: 'REQUIRES_CONFIRMATION' as const, impact }
-        await ({
-          countries: () => transaction.country.delete({ where: { id } }),
-          universities: () => transaction.university.delete({ where: { id } }),
-          scholarships: () => transaction.scholarship.delete({ where: { id } }),
-          services: () => transaction.service.delete({ where: { id } }),
-          articles: () => this.executeConfirmedDeletion(transaction, 'articles', id),
-        })[resource]()
+        // A SAFE graph can still contain approved association unlinks. Use the
+        // same explicit, FK-safe executor as confirmed deletion so optional
+        // Country/University/Scholarship links are cleared before their target
+        // is removed; never rely on a database cascade.
+        await this.executeConfirmedDeletion(transaction, resource, id)
         await transaction.adminAuditLog.create({ data: {
           actorAdminId,
           action: `content.${resource}.hard_deleted`,
@@ -464,7 +462,10 @@ export class PrismaContentRepository implements ContentRepository {
             countAndSamples(database.analyticsEvent.count({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] } }), database.analyticsEvent.findMany({ where: { OR: [{ path: { endsWith: `/${target.slug}` } }, { targetPath: { endsWith: `/${target.slug}` } }] }, select: { id: true }, take: 5 })),
           ])
           return this.toDeletionImpact(resource, target, [
-            this.dependency('ARTICLE_SCHOLARSHIP', 'DELETE', links, 'article.relatedScholarships', 'ARTICLE_SCHOLARSHIP_LINKS_EXPLICIT_DELETE'),
+            // This join row is an association, not independent Scholarship
+            // content. It is explicitly removed before the Article while all
+            // linked Scholarships remain intact.
+            this.dependency('ARTICLE_SCHOLARSHIP', 'UNLINK', links, 'article.relatedScholarships', 'ARTICLE_SCHOLARSHIP_LINKS_UNLINK'),
             this.dependency('ADMIN_AUDIT_LOG', 'PRESERVE', audits, 'article.auditHistory', 'AUDIT_HISTORY_PRESERVED'),
             this.dependency('ANALYTICS_EVENT', 'PRESERVE', analytics, 'article.analyticsPaths', 'ANALYTICS_HISTORY_PRESERVED'),
           ])

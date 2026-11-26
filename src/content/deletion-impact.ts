@@ -65,15 +65,18 @@ export const analyzeDeletionImpact = ({ target, items, analysisComplete }: Delet
         { canConfirm: false, blocked: true },
       )]
   const hasBlocked = effectiveItems.some((item) => item.blocked)
-  const hasDestructiveEffect = effectiveItems.some((item) =>
-    item.effect === 'DELETE' || item.effect === 'SET_NULL' || item.effect === 'UNLINK',
-  )
+  // An association-row removal or nullable relationship update preserves the
+  // independently managed record at the other end of the relationship. Those
+  // operations are part of an ordinary content deletion and do not themselves
+  // elevate an ADMIN request. Confirmation remains reserved for deleting an
+  // additional dependent record, which is the only approved elevated impact.
+  const hasAdditionalRecordDeletion = effectiveItems.some((item) => item.effect === 'DELETE')
   return {
     target,
     items: effectiveItems,
     outcome: hasBlocked
       ? 'BLOCKED'
-      : target.status === 'PUBLISHED' || hasDestructiveEffect
+      : hasAdditionalRecordDeletion
         ? 'REQUIRES_CONFIRMATION'
         : 'SAFE',
   }

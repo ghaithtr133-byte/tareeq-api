@@ -350,7 +350,7 @@ const registerDocumentation = (
   {
     routes.openAPIRegistry.registerPath({
       method: 'delete', path: `/admin/${resource}/{id}`, tags: [names.adminTag], summary: `Safely hard delete ${names.article} ${names.singular}`,
-      description: 'ADMIN or SUPER_ADMIN only. Initial hard deletion succeeds only for DRAFT or ARCHIVED records with a freshly verified empty destructive-impact graph. PUBLISHED records or explicit child deletion/unlink effects require the documented SUPER_ADMIN confirmation flow. Protected, RESTRICT, Demo-fixture, historical-student, or unknown dependencies are blocked without deletion.',
+      description: 'ADMIN or SUPER_ADMIN only. A PUBLISHED target does not by itself require elevated permission. The initial deletion succeeds when its fresh impact contains only the target and preserved or association-unlink effects. Explicit deletion of additional dependent records requires the documented SUPER_ADMIN confirmation flow. Protected, RESTRICT, Demo-fixture, historical-student, or unknown dependencies are blocked without deletion.',
       security: [{ accessCookie: [] }], request: { params: uuidParamSchema },
       responses: {
         200: { description: `${names.singular} safely deleted and audited.`, content: successContent(contentDeleteResponseSchema, { success: true, data: { id: exampleId, impact: { target: { resource: resource, id: exampleId, slug: 'example-record', status: 'DRAFT' }, outcome: 'SAFE', items: [] } } }) },
@@ -360,7 +360,7 @@ const registerDocumentation = (
     })
     routes.openAPIRegistry.registerPath({
       method: 'post', path: `/admin/${resource}/{id}/hard-delete/confirm`, tags: [names.adminTag], summary: `Confirm hard deletion of ${names.article} ${names.singular}`,
-      description: 'SUPER_ADMIN only. Submits the short-lived, actor-bound confirmation challenge returned by a prior DELETE preflight. The complete impact graph is locked and revalidated before explicit child deletion or unlinking. A stale or changed graph returns 409 with an updated impact; protected dependencies remain blocked.',
+      description: 'SUPER_ADMIN only. Submits the short-lived, actor-bound confirmation challenge returned only when deletion would explicitly remove additional dependent records. The complete impact graph is locked and revalidated before that work. Association unlinking alone is handled by the standard ADMIN-or-SUPER_ADMIN DELETE. A stale or changed graph returns 409 with an updated impact; protected dependencies remain blocked.',
       security: [{ accessCookie: [] }],
       request: { params: uuidParamSchema, body: { required: true, content: { 'application/json': { schema: hardDeleteConfirmationSchema, example: { challengeId: exampleId } } } } },
       responses: {

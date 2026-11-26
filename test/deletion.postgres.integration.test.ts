@@ -145,7 +145,7 @@ describe.runIf(shouldRun)('PostgreSQL confirmed content and submission deletion'
     await disconnectPrisma()
   }, completeHardDeleteScenarioTimeoutMs)
 
-  it('confirms and atomically deletes every published top-level content resource without database cascades', async () => {
+  it('deletes published content without confirmation when it has no additional dependent records', async () => {
     const prisma = getPrisma()
     const actor = await prisma.adminUser.create({ data: {
       name: 'Deletion integration super admin', email: `deletion-${runToken}-${randomUUID().slice(0, 8)}@example.invalid`, passwordHash: '$argon2id$integration-only', role: 'SUPER_ADMIN',
@@ -156,12 +156,8 @@ describe.runIf(shouldRun)('PostgreSQL confirmed content and submission deletion'
 
     expect(fixtures.map(({ resource }) => resource)).toEqual(contentResources)
     for (const { resource, id } of fixtures) {
-      const issued = await repository.issueDeletionChallenge(resource, id, actor.id, new Date(Date.now() + 60_000))
-      expect(issued.outcome).toBe('ISSUED')
-      if (issued.outcome !== 'ISSUED') throw new Error(`Expected challenge for ${resource}.`)
-      const deleted = await repository.confirmHardDelete(resource, id, issued.challenge.id, actor.id, new Date())
+      const deleted = await repository.deleteIfSafe(resource, id, actor.id)
       expect(deleted).toMatchObject({ outcome: 'DELETED', id })
-      await expect(repository.confirmHardDelete(resource, id, issued.challenge.id, actor.id, new Date())).resolves.toMatchObject({ outcome: 'NOT_FOUND' })
     }
 
     expect(await prisma.adminAuditLog.count({ where: { actorAdminId: actor.id, action: { endsWith: '.hard_deleted' } } })).toBe(5)
@@ -171,6 +167,63 @@ describe.runIf(shouldRun)('PostgreSQL confirmed content and submission deletion'
     const confirmedCountryIds = fixtures.filter(({ resource }) => resource === 'countries').map(({ id }) => id)
     expect(await prisma.country.count({ where: { id: { in: confirmedCountryIds } } })).toBe(0)
     expect(await prisma.country.count({ where: { id: { in: created.get('countries') ?? [] } } })).toBe(1)
+  }, completeHardDeleteScenarioTimeoutMs)
+
+  it('unlinks an Article from independent Country, University, and Scholarship records without deleting them', async () => {
+    const prisma = getPrisma()
+    const actor = await prisma.adminUser.create({ data: {
+      name: 'Article deletion integration admin', email: `article-deletion-${runToken}-${randomUUID().slice(0, 8)}@example.invalid`, passwordHash: '$argon2id$integration-only', role: 'ADMIN',
+    } })
+    actorAdminId = actor.id
+    const fixtureToken = `${runToken}-${randomUUID().slice(0, 8)}`
+    const country = await prisma.country.create({ data: {
+      nameAr: `بلد مقال ${fixtureToken}`, slug: `article-country-${fixtureToken}`, introductionAr: 'مقدمة', detailsAr: 'تفاصيل', status: 'DRAFT',
+    } })
+    track('countries', country.id)
+    const university = await prisma.university.create({ data: {
+      nameAr: `جامعة مقال ${fixtureToken}`, officialName: `Article Association University ${fixtureToken}`, slug: `article-university-${fixtureToken}`,
+      countryId: country.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', status: 'DRAFT',
+    } })
+    track('universities', university.id)
+    const scholarship = await prisma.scholarship.create({ data: {
+      titleAr: `منحة مقال ${fixtureToken}`, slug: `article-scholarship-${fixtureToken}`, studyLevel: 'MASTERS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    } })
+    track('scholarships', scholarship.id)
+    const article = await prisma.article.create({ data: {
+      titleAr: `مقال مرتبط ${fixtureToken}`, slug: `article-linked-${fixtureToken}`, summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }],
+      countryId: country.id, universityId: university.id, scholarshipId: scholarship.id, status: 'PUBLISHED', publishedAt: new Date(),
+    } })
+    track('articles', article.id)
+    await prisma.articleScholarship.create({ data: { articleId: article.id, scholarshipId: scholarship.id, displayOrder: 0 } })
+
+    const repository = new PrismaContentRepository()
+    await expect(repository.deleteIfSafe('articles', article.id, actor.id)).resolves.toMatchObject({
+      outcome: 'DELETED', id: article.id, impact: { outcome: 'SAFE', items: [expect.objectContaining({ resourceType: 'ARTICLE_SCHOLARSHIP', effect: 'UNLINK' })] },
+    })
+    await expect(prisma.article.findUnique({ where: { id: article.id } })).resolves.toBeNull()
+    await expect(prisma.articleScholarship.count({ where: { articleId: article.id } })).resolves.toBe(0)
+    await expect(prisma.country.findUnique({ where: { id: country.id } })).resolves.not.toBeNull()
+    await expect(prisma.university.findUnique({ where: { id: university.id } })).resolves.not.toBeNull()
+    await expect(prisma.scholarship.findUnique({ where: { id: scholarship.id } })).resolves.not.toBeNull()
+
+    const unlinkCountry = await prisma.country.create({ data: {
+      nameAr: `بلد فك الارتباط ${fixtureToken}`, slug: `unlink-country-${fixtureToken}`, introductionAr: 'مقدمة', detailsAr: 'تفاصيل', status: 'DRAFT',
+    } })
+    track('countries', unlinkCountry.id)
+    const preservedScholarship = await prisma.scholarship.create({ data: {
+      titleAr: `منحة فك الارتباط ${fixtureToken}`, slug: `unlink-scholarship-${fixtureToken}`, countryId: unlinkCountry.id,
+      studyLevel: 'MASTERS', fundingType: 'FULL', requirementsAr: 'متطلبات', descriptionAr: 'وصف', status: 'DRAFT',
+    } })
+    track('scholarships', preservedScholarship.id)
+    const preservedArticle = await prisma.article.create({ data: {
+      titleAr: `مقال فك الارتباط ${fixtureToken}`, slug: `unlink-article-${fixtureToken}`, countryId: unlinkCountry.id,
+      summaryAr: 'ملخص', bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'DRAFT',
+    } })
+    track('articles', preservedArticle.id)
+
+    await expect(repository.deleteIfSafe('countries', unlinkCountry.id, actor.id)).resolves.toMatchObject({ outcome: 'DELETED', id: unlinkCountry.id })
+    await expect(prisma.scholarship.findUnique({ where: { id: preservedScholarship.id } })).resolves.toMatchObject({ countryId: null })
+    await expect(prisma.article.findUnique({ where: { id: preservedArticle.id } })).resolves.toMatchObject({ countryId: null })
   }, completeHardDeleteScenarioTimeoutMs)
 
   it('keeps changed dependency graphs and failed submission deletion transactions intact', async () => {
