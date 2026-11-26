@@ -89,11 +89,29 @@ describe.runIf(shouldRun)('content PostgreSQL integration', () => {
       titleAr: 'خدمة اختبار التكامل', slug: slug('service'), summaryAr: 'ملخص',
       descriptionAr: 'وصف', status: 'DRAFT', featured: false,
     }, actorAdminId))
-    track('articles', await service.create('articles', {
+    const publishedService = track('services', await service.create('services', {
+      titleAr: 'خدمة منشورة لاختبار التكامل', slug: slug('published-service'), summaryAr: 'ملخص',
+      descriptionAr: 'وصف', status: 'PUBLISHED', featured: false,
+    }, actorAdminId))
+    const article = track('articles', await service.create('articles', {
       titleAr: 'مقال اختبار التكامل', slug: slug('article'), summaryAr: 'ملخص',
       bodyAr: [{ type: 'paragraph', text: 'نص' }], countryId: country.id,
       universityId: university.id, scholarshipId: scholarship.id, status: 'PUBLISHED', featured: true,
     }, actorAdminId))
+
+    // The route-level schema test proves omitted status stays absent. These
+    // real PostgreSQL writes prove the resulting partial update preserves the
+    // persisted publication state and first publication time for every model.
+    for (const [resource, id, data, publishedAt] of [
+      ['countries', country.id, { imageUrl: 'https://example.edu/updated-country.jpg' }, country.publishedAt],
+      ['universities', university.id, { imageUrl: 'https://example.edu/updated-university.jpg' }, university.publishedAt],
+      ['scholarships', scholarship.id, { imageUrl: 'https://example.edu/updated-scholarship.jpg' }, scholarship.publishedAt],
+      ['services', publishedService.id, { imageUrl: 'https://example.edu/updated-service.jpg' }, publishedService.publishedAt],
+      ['articles', article.id, { coverImageUrl: 'https://example.edu/updated-article.jpg' }, article.publishedAt],
+    ] as const) {
+      const updated = await service.update(resource, id, data, actorAdminId)
+      expect(updated).toMatchObject({ status: 'PUBLISHED', publishedAt })
+    }
 
     await expect(service.create('countries', {
       nameAr: 'تكرار', slug: country.slug, introductionAr: 'مقدمة', detailsAr: 'تفاصيل',

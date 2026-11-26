@@ -8,6 +8,7 @@ import { AuthService } from '../src/auth/service.js'
 import type { AdminRole } from '../src/auth/types.js'
 import type { AuthConfig } from '../src/config/env.js'
 import type { ContentRuntime } from '../src/content/runtime.js'
+import { contentPatchSchemas } from '../src/content/schemas.js'
 import { ContentService } from '../src/content/service.js'
 import { impactItem } from '../src/content/deletion-impact.js'
 import { InMemoryAuthRepository } from './helpers/in-memory-auth-repository.js'
@@ -403,6 +404,99 @@ describe('content management APIs', () => {
     expect((await app.request('/api/v1/countries/germany')).status).toBe(404)
     const archived = await adminRequest('/api/v1/admin/countries?status=ARCHIVED')
     await expect(archived.json()).resolves.toMatchObject({ data: { pagination: { total: 1 } } })
+  })
+
+  it('does not inject create-only defaults into any top-level content PATCH schema', () => {
+    const imageOnlyPayloads = {
+      countries: { imageUrl: 'https://example.invalid/country-patch.webp' },
+      universities: { imageUrl: 'https://example.invalid/university-patch.webp' },
+      scholarships: { imageUrl: 'https://example.invalid/scholarship-patch.webp' },
+      services: { imageUrl: 'https://example.invalid/service-patch.webp' },
+      articles: { coverImageUrl: 'https://example.invalid/article-patch.webp' },
+    } as const
+
+    for (const resource of Object.keys(imageOnlyPayloads) as Array<keyof typeof imageOnlyPayloads>) {
+      const parsed = contentPatchSchemas[resource].parse(imageOnlyPayloads[resource])
+      expect(parsed).not.toHaveProperty('status')
+      expect(parsed).not.toHaveProperty('featured')
+      if (resource === 'scholarships') expect(parsed).not.toHaveProperty('applicationStatus')
+    }
+  })
+
+  it('preserves PUBLISHED state and first publication time for image-only PATCHes on every top-level content resource', async () => {
+    const country = await contentService.create('countries', {
+      ...countryInput('status-preservation-country'), status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const university = await contentService.create('universities', {
+      nameAr: 'جامعة حفظ الحالة', officialName: 'Status Preservation University', slug: 'status-preservation-university',
+      countryId: country.id, cityAr: 'مدينة', overviewAr: 'نظرة عامة', summaryAr: 'ملخص', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const scholarship = await contentService.create('scholarships', {
+      titleAr: 'منحة حفظ الحالة', slug: 'status-preservation-scholarship', countryId: country.id, universityId: university.id,
+      studyLevel: 'MASTERS', fundingType: 'FULL', summaryAr: 'ملخص', requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+      officialSourceUrl: 'https://example.invalid/status-preservation', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const service = await contentService.create('services', {
+      titleAr: 'خدمة حفظ الحالة', slug: 'status-preservation-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const article = await contentService.create('articles', {
+      titleAr: 'مقال حفظ الحالة', slug: 'status-preservation-article', summaryAr: 'ملخص',
+      bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
+    }, ADMIN_ID)
+    clock = new Date(FIXED_NOW.getTime() + 60_000)
+    const targets = [
+      ['countries', country.id, { imageUrl: 'https://example.invalid/country-updated.webp' }],
+      ['universities', university.id, { imageUrl: 'https://example.invalid/university-updated.webp' }],
+      ['scholarships', scholarship.id, { imageUrl: 'https://example.invalid/scholarship-updated.webp' }],
+      ['services', service.id, { imageUrl: 'https://example.invalid/service-updated.webp' }],
+      ['articles', article.id, { coverImageUrl: 'https://example.invalid/article-updated.webp' }],
+    ] as const
+
+    for (const [resource, id, body] of targets) {
+      const response = await adminRequest(`/api/v1/admin/${resource}/${id}`, 'PATCH', body)
+      expect(response.status).toBe(200)
+      await expect(response.json()).resolves.toMatchObject({
+        success: true,
+        data: { status: 'PUBLISHED', publishedAt: FIXED_NOW.toISOString() },
+      })
+    }
+  })
+
+  it('preserves omitted status during text and relationship PATCHes while explicit transitions still work', async () => {
+    const country = await contentService.create('countries', {
+      ...countryInput('status-preservation-relationships'), status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const scholarship = await contentService.create('scholarships', {
+      titleAr: 'منحة روابط الحالة', slug: 'status-preservation-link-scholarship', countryId: country.id,
+      studyLevel: 'MASTERS', fundingType: 'FULL', summaryAr: 'ملخص', requirementsAr: 'متطلبات', descriptionAr: 'وصف',
+      officialSourceUrl: 'https://example.invalid/status-preservation-link', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const article = await contentService.create('articles', {
+      titleAr: 'مقال روابط الحالة', slug: 'status-preservation-links-article', summaryAr: 'ملخص',
+      bodyAr: [{ type: 'paragraph', text: 'نص' }], status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const publishedService = await contentService.create('services', {
+      titleAr: 'خدمة منشورة للحالة', slug: 'status-preservation-published-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'PUBLISHED',
+    }, ADMIN_ID)
+    const draftService = await contentService.create('services', {
+      titleAr: 'خدمة مسودة الحالة', slug: 'status-preservation-draft-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'DRAFT',
+    }, ADMIN_ID)
+    const archivedService = await contentService.create('services', {
+      titleAr: 'خدمة مؤرشفة الحالة', slug: 'status-preservation-archived-service', summaryAr: 'ملخص', descriptionAr: 'وصف', status: 'ARCHIVED',
+    }, ADMIN_ID)
+    clock = new Date(FIXED_NOW.getTime() + 60_000)
+
+    const relationshipUpdate = await adminRequest(`/api/v1/admin/articles/${article.id}`, 'PATCH', { scholarshipIds: [scholarship.id] })
+    expect(relationshipUpdate.status).toBe(200)
+    await expect(relationshipUpdate.json()).resolves.toMatchObject({ data: { status: 'PUBLISHED', publishedAt: FIXED_NOW.toISOString(), scholarshipIds: [scholarship.id] } })
+    const textUpdate = await adminRequest(`/api/v1/admin/services/${publishedService.id}`, 'PATCH', { descriptionAr: 'وصف منشور محدّث' })
+    await expect(textUpdate.json()).resolves.toMatchObject({ data: { status: 'PUBLISHED', publishedAt: FIXED_NOW.toISOString() } })
+    const draftUpdate = await adminRequest(`/api/v1/admin/services/${draftService.id}`, 'PATCH', { descriptionAr: 'وصف محدّث' })
+    await expect(draftUpdate.json()).resolves.toMatchObject({ data: { status: 'DRAFT', publishedAt: null } })
+    const archivedUpdate = await adminRequest(`/api/v1/admin/services/${archivedService.id}`, 'PATCH', { descriptionAr: 'وصف مؤرشف محدّث' })
+    await expect(archivedUpdate.json()).resolves.toMatchObject({ data: { status: 'ARCHIVED', publishedAt: null } })
+    const transition = await adminRequest(`/api/v1/admin/services/${draftService.id}`, 'PATCH', { status: 'PUBLISHED' })
+    await expect(transition.json()).resolves.toMatchObject({ data: { status: 'PUBLISHED', publishedAt: clock.toISOString() } })
   })
 
   it('returns actionable validation, duplicate-slug, invalid-UUID, and unknown-ID errors', async () => {
