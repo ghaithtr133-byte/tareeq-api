@@ -8,8 +8,9 @@ import {
   requireTrustedOrigin,
 } from '../auth/security.js'
 import type { AuthEnv } from '../auth/types.js'
-import { ApiError, successEnvelopeSchema, successResponse } from '../shared/http.js'
+import { ApiError, errorResponseSchema, successEnvelopeSchema, successResponse } from '../shared/http.js'
 import type { ContentRuntime } from './runtime.js'
+import { articleSeoSuggestionSchema } from './seo-suggestions.js'
 import {
   adminQuerySchemas,
   contentCreateSchemas,
@@ -386,6 +387,26 @@ export const createContentRoutes = (
   adminRoutes.use('*', requireTrustedOrigin(authRuntime))
   adminRoutes.use('*', requireAuthentication(authRuntime))
   adminRoutes.use('*', requireRole('ADMIN', 'SUPER_ADMIN'))
+
+  routes.openAPIRegistry.registerPath({
+    method: 'post', path: '/admin/articles/{id}/seo-suggestions', tags: ['Admin — Articles'], summary: 'Generate Arabic SEO suggestions for an Article',
+    description: 'ADMIN or SUPER_ADMIN only. Sends only the selected Article’s Arabic title, summary, and rich-text body to the configured Gemini model. Suggestions are validated but never saved, and no Article status, slug, publication timestamp, student data, or unrelated records are changed. A project-wide durable UTC-day limit is configured by GEMINI_DAILY_LIMIT (default 100; maximum 500).',
+    security: [{ accessCookie: [] }], request: { params: uuidParamSchema },
+    responses: {
+      200: { description: 'Validated suggestions; the Article is unchanged.', content: { 'application/json': { schema: successEnvelopeSchema(articleSeoSuggestionSchema), example: { success: true, data: { seoTitleAr: 'دليل الدراسة الجامعية', seoDescriptionAr: 'تعرف على أهم المعلومات والخطوات للدراسة الجامعية.' } } } } },
+      400: contentErrorResponses[400], 401: contentErrorResponses[401], 403: contentErrorResponses[403], 404: contentErrorResponses[404],
+      429: { description: 'Either `GEMINI_DAILY_LIMIT_REACHED` with `{ remainingRequests: 0, resetAt }`, or `GEMINI_PROVIDER_QUOTA_EXCEEDED` with optional provider-supplied `{ retryAfterSeconds }`.', content: { 'application/json': { schema: errorResponseSchema, examples: { internalDailyLimit: { value: { success: false, error: { code: 'GEMINI_DAILY_LIMIT_REACHED', message: 'تم الوصول إلى الحد اليومي لاقتراحات تحسين محركات البحث. حاول مجدداً غداً.', details: { remainingRequests: 0, resetAt: '2026-11-28T00:00:00.000Z' } } } }, providerQuota: { value: { success: false, error: { code: 'GEMINI_PROVIDER_QUOTA_EXCEEDED', message: 'تم تجاوز حد مزود Gemini مؤقتاً. يرجى المحاولة لاحقاً.', details: { retryAfterSeconds: 60 } } } } } } } },
+      502: { description: 'Gemini returned an unavailable or invalid response.', content: { 'application/json': { schema: errorResponseSchema } } },
+      503: { description: 'Gemini is not configured or its configured model is unavailable.', content: { 'application/json': { schema: errorResponseSchema } } },
+      504: { description: 'Gemini did not respond before the bounded request timeout.', content: { 'application/json': { schema: errorResponseSchema } } },
+    },
+  })
+  adminRoutes.post('/articles/:id/seo-suggestions', async (c) => {
+    const { id } = parse(uuidParamSchema, { id: c.req.param('id') })
+    const service = contentRuntime.getSeoSuggestionService?.()
+    if (!service) throw new ApiError(503, 'SEO_SUGGESTIONS_NOT_CONFIGURED', 'SEO suggestions are not configured.')
+    return c.json(successResponse(await service.suggest(id)), 200)
+  })
 
   for (const resource of contentResources) {
     const names = metadata[resource]

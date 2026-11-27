@@ -673,20 +673,20 @@ if ($null -ne $openApi -and (Test-Property $openApi 'paths')) {
   }
 }
 $operationDifference = @(Compare-Object -ReferenceObject @($expectedOperations | Sort-Object) -DifferenceObject @($actualOperations | Sort-Object))
-$operationPass = $actualOperations.Count -eq 143 -and $operationDifference.Count -eq 0
+$operationPass = $actualOperations.Count -eq 144 -and $operationDifference.Count -eq 0
 if (-not $openApiAvailable) {
-  Add-OpenApiBlockedCheck -Id 'openapi.operations' -Expected 'Exactly the approved 143 operations with no missing or unexpected operations.' -StatusCode $openApiResponse.statusCode
+  Add-OpenApiBlockedCheck -Id 'openapi.operations' -Expected 'Exactly the approved 144 operations with no missing or unexpected operations.' -StatusCode $openApiResponse.statusCode
   Add-OpenApiBlockedCheck -Id 'openapi.operation_documentation' -Expected 'Every operation has summary, description, tags, examples, responses, and Admin security where applicable.' -StatusCode $openApiResponse.statusCode
 } else {
   Add-Check -Id 'openapi.operations' -Category 'Documentation' -Status $(if ($operationPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'Exactly the approved 143 operations with no missing or unexpected operations.' `
+  -Expected 'Exactly the approved 144 operations with no missing or unexpected operations.' `
     -Actual "$($actualOperations.Count) operations; differences=$($operationDifference.Count)." `
     -Evidence $(if ($operationDifference.Count -eq 0) { 'The live operation set exactly matches the approved health, authentication, content, submission, media-upload, audit-log, Admin-management, site-settings, analytics, FAQ, and University-directory surface.' } else { ($operationDifference | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }) -join '; ' }) `
     -Classification $(if ($operationPass) { 'NONE' } else { 'CONTRACT_FAILURE' })
 
-  $documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 143
+  $documentationPass = $documentationIssues.Count -eq 0 -and $actualOperations.Count -eq 144
   $documentationEvidence = if ($documentationIssues.Count -eq 0) {
-    'All 143 live operations passed documentation metadata checks.'
+    'All 144 live operations passed documentation metadata checks.'
   } else {
     $issueLimit = [Math]::Min(10, $documentationIssues.Count)
     @($documentationIssues.GetRange(0, $issueLimit)) -join '; '
@@ -837,9 +837,9 @@ $collectionDownloadPass = $collectionDownload.statusCode -eq 200 -and
   $collectionDownload.contentDisposition -match 'attachment;\s*filename="tareeq-api\.postman_collection\.json"' -and
   (Test-Property $downloadedCollection 'info') -and
   $downloadedCollection.info.schema -eq 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' -and
-$downloadedRequestCount -eq 143
+$downloadedRequestCount -eq 144
 Add-Check -Id 'postman.collection_download' -Category 'Documentation' -Status $(if ($collectionDownloadPass) { 'PASS' } else { 'FAIL' }) `
-  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 143 requests.' `
+  -Expected 'HTTP 200 downloadable Postman v2.1 JSON containing exactly 144 requests.' `
   -Actual "HTTP $($collectionDownload.statusCode); requests=$downloadedRequestCount; content type=$($collectionDownload.contentType); attachment=$(-not [string]::IsNullOrWhiteSpace($collectionDownload.contentDisposition))." `
   -Evidence 'GET /postman/collection.json; downloaded content is parsed in memory and is not retained in reports.' `
   -Classification $(if ($collectionDownload.statusCode -eq 0 -or $collectionDownload.statusCode -ge 500) { 'DEPLOYMENT_FAILURE' } elseif ($collectionDownloadPass) { 'NONE' } else { 'CONTRACT_FAILURE' })

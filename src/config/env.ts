@@ -54,6 +54,13 @@ export type CloudinaryConfig = {
   apiSecret?: string
 }
 
+export type GeminiConfig = {
+  status: 'CONFIGURED' | 'MISSING' | 'INVALID'
+  apiKey: string
+  model: string
+  dailyLimit: number
+}
+
 let cachedAuthConfig: AuthConfig | undefined
 
 export const getAuthConfig = (): AuthConfig => {
@@ -185,6 +192,25 @@ export const getCloudinaryConfig = (): CloudinaryConfig => {
     apiSecret: CLOUDINARY_API_SECRET!,
   }
   return cachedCloudinaryConfig
+}
+
+const geminiEnvSchema = z.object({
+  GEMINI_API_KEY: optionalNonEmptyString,
+  GEMINI_MODEL: z.preprocess(
+    (value) => typeof value === 'string' && value.trim() === '' ? undefined : value,
+    z.string().trim().min(1).max(100).regex(/^[A-Za-z0-9._-]+$/).default('gemini-3.5-flash-lite'),
+  ),
+  GEMINI_DAILY_LIMIT: z.coerce.number().int().min(1).max(500).default(100),
+})
+
+let cachedGeminiConfig: GeminiConfig | undefined
+
+export const getGeminiConfig = (): GeminiConfig => {
+  if (cachedGeminiConfig) return cachedGeminiConfig
+  const parsed = geminiEnvSchema.safeParse(process.env)
+  if (!parsed.success) return cachedGeminiConfig = { status: 'INVALID', apiKey: '', model: 'gemini-3.5-flash-lite', dailyLimit: 100 }
+  if (!parsed.data.GEMINI_API_KEY) return cachedGeminiConfig = { status: 'MISSING', apiKey: '', model: parsed.data.GEMINI_MODEL, dailyLimit: parsed.data.GEMINI_DAILY_LIMIT }
+  return cachedGeminiConfig = { status: 'CONFIGURED', apiKey: parsed.data.GEMINI_API_KEY, model: parsed.data.GEMINI_MODEL, dailyLimit: parsed.data.GEMINI_DAILY_LIMIT }
 }
 
 const cronSecretSchema = z.string().min(32)

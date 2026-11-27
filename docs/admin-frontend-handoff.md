@@ -1,6 +1,6 @@
 # Admin Frontend handoff — Merna
 
-This handoff describes the Backend contracts implemented locally as of the generated 143-operation OpenAPI document. It does **not** claim that the latest local changes have been deployed. Use the generated OpenAPI and Postman Collection as the machine-readable source of truth.
+This handoff describes the Backend contracts implemented locally as of the generated 144-operation OpenAPI document. It does **not** claim that the latest local changes have been deployed. Use the generated OpenAPI and Postman Collection as the machine-readable source of truth.
 
 ## Shared browser rules
 
@@ -30,6 +30,10 @@ POST/PATCH /admin/scholarships[/ {id}]
 POST/PATCH /admin/services[/ {id}]
 POST/PATCH /admin/articles[/ {id}]
 ```
+
+### Article SEO suggestions
+
+`POST /api/v1/admin/articles/{id}/seo-suggestions` is available to ADMIN and SUPER_ADMIN. It returns `{ seoTitleAr, seoDescriptionAr }` only; the Dashboard must let the editor review and explicitly save either value through the existing Article PATCH endpoint. The endpoint never changes Article status, slug, publication timestamps, or content. `GEMINI_DAILY_LIMIT` defaults to 100 requests per UTC day (maximum 500). On `429`, distinguish `GEMINI_DAILY_LIMIT_REACHED` (`remainingRequests: 0`, `resetAt`) from `GEMINI_PROVIDER_QUOTA_EXCEEDED` (optional provider-supplied `retryAfterSeconds` only).
 
 English translation fields are optional unless explicitly noted. Omit an optional translation to preserve it on PATCH; send `null` only where the OpenAPI schema permits clearing it.
 

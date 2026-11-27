@@ -92,7 +92,7 @@ For real authenticated browser testing, use the shared-site production domains o
 
 `ADMIN` and `SUPER_ADMIN` have the same Content Management and FAQ-management permissions. Audit-log review, existing Admin-account management, About Us editing, site-settings updates, analytics reporting, and permanent submission deletion are SUPER_ADMIN-only. There is no Admin creation or deletion endpoint.
 
-The local generated OpenAPI contains exactly 143 operations:
+The local generated OpenAPI contains exactly 144 operations:
 
 | Group | Operations | Access |
 | --- | ---: | --- |
@@ -286,6 +286,16 @@ await adminApi.patch(`/admin/countries/${id}`, { status: 'PUBLISHED' })
 ```
 
 Admin detail and update routes use UUIDs, while public detail routes use slugs. The first publication sets `publishedAt`; later unpublish/archive transitions preserve it. Published slugs are immutable.
+
+### Request Article SEO suggestions
+
+```ts
+const { data } = await adminApi.post(`/admin/articles/${articleId}/seo-suggestions`)
+// data.data is { seoTitleAr, seoDescriptionAr }; review it, then PATCH only
+// the editor-approved fields through the existing Article endpoint.
+```
+
+Both ADMIN roles may request suggestions. The Backend sends only that Article’s Arabic title, summary, and body to Gemini; it does not persist any change. `GEMINI_DAILY_LIMIT` defaults to 100 durable project-wide requests per UTC day (maximum 500). For `429 GEMINI_DAILY_LIMIT_REACHED`, display `error.message` and retry at `error.details.resetAt`. For `429 GEMINI_PROVIDER_QUOTA_EXCEEDED`, display `error.message` and honor `error.details.retryAfterSeconds` only when supplied. Handle `503` when the service or configured model is unavailable.
 
 ### Optional top-level manual ordering
 
@@ -946,7 +956,7 @@ Admins use `GET`/`POST`/`PATCH .../order` at `/admin/countries/{countryId}/study
 
 The repository includes:
 
-- `docs/postman/tareeq-api.postman_collection.json` — all 143 operations.
+- `docs/postman/tareeq-api.postman_collection.json` — all 144 operations.
 - `docs/postman/tareeq-api.read-only-smoke.postman_collection.json` — Health plus five safe public list requests.
 - Local and Vercel Postman environments. The Vercel environment uses the production custom API and Admin origins.
 

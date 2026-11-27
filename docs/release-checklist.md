@@ -9,7 +9,7 @@ Use this checklist for a coordinated Backend release. It records evidence, not a
   - `npm test`: 192 passed; PostgreSQL-gated tests skip without the approved test target.
   - `npm run test:api`: 136 passed.
   - TypeScript, ESLint, Prisma validation/generation, Postman synchronization, and production build: passed locally.
-  - Generated OpenAPI/Postman contract: 143 operations.
+  - Generated OpenAPI/Postman contract: 144 operations.
 - The five latest PostgreSQL tests in `auth-recovery.postgres.integration.test.ts` and `deletion.postgres.integration.test.ts` are **not yet executed against the disposable target**. Do not report 25/25 until the guarded command succeeds.
 
 ## Required owner actions before release completion

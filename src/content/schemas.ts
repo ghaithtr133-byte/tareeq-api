@@ -28,6 +28,8 @@ const slugSchema = z
   .openapi({ example: 'study-in-germany' })
 const requiredArabicText = z.string().trim().min(1).max(20_000)
 const optionalText = z.string().trim().min(1).max(20_000).optional()
+export const seoTitleArSchema = z.string().trim().min(1).max(120)
+export const seoDescriptionArSchema = z.string().trim().min(1).max(320)
 const webUrlSchema = z.url().max(2_048).refine(
   (value) => ['http:', 'https:'].includes(new URL(value).protocol),
   'Use an HTTP or HTTPS URL.',
@@ -74,8 +76,8 @@ const commonCreateFields = {
   slug: slugSchema,
   featured: z.boolean().optional().default(false),
   status: publicationStatusSchema.optional().default('DRAFT'),
-  seoTitleAr: z.string().trim().min(1).max(120).optional(),
-  seoDescriptionAr: z.string().trim().min(1).max(320).optional(),
+  seoTitleAr: seoTitleArSchema.optional(),
+  seoDescriptionAr: seoDescriptionArSchema.optional(),
 }
 
 export const countryCreateSchema = z

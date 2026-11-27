@@ -211,6 +211,12 @@ model PasswordRecoveryRateLimit {
   @@index([expiresAt])
 }
 
+model GeminiSeoDailyQuota {
+  day       DateTime @id @db.Date
+  count     Int
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
 model AdminAuditLog {
   id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   actorAdminId String            @db.Uuid

@@ -24135,6 +24135,309 @@
           ]
         },
         {
+          "name": "[MANUAL] Generate Arabic SEO suggestions for an Article",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text",
+                "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/articles/:id/seo-suggestions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "articles",
+                ":id",
+                "seo-suggestions"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{articleId}}",
+                  "description": "Administrative content UUID."
+                }
+              ]
+            },
+            "description": "ADMIN or SUPER_ADMIN only. Sends only the selected Article’s Arabic title, summary, and rich-text body to the configured Gemini model. Suggestions are validated but never saved, and no Article status, slug, publication timestamp, student data, or unrelated records are changed. A project-wide durable UTC-day limit is configured by GEMINI_DAILY_LIMIT (default 100; maximum 500).\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Validated suggestions; the Article is unchanged.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n429: Either `GEMINI_DAILY_LIMIT_REACHED` with `{ remainingRequests: 0, resetAt }`, or `GEMINI_PROVIDER_QUOTA_EXCEEDED` with optional provider-supplied `{ retryAfterSeconds }`.\n502: Gemini returned an unavailable or invalid response.\n503: Gemini is not configured or its configured model is unavailable.\n504: Gemini did not respond before the bounded request timeout."
+          },
+          "response": [
+            {
+              "name": "200 Validated suggestions; the Article is unchanged.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/articles/:id/seo-suggestions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "articles",
+                    ":id",
+                    "seo-suggestions"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{articleId}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Sends only the selected Article’s Arabic title, summary, and rich-text body to the configured Gemini model. Suggestions are validated but never saved, and no Article status, slug, publication timestamp, student data, or unrelated records are changed. A project-wide durable UTC-day limit is configured by GEMINI_DAILY_LIMIT (default 100; maximum 500).\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Validated suggestions; the Article is unchanged.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n429: Either `GEMINI_DAILY_LIMIT_REACHED` with `{ remainingRequests: 0, resetAt }`, or `GEMINI_PROVIDER_QUOTA_EXCEEDED` with optional provider-supplied `{ retryAfterSeconds }`.\n502: Gemini returned an unavailable or invalid response.\n503: Gemini is not configured or its configured model is unavailable.\n504: Gemini did not respond before the bounded request timeout."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"seoTitleAr\": \"دليل الدراسة الجامعية\",\n    \"seoDescriptionAr\": \"تعرف على أهم المعلومات والخطوات للدراسة الجامعية.\"\n  }\n}"
+            },
+            {
+              "name": "400 Validation, publication prerequisite, or relationship error.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/articles/:id/seo-suggestions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "articles",
+                    ":id",
+                    "seo-suggestions"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{articleId}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Sends only the selected Article’s Arabic title, summary, and rich-text body to the configured Gemini model. Suggestions are validated but never saved, and no Article status, slug, publication timestamp, student data, or unrelated records are changed. A project-wide durable UTC-day limit is configured by GEMINI_DAILY_LIMIT (default 100; maximum 500).\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Validated suggestions; the Article is unchanged.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n429: Either `GEMINI_DAILY_LIMIT_REACHED` with `{ remainingRequests: 0, resetAt }`, or `GEMINI_PROVIDER_QUOTA_EXCEEDED` with optional provider-supplied `{ retryAfterSeconds }`.\n502: Gemini returned an unavailable or invalid response.\n503: Gemini is not configured or its configured model is unavailable.\n504: Gemini did not respond before the bounded request timeout."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"VALIDATION_ERROR\",\n    \"message\": \"The request contains invalid fields.\",\n    \"details\": {\n      \"fields\": {\n        \"titleAr\": [\n          \"Invalid input: expected string, received undefined\"\n        ]\n      }\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Authentication is required.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/articles/:id/seo-suggestions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "articles",
+                    ":id",
+                    "seo-suggestions"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{articleId}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Sends only the selected Article’s Arabic title, summary, and rich-text body to the configured Gemini model. Suggestions are validated but never saved, and no Article status, slug, publication timestamp, student data, or unrelated records are changed. A project-wide durable UTC-day limit is configured by GEMINI_DAILY_LIMIT (default 100; maximum 500).\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Validated suggestions; the Article is unchanged.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n429: Either `GEMINI_DAILY_LIMIT_REACHED` with `{ remainingRequests: 0, resetAt }`, or `GEMINI_PROVIDER_QUOTA_EXCEEDED` with optional provider-supplied `{ retryAfterSeconds }`.\n502: Gemini returned an unavailable or invalid response.\n503: Gemini is not configured or its configured model is unavailable.\n504: Gemini did not respond before the bounded request timeout."
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"AUTHENTICATION_REQUIRED\",\n    \"message\": \"Authentication is required.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "403 The administrator lacks permission or the request origin is not trusted.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/articles/:id/seo-suggestions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "articles",
+                    ":id",
+                    "seo-suggestions"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{articleId}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Sends only the selected Article’s Arabic title, summary, and rich-text body to the configured Gemini model. Suggestions are validated but never saved, and no Article status, slug, publication timestamp, student data, or unrelated records are changed. A project-wide durable UTC-day limit is configured by GEMINI_DAILY_LIMIT (default 100; maximum 500).\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Validated suggestions; the Article is unchanged.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n429: Either `GEMINI_DAILY_LIMIT_REACHED` with `{ remainingRequests: 0, resetAt }`, or `GEMINI_PROVIDER_QUOTA_EXCEEDED` with optional provider-supplied `{ retryAfterSeconds }`.\n502: Gemini returned an unavailable or invalid response.\n503: Gemini is not configured or its configured model is unavailable.\n504: Gemini did not respond before the bounded request timeout."
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"FORBIDDEN\",\n    \"message\": \"Insufficient permissions.\",\n    \"details\": {}\n  }\n}"
+            },
+            {
+              "name": "404 The content record was not found or is not publicly available.",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Origin",
+                    "value": "{{origin}}",
+                    "type": "text",
+                    "description": "Required by the Backend CSRF origin check for authenticated state-changing requests."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/admin/articles/:id/seo-suggestions",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "articles",
+                    ":id",
+                    "seo-suggestions"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "{{articleId}}",
+                      "description": "Administrative content UUID."
+                    }
+                  ]
+                },
+                "description": "ADMIN or SUPER_ADMIN only. Sends only the selected Article’s Arabic title, summary, and rich-text body to the configured Gemini model. Suggestions are validated but never saved, and no Article status, slug, publication timestamp, student data, or unrelated records are changed. A project-wide durable UTC-day limit is configured by GEMINI_DAILY_LIMIT (default 100; maximum 500).\n\nAuthentication: Postman must hold a valid host-only HttpOnly access cookie for an ADMIN or SUPER_ADMIN.\n\nMANUAL OPERATION: do not run this request through routine Collection Runner verification. It may create data, change data, rotate/revoke sessions, or change an administrator password.\n\nExpected responses:\n200: Validated suggestions; the Article is unchanged.\n400: Validation, publication prerequisite, or relationship error.\n401: Authentication is required.\n403: The administrator lacks permission or the request origin is not trusted.\n404: The content record was not found or is not publicly available.\n429: Either `GEMINI_DAILY_LIMIT_REACHED` with `{ remainingRequests: 0, resetAt }`, or `GEMINI_PROVIDER_QUOTA_EXCEEDED` with optional provider-supplied `{ retryAfterSeconds }`.\n502: Gemini returned an unavailable or invalid response.\n503: Gemini is not configured or its configured model is unavailable.\n504: Gemini did not respond before the bounded request timeout."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"CONTENT_NOT_FOUND\",\n    \"message\": \"Content not found.\",\n    \"details\": {}\n  }\n}"
+            }
+          ]
+        },
+        {
           "name": "[MANUAL] Create an article",
           "request": {
             "method": "POST",
