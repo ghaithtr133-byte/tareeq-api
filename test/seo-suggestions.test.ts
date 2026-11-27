@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '../src/shared/http.js'
-import { ArticleSeoSuggestionService, type ArticleSeoSuggestionRepository, type GeminiSeoClient } from '../src/content/seo-suggestions.js'
+import { ArticleSeoSuggestionService, parseGeminiSeoResponse, type ArticleSeoSuggestionRepository, type GeminiSeoClient } from '../src/content/seo-suggestions.js'
 
 const article = { titleAr: 'دليل الدراسة', summaryAr: 'ملخص الدراسة الجامعية', bodyAr: [{ type: 'paragraph', text: 'محتوى عربي صالح للاقتراح.' }] }
 
@@ -13,6 +13,17 @@ const repository = (allowed = true): ArticleSeoSuggestionRepository => ({
 const client = (response: unknown): GeminiSeoClient => ({ suggest: async () => response })
 
 describe('ArticleSeoSuggestionService', () => {
+  it('accepts structured output across Gemini text parts', () => {
+    expect(parseGeminiSeoResponse({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"seoTitleAr":"عنوان"' }, { text: ',"seoDescriptionAr":"وصف صالح"}' }] } }], usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 8, totalTokenCount: 20 } }, 'gemini-3.5-flash-lite')).toEqual({ seoTitleAr: 'عنوان', seoDescriptionAr: 'وصف صالح' })
+  })
+
+  it('reports truncated and schema-invalid Gemini output without raw content', () => {
+    expect(() => parseGeminiSeoResponse({ candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{' }] } }] }, 'gemini-3.5-flash-lite')).toThrowError(ApiError)
+    try { parseGeminiSeoResponse({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"seoTitleAr":"عنوان","seoDescriptionAr":""}' }] } }] }, 'gemini-3.5-flash-lite') } catch (error) {
+      expect(error).toMatchObject({ code: 'SEO_SUGGESTION_INVALID_RESPONSE', details: { failureCategory: 'SEO_FIELD_VALIDATION', model: 'gemini-3.5-flash-lite', validationFields: ['seoDescriptionAr'] } })
+    }
+  })
+
   it('returns validated suggestions without persisting Article changes', async () => {
     const service = new ArticleSeoSuggestionService(repository(), client({ seoTitleAr: 'دليل الدراسة الجامعية', seoDescriptionAr: 'ملخص عربي صالح لمحركات البحث عن الدراسة الجامعية.' }))
     await expect(service.suggest('a0000000-0000-4000-8000-000000000001')).resolves.toEqual({ seoTitleAr: 'دليل الدراسة الجامعية', seoDescriptionAr: 'ملخص عربي صالح لمحركات البحث عن الدراسة الجامعية.' })

@@ -13,6 +13,10 @@ export const articleSeoSuggestionSchema = z.object({
 }).openapi('ArticleSeoSuggestion')
 
 type ArticleSeoSource = { titleAr: string; summaryAr: string; bodyAr: unknown }
+type GeminiResponse = {
+  candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number }
+}
 
 export interface ArticleSeoSuggestionRepository {
   findArticleSeoSource(id: string): Promise<ArticleSeoSource | null>
@@ -30,6 +34,40 @@ const arabicBodyText = (body: unknown) => Array.isArray(body)
   : ''
 
 const utcDay = (now: Date) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+
+const invalidGeminiResponse = (model: string, category: string, response: GeminiResponse | null, validationFields: string[] = []) => {
+  const candidate = response?.candidates?.[0]
+  const usage = response?.usageMetadata
+  return new ApiError(502, 'SEO_SUGGESTION_INVALID_RESPONSE', 'The SEO suggestion provider returned an invalid response.', {
+    failureCategory: category,
+    model,
+    finishReason: typeof candidate?.finishReason === 'string' ? candidate.finishReason : null,
+    tokenCounts: {
+      prompt: typeof usage?.promptTokenCount === 'number' ? usage.promptTokenCount : null,
+      candidates: typeof usage?.candidatesTokenCount === 'number' ? usage.candidatesTokenCount : null,
+      total: typeof usage?.totalTokenCount === 'number' ? usage.totalTokenCount : null,
+    },
+    ...(validationFields.length ? { validationFields } : {}),
+  })
+}
+
+export const parseGeminiSeoResponse = (response: GeminiResponse | null, model: string) => {
+  const candidate = response?.candidates?.[0]
+  if (!candidate) throw invalidGeminiResponse(model, 'NO_CANDIDATE', response)
+  if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+    throw invalidGeminiResponse(model, `FINISH_${candidate.finishReason}`, response)
+  }
+  const text = candidate.content?.parts?.flatMap((part) => typeof part.text === 'string' ? [part.text] : []).join('').trim()
+  if (!text) throw invalidGeminiResponse(model, 'EMPTY_TEXT', response)
+  const json = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+  let parsed: unknown
+  try { parsed = JSON.parse(json) } catch { throw invalidGeminiResponse(model, 'INVALID_JSON', response) }
+  const validated = articleSeoSuggestionSchema.safeParse(parsed)
+  if (!validated.success) {
+    throw invalidGeminiResponse(model, 'SEO_FIELD_VALIDATION', response, [...new Set(validated.error.issues.map((issue) => issue.path.join('.')).filter(Boolean))])
+  }
+  return validated.data
+}
 
 export class PrismaArticleSeoSuggestionRepository implements ArticleSeoSuggestionRepository {
   async findArticleSeoSource(id: string) {
@@ -65,7 +103,10 @@ export class GeminiApiSeoClient implements GeminiSeoClient {
             'أعد كائن JSON فقط بالمفاتيح seoTitleAr وseoDescriptionAr. لا تستخدم Markdown أو حقولاً إضافية.',
             `العنوان: ${source.titleAr}`, `الملخص: ${source.summaryAr}`, `النص: ${source.bodyAr}`,
           ].join('\n') }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+          generationConfig: {
+            responseMimeType: 'application/json', temperature: 0.2, maxOutputTokens: 512,
+            responseSchema: { type: 'OBJECT', properties: { seoTitleAr: { type: 'STRING' }, seoDescriptionAr: { type: 'STRING' } }, required: ['seoTitleAr', 'seoDescriptionAr'] },
+          },
         }),
       })
       if (response.status === 404) throw new ApiError(503, 'SEO_SUGGESTION_MODEL_UNAVAILABLE', 'The configured SEO suggestion model is unavailable.')
@@ -74,10 +115,8 @@ export class GeminiApiSeoClient implements GeminiSeoClient {
         throw new ApiError(429, 'GEMINI_PROVIDER_QUOTA_EXCEEDED', 'تم تجاوز حد مزود Gemini مؤقتاً. يرجى المحاولة لاحقاً.', Number.isFinite(seconds) && seconds > 0 ? { retryAfterSeconds: Math.ceil(seconds) } : {})
       }
       if (!response.ok) throw new ApiError(502, 'SEO_SUGGESTION_PROVIDER_UNAVAILABLE', 'The SEO suggestion provider is unavailable.')
-      const body = await response.json().catch(() => null) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> } | null
-      const text = body?.candidates?.[0]?.content?.parts?.[0]?.text
-      if (!text) throw new ApiError(502, 'SEO_SUGGESTION_INVALID_RESPONSE', 'The SEO suggestion provider returned an invalid response.')
-      try { return JSON.parse(text) } catch { throw new ApiError(502, 'SEO_SUGGESTION_INVALID_RESPONSE', 'The SEO suggestion provider returned an invalid response.') }
+      const body = await response.json().catch(() => null) as GeminiResponse | null
+      return parseGeminiSeoResponse(body, this.config.model)
     } catch (error) {
       if (error instanceof ApiError) throw error
       if (error instanceof DOMException && error.name === 'AbortError') throw new ApiError(504, 'SEO_SUGGESTION_TIMEOUT', 'The SEO suggestion provider timed out.')
@@ -109,7 +148,11 @@ export class ArticleSeoSuggestionService {
     }
     const result = await this.client.suggest({ titleAr: article.titleAr, summaryAr: article.summaryAr, bodyAr })
     const parsed = articleSeoSuggestionSchema.safeParse(result)
-    if (!parsed.success) throw new ApiError(502, 'SEO_SUGGESTION_INVALID_RESPONSE', 'The SEO suggestion provider returned an invalid response.')
+    if (!parsed.success) throw new ApiError(502, 'SEO_SUGGESTION_INVALID_RESPONSE', 'The SEO suggestion provider returned an invalid response.', {
+      failureCategory: 'SEO_FIELD_VALIDATION', model: 'client-mock-or-unavailable', finishReason: null,
+      tokenCounts: { prompt: null, candidates: null, total: null },
+      validationFields: [...new Set(parsed.error.issues.map((issue) => issue.path.join('.')).filter(Boolean))],
+    })
     return parsed.data
   }
 }
